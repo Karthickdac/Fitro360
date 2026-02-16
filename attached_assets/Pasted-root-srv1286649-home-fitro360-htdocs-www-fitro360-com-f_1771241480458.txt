@@ -1,0 +1,72 @@
+root@srv1286649:/home/fitro360/htdocs/www.fitro360.com/fitro360# pm2 logs fitro360 --lines 50
+[TAILING] Tailing last 50 lines for [fitro360] process (change the value with --lines option)
+/root/.pm2/logs/fitro360-out.log last 50 lines:
+2|fitro360 | > NODE_ENV=production node dist/index.cjs
+2|fitro360 | 
+2|fitro360 | 
+2|fitro360 | > rest-express@1.0.0 start
+2|fitro360 | > NODE_ENV=production node dist/index.cjs
+2|fitro360 | 
+2|fitro360 | 
+2|fitro360 | > rest-express@1.0.0 start
+2|fitro360 | > NODE_ENV=production node dist/index.cjs
+2|fitro360 | 
+2|fitro360 | 
+2|fitro360 | > rest-express@1.0.0 start
+2|fitro360 | > NODE_ENV=production node dist/index.cjs
+2|fitro360 | 
+2|fitro360 | 
+2|fitro360 | > rest-express@1.0.0 start
+2|fitro360 | > NODE_ENV=production node dist/index.cjs
+2|fitro360 | 
+2|fitro360 | 
+2|fitro360 | > rest-express@1.0.0 start
+2|fitro360 | > NODE_ENV=production node dist/index.cjs
+2|fitro360 | 
+2|fitro360 | 
+2|fitro360 | > rest-express@1.0.0 start
+2|fitro360 | > NODE_ENV=production node dist/index.cjs
+2|fitro360 | 
+2|fitro360 | 
+2|fitro360 | > rest-express@1.0.0 start
+2|fitro360 | > NODE_ENV=production node dist/index.cjs
+2|fitro360 | 
+2|fitro360 | 
+2|fitro360 | > rest-express@1.0.0 start
+2|fitro360 | > NODE_ENV=production node dist/index.cjs
+2|fitro360 | 
+2|fitro360 | 
+2|fitro360 | > rest-express@1.0.0 start
+2|fitro360 | > NODE_ENV=production node dist/index.cjs
+2|fitro360 | 
+2|fitro360 | 
+2|fitro360 | > rest-express@1.0.0 start
+2|fitro360 | > NODE_ENV=production node dist/index.cjs
+2|fitro360 | 
+2|fitro360 | 
+2|fitro360 | > rest-express@1.0.0 start
+2|fitro360 | > NODE_ENV=production node dist/index.cjs
+2|fitro360 | 
+2|fitro360 | 
+2|fitro360 | > rest-express@1.0.0 start
+2|fitro360 | > NODE_ENV=production node dist/index.cjs
+2|fitro360 | 
+
+/root/.pm2/logs/fitro360-error.log last 50 lines:
+2|fitro360 | ).json({message:"Trainer has a conflicting session at this time"});let c=await C.createSession({tenantId:i.tenantId,trainerId:a.trainerId,title:a.title,type:a.type,startTime:s,endTime:o,capacity:a.capacity||(a.type==="personal"?1:20),isRecurring:a.isRecurring||!1,recurringPattern:a.recurringPattern,notes:a.notes,status:"scheduled"});return r.json(c)}catch(i){return r.status(400).json({message:i.message})}}),e.patch("/api/sessions/:id",z,async(t,r)=>{try{let i=t.body;i.startTime&&(i.startTime=new Date(i.startTime)),i.endTime&&(i.endTime=new Date(i.endTime));let a=await C.updateSession(ge(t),i);return a?r.json(a):r.status(404).json({message:"Session not found"})}catch(i){return r.status(400).json({message:i.message})}}),e.delete("/api/sessions/:id",z,async(t,r)=>(await C.deleteSession(ge(t)),r.json({message:"Deleted"}))),e.post("/api/sessions/:id/book",z,async(t,r)=>{try{let{memberId:i}=S.object({memberId:S.string().min(1)}).parse(t.body),a=await C.getSession(ge(t));if(!a)return r.status(404).json({message:"Session not found"});if((a.enrolled||0)>=(a.capacity||1))return r.status(400).json({message:"Session is full"});let s=await C.createBooking({sessionId:ge(t),memberId:i,status:"confirmed"});return r.json(s)}catch(i){return r.status(400).json({message:i.message})}}),e.get("/api/trainers",z,async(t,r)=>{let i=t.user;if(!i.tenantId)return r.json([]);let s=(await C.getUsersByRole(i.tenantId,"trainer")).map(({password:o,...l})=>l);return r.json(s)}),e.get("/api/branches",z,async(t,r)=>{let i=t.user;if(!i.tenantId)return r.json([]);let a=await C.getBranchesByTenant(i.tenantId);return r.json(a)}),e.post("/api/branches",z,rr("gym_owner","platform_admin"),async(t,r)=>{try{let i=t.user;if(!i.tenantId)return r.status(400).json({message:"No tenant"});let a=S.object({name:S.string().min(1),address:S.string().optional(),phone:S.string().optional(),email:S.string().optional()}).parse(t.body),s=await C.createBranch({...a,tenantId:i.tenantId});return await C.createActivity({tenantId:i.tenantId,userId:i.id,type:"branch_added",description:`New branch "${a.name}" was added`}),r.json(s)}catch(i){return r.status(400).json({message:i.message})}}),e.patch("/api/branches/:id",z,rr("gym_owner","platform_admin"),async(t,r)=>{let i=await C.updateBranch(ge(t),t.body);return r.json(i)}),e.delete("/api/branches/:id",z,rr("gym_owner","platform_admin"),async(t,r)=>(await C.deleteBranch(ge(t)),r.json({message:"Deleted"}))),e.get("/api/equipment",z,async(t,r)=>{let i=t.user;if(!i.tenantId)return r.json([]);let a=await C.getEquipmentByTenant(i.tenantId);return r.json(a)}),e.post("/api/equipment",z,async(t,r)=>{try{let i=t.user;if(!i.tenantId)return r.status(400).json({message:"No tenant"});let a=S.object({name:S.string().min(1),category:S.string().min(1),sku:S.string().optional(),quantity:S.number().optional(),minStock:S.number().optional(),costPrice:S.string().optional(),sellPrice:S.string().optional(),supplierId:S.string().optional(),branchId:S.string().optional()}).parse(t.body),s=await C.createEquipment({...a,tenantId:i.tenantId});return r.json(s)}catch(i){return r.status(400).json({message:i.message})}}),e.patch("/api/equipment/:id",z,async(t,r)=>{let i=await C.updateEquipment(ge(t),t.body);return r.json(i)}),e.delete("/api/equipment/:id",z,async(t,r)=>(await C.deleteEquipment(ge(t)),r.json({message:"Deleted"}))),e.get("/api/suppliers",z,async(t,r)=>{let i=t.user;if(!i.tenantId)return r.json([]);let a=await C.getSuppliersByTenant(i.tenantId);return r.json(a)}),e.post("/api/suppliers",z,async(t,r)=>{try{let i=t.user;if(!i.tenantId)return r.status(400).json({message:"No tenant"});let a=S.object({name:S.string().min(1),contactPerson:S.string().optional(),email:S.string().optional(),phone:S.string().optional(),address:S.string().optional(),taxNumber:S.string().optional()}).parse(t.body),s=await C.createSupplier({...a,tenantId:i.tenantId});return r.json(s)}catch(i){return r.status(400).json({message:i.message})}}),e.patch("/api/suppliers/:id",z,async(t,r)=>{let i=await C.updateSupplier(ge(t),t.body);return r.json(i)}),e.get("/api/invoices",z,async(t,r)=>{let i=t.user;if(!i.tenantId)return r.json([]);let a=await C.getInvoicesByTenant(i.tenantId);return r.json(a)}),e.post("/api/invoices",z,async(t,r)=>{try{let i=t.user;if(!i.tenantId)return r.status(400).json({message:"No tenant"});let a=S.object({type:S.string().optional(),customerId:S.string().optional(),items:S.array(S.object({name:S.string(),quantity:S.number(),unitPrice:S.number(),total:S.number()})),gstRate:S.string().optional()}).parse(t.body),s=a.items.reduce((m,b)=>m+b.total,0),l=t.tenant?.market==="india"?"18":"5",u=parseFloat(a.gstRate||l),c=s*(u/100),p=s+c,d=await C.getInvoicesByTenant(i.tenantId),f=`INV-${String(d.length+1).padStart(4,"0")}`,v=await C.createInvoice({tenantId:i.tenantId,invoiceNumber:f,type:a.type||"sale",customerId:a.customerId,items:a.items,subtotal:s.toFixed(2),gstRate:u.toFixed(2),gstAmount:c.toFixed(2),total:p.toFixed(2),status:"pending"});return r.json(v)}catch(i){return r.status(400).json({message:i.message})}}),e.patch("/api/invoices/:id",z,async(t,r)=>{let i=await C.updateInvoice(ge(t),t.body);return r.json(i)}),e.get("/api/notifications",z,async(t,r)=>{let i=t.user,a=i.tenantId?await C.getNotificationsByTenant(i.tenantId):await C.getNotificationsByUser(i.id);return r.json(a)}),e.post("/api/notifications",z,async(t,r)=>{try{let i=t.user,a=S.object({type:S.string().min(1),title:S.string().min(1),message:S.string().min(1),userId:S.string().optional(),channel:S.string().optional()}).parse(t.body),s=await C.createNotification({...a,tenantId:i.tenantId});return r.json(s)}catch(i){return r.status(400).json({message:i.message})}}),e.patch("/api/notifications/:id/read",z,async(t,r)=>(await C.markNotificationRead(ge(t)),r.json({message:"Marked as read"}))),e.get("/api/coupons",z,async(t,r)=>{let i=t.user;if(!i.tenantId)return r.json([]);let a=await C.getCouponsByTenant(i.tenantId);return r.json(a)}),e.post("/api/coupons",z,async(t,r)=>{try{let i=t.user;if(!i.tenantId)return r.status(400).json({message:"No tenant"});let a=S.object({code:S.string().min(1),description:S.string().optional(),discountType:S.string().min(1),discountValue:S.string().min(1),maxUses:S.number().optional(),validFrom:S.string().optional(),validUntil:S.string().optional()}).parse(t.body),s=await C.createCoupon({...a,tenantId:i.tenantId,validFrom:a.validFrom?new Date(a.validFrom):new Date,validUntil:a.validUntil?new Date(a.validUntil):void 0});return r.json(s)}catch(i){return r.status(400).json({message:i.message})}}),e.patch("/api/coupons/:id",z,async(t,r)=>{let i=await C.updateCoupon(ge(t),t.body);return r.json(i)}),e.get("/api/referrals",z,async(t,r)=>{let i=t.user;if(!i.tenantId)return r.json([]);let a=await C.getReferralsByTenant(i.tenantId);return r.json(a)}),e.post("/api/referrals",z,async(t,r)=>{try{let i=t.user;if(!i.tenantId)return r.status(400).json({message:"No tenant"});let a=S.object({referrerId:S.string().min(1),referralCode:S.string().min(1),rewardType:S.string().optional(),rewardValue:S.string().optional()}).parse(t.body),s=await C.createReferral({...a,tenantId:i.tenantId,status:"pending"});return r.json(s)}catch(i){return r.status(400).json({message:i.message})}}),e.get("/api/activities",z,async(t,r)=>{let i=t.user;if(!i.tenantId)return r.json([]);let a=await C.getActivities(i.tenantId);return r.json(a)}),e.get("/api/analytics/export",z,async(t,r)=>{try{let i=t.user;if(!i.tenantId)return r.status(400).json({message:"No tenant"});let a=t.query.type||"members",s=[],o="export.csv",l=[];a==="members"?(s=await C.getMembersByTenant(i.tenantId),l=["First Name","Last Name","Email","Phone","Membership Type","Status","Start Date","End Date"],o="members_export.csv"):a==="attendance"?(s=await C.getAttendanceByTenant(i.tenantId),l=["Member ID","Check In","Check Out","Method"],o="attendance_export.csv"):a==="equipment"?(s=await C.getEquipmentByTenant(i.tenantId),l=["Name","Category","SKU","Quantity","Cost Price","Sell Price","Status"],o="equipment_export.csv"):a==="invoices"&&(s=await C.getInvoicesByTenant(i.tenantId),l=["Invoice #","Type","Subtotal","VAT","Total","Status","Date"],o="invoices_export.csv");let u=l.join(",")+`
+2|fitro360 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+2|fitro360 | 
+2|fitro360 | Error: DATABASE_URL must be set
+2|fitro360 |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:117395
+2|fitro360 |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:1:225
+2|fitro360 |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:117553
+2|fitro360 |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:1:225
+2|fitro360 |     at Object.<anonymous> (/home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:133589)
+2|fitro360 |     at Module._compile (node:internal/modules/cjs/loader:1706:14)
+2|fitro360 |     at Object..js (node:internal/modules/cjs/loader:1839:10)
+2|fitro360 |     at Module.load (node:internal/modules/cjs/loader:1441:32)
+2|fitro360 |     at Function._load (node:internal/modules/cjs/loader:1263:12)
+2|fitro360 |     at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+2|fitro360 | 
+2|fitro360 | Node.js v22.22.0
+
