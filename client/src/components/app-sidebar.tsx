@@ -80,6 +80,7 @@ const trainerItems = [
 const managerMainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Members", url: "/members", icon: Users },
+  { title: "Membership Plans", url: "/membership-plans", icon: CreditCard },
   { title: "Check-in", url: "/check-in", icon: UserCheck },
   { title: "Trainers", url: "/trainers", icon: Dumbbell },
   { title: "Schedule", url: "/schedule", icon: CalendarDays },
@@ -97,6 +98,7 @@ const managerSystemItems = [
 const gymMainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Members", url: "/members", icon: Users },
+  { title: "Membership Plans", url: "/membership-plans", icon: CreditCard },
   { title: "Check-in", url: "/check-in", icon: UserCheck },
   { title: "Trainers", url: "/trainers", icon: Dumbbell },
   { title: "Trainer Mgmt", url: "/trainer-management", icon: Award },

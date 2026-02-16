@@ -159,6 +159,7 @@ export async function registerRoutes(
         lastName: z.string().min(1),
         email: z.string().email(),
         phone: z.string().optional(),
+        membershipPlanId: z.string().optional(),
         membershipType: z.string().min(1),
         status: z.string().optional(),
         trainerId: z.string().optional(),
@@ -169,11 +170,20 @@ export async function registerRoutes(
 
       const now = new Date();
       let membershipEnd: Date;
-      switch (memberInput.membershipType) {
-        case "annual": membershipEnd = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); break;
-        case "quarterly": membershipEnd = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); break;
-        case "day_pass": membershipEnd = new Date(now.getTime() + 24 * 60 * 60 * 1000); break;
-        default: membershipEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      let durationDays: number | undefined;
+      if (memberInput.membershipPlanId) {
+        const plan = await storage.getMembershipPlan(memberInput.membershipPlanId);
+        if (plan) durationDays = plan.durationDays;
+      }
+      if (durationDays) {
+        membershipEnd = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+      } else {
+        switch (memberInput.membershipType) {
+          case "annual": membershipEnd = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); break;
+          case "quarterly": membershipEnd = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); break;
+          case "day_pass": membershipEnd = new Date(now.getTime() + 24 * 60 * 60 * 1000); break;
+          default: membershipEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        }
       }
 
       let bmi: string | undefined;
@@ -832,6 +842,86 @@ export async function registerRoutes(
         status: "pending",
       });
       return res.json(referral);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  // ─── Membership Plans ─────────────────────────────────
+  app.get("/api/membership-plans", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.json([]);
+    const plans = await storage.getMembershipPlansByTenant(user.tenantId);
+    return res.json(plans);
+  });
+
+  app.get("/api/membership-plans/:id", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    const plan = await storage.getMembershipPlan(req.params.id);
+    if (!plan) return res.status(404).json({ message: "Plan not found" });
+    if (user.tenantId && plan.tenantId !== user.tenantId) return res.status(403).json({ message: "Not authorized" });
+    return res.json(plan);
+  });
+
+  app.post("/api/membership-plans", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      if (!["gym_owner", "manager"].includes(user.role)) return res.status(403).json({ message: "Not authorized" });
+      const input = z.object({
+        name: z.string().min(1),
+        description: z.string().optional().nullable(),
+        durationType: z.string().default("monthly"),
+        durationDays: z.coerce.number().min(1).default(30),
+        price: z.string().min(1),
+        currency: z.string().default("AED"),
+        setupFee: z.string().optional().nullable(),
+        features: z.array(z.string()).optional().default([]),
+        maxFreezeDays: z.coerce.number().optional().default(0),
+        guestPasses: z.coerce.number().optional().default(0),
+        personalTrainerSessions: z.coerce.number().optional().default(0),
+        lockerAccess: z.boolean().optional().default(false),
+        towelService: z.boolean().optional().default(false),
+        groupClasses: z.boolean().optional().default(false),
+        personalTraining: z.boolean().optional().default(false),
+        color: z.string().optional().default("#6366f1"),
+        isPopular: z.boolean().optional().default(false),
+        isActive: z.boolean().optional().default(true),
+        sortOrder: z.coerce.number().optional().default(0),
+      }).parse(req.body);
+      const plan = await storage.createMembershipPlan({
+        ...input,
+        tenantId: user.tenantId,
+      });
+      return res.json(plan);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/membership-plans/:id", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!["gym_owner", "manager"].includes(user.role)) return res.status(403).json({ message: "Not authorized" });
+      const existing = await storage.getMembershipPlan(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Plan not found" });
+      if (user.tenantId && existing.tenantId !== user.tenantId) return res.status(403).json({ message: "Not authorized" });
+      const plan = await storage.updateMembershipPlan(req.params.id, req.body);
+      return res.json(plan);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/membership-plans/:id", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!["gym_owner", "manager"].includes(user.role)) return res.status(403).json({ message: "Not authorized" });
+      const existing = await storage.getMembershipPlan(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Plan not found" });
+      if (user.tenantId && existing.tenantId !== user.tenantId) return res.status(403).json({ message: "Not authorized" });
+      await storage.deleteMembershipPlan(req.params.id);
+      return res.json({ success: true });
     } catch (error: any) {
       return res.status(400).json({ message: error.message });
     }

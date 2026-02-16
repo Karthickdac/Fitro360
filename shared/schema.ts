@@ -65,6 +65,7 @@ export const members = pgTable("members", {
   lastName: text("last_name").notNull(),
   email: text("email").notNull(),
   phone: text("phone"),
+  membershipPlanId: varchar("membership_plan_id"),
   membershipType: text("membership_type").notNull().default("monthly"),
   membershipStart: timestamp("membership_start").defaultNow(),
   membershipEnd: timestamp("membership_end"),
@@ -281,6 +282,31 @@ export const trainerProfiles = pgTable("trainer_profiles", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const membershipPlans = pgTable("membership_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  durationType: text("duration_type").notNull().default("monthly"),
+  durationDays: integer("duration_days").notNull().default(30),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("AED"),
+  setupFee: decimal("setup_fee", { precision: 10, scale: 2 }).default("0"),
+  features: jsonb("features").$type<string[]>().default([]),
+  maxFreezeDays: integer("max_freeze_days").default(0),
+  guestPasses: integer("guest_passes").default(0),
+  personalTrainerSessions: integer("personal_trainer_sessions").default(0),
+  lockerAccess: boolean("locker_access").default(false),
+  towelService: boolean("towel_service").default(false),
+  groupClasses: boolean("group_classes").default(false),
+  personalTraining: boolean("personal_training").default(false),
+  color: text("color").default("#6366f1"),
+  isPopular: boolean("is_popular").default(false),
+  isActive: boolean("is_active").default(true),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const subscriptionPlans = pgTable("subscription_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
@@ -318,6 +344,7 @@ export const insertReferralSchema = createInsertSchema(referrals).omit({ id: tru
 export const insertMemberMetricSchema = createInsertSchema(memberMetrics).omit({ id: true, recordedAt: true });
 export const insertEquipmentMaintenanceSchema = createInsertSchema(equipmentMaintenance).omit({ id: true, createdAt: true });
 export const insertPaymentRecordSchema = createInsertSchema(paymentRecords).omit({ id: true, createdAt: true });
+export const insertMembershipPlanSchema = createInsertSchema(membershipPlans).omit({ id: true, createdAt: true });
 export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({ id: true });
 export const insertTrainerCommissionSchema = createInsertSchema(trainerCommissions).omit({ id: true, createdAt: true });
 export const insertTrainerLeaveSchema = createInsertSchema(trainerLeaves).omit({ id: true, createdAt: true });
@@ -355,6 +382,8 @@ export type InsertCoupon = z.infer<typeof insertCouponSchema>;
 export type Coupon = typeof coupons.$inferSelect;
 export type InsertReferral = z.infer<typeof insertReferralSchema>;
 export type Referral = typeof referrals.$inferSelect;
+export type InsertMembershipPlan = z.infer<typeof insertMembershipPlanSchema>;
+export type MembershipPlan = typeof membershipPlans.$inferSelect;
 export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
 export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
 export type InsertMemberMetric = z.infer<typeof insertMemberMetricSchema>;

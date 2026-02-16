@@ -51,14 +51,15 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { useMarket } from "@/hooks/use-market";
-import type { Member, User } from "@shared/schema";
+import type { Member, User, MembershipPlan } from "@shared/schema";
 
 const addMemberSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Valid email required"),
   phone: z.string().optional(),
-  membershipType: z.string().min(1, "Membership type is required"),
+  membershipPlanId: z.string().optional(),
+  membershipType: z.string().default("monthly"),
   trainerId: z.string().optional(),
   heightCm: z.string().optional(),
   weightKg: z.string().optional(),
@@ -82,6 +83,10 @@ export default function MembersPage() {
 
   const { data: trainers } = useQuery<User[]>({
     queryKey: ["/api/trainers"],
+  });
+
+  const { data: membershipPlans } = useQuery<MembershipPlan[]>({
+    queryKey: ["/api/membership-plans"],
   });
 
   const [assignTrainerDialogOpen, setAssignTrainerDialogOpen] = useState(false);
@@ -255,23 +260,46 @@ export default function MembersPage() {
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <FormField control={form.control} name="membershipType" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Membership Type</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-membership-type"><SelectValue placeholder="Select type" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="monthly">Monthly</SelectItem>
-                          <SelectItem value="quarterly">Quarterly</SelectItem>
-                          <SelectItem value="annual">Annual</SelectItem>
-                          <SelectItem value="day_pass">Day Pass</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+                  {(membershipPlans || []).filter(p => p.isActive !== false).length > 0 ? (
+                    <FormField control={form.control} name="membershipPlanId" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Membership Plan</FormLabel>
+                        <Select onValueChange={(v) => {
+                          field.onChange(v);
+                          const plan = (membershipPlans || []).find(p => p.id === v);
+                          if (plan) form.setValue("membershipType", plan.durationType);
+                        }} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-membership-plan"><SelectValue placeholder="Select plan" /></SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {(membershipPlans || []).filter(p => p.isActive !== false).map((p) => (
+                              <SelectItem key={p.id} value={p.id}>{p.name} - {p.price} {p.currency}/{p.durationType}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  ) : (
+                    <FormField control={form.control} name="membershipType" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Membership Type</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-membership-type"><SelectValue placeholder="Select type" /></SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                            <SelectItem value="quarterly">Quarterly</SelectItem>
+                            <SelectItem value="annual">Annual</SelectItem>
+                            <SelectItem value="day_pass">Day Pass</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  )}
                   <FormField control={form.control} name="trainerId" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Assign Trainer</FormLabel>

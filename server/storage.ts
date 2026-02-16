@@ -5,7 +5,7 @@ import {
   branches, attendance, trainerSessions, sessionBookings,
   equipment, suppliers, invoices, notifications, coupons, referrals,
   memberMetrics, equipmentMaintenance, paymentRecords,
-  trainerCommissions, trainerLeaves, trainerProfiles,
+  trainerCommissions, trainerLeaves, trainerProfiles, membershipPlans,
   type Tenant, type InsertTenant,
   type User, type InsertUser,
   type Branch, type InsertBranch,
@@ -23,6 +23,7 @@ import {
   type EquipmentMaintenance, type InsertEquipmentMaintenance,
   type PaymentRecord, type InsertPaymentRecord,
   type SubscriptionPlan, type InsertSubscriptionPlan,
+  type MembershipPlan, type InsertMembershipPlan,
   type Activity, type InsertActivity,
   type TrainerCommission, type InsertTrainerCommission,
   type TrainerLeave, type InsertTrainerLeave,
@@ -109,6 +110,12 @@ export interface IStorage {
   getReferralsByTenant(tenantId: string): Promise<Referral[]>;
   createReferral(referral: InsertReferral): Promise<Referral>;
   updateReferral(id: string, data: Partial<InsertReferral>): Promise<Referral | undefined>;
+
+  getMembershipPlansByTenant(tenantId: string): Promise<MembershipPlan[]>;
+  getMembershipPlan(id: string): Promise<MembershipPlan | undefined>;
+  createMembershipPlan(plan: InsertMembershipPlan): Promise<MembershipPlan>;
+  updateMembershipPlan(id: string, data: Partial<InsertMembershipPlan>): Promise<MembershipPlan | undefined>;
+  deleteMembershipPlan(id: string): Promise<void>;
 
   getAllPlans(): Promise<SubscriptionPlan[]>;
   createPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan>;
@@ -516,6 +523,29 @@ export class DatabaseStorage implements IStorage {
   async updateReferral(id: string, data: Partial<InsertReferral>): Promise<Referral | undefined> {
     const [updated] = await db.update(referrals).set(data).where(eq(referrals.id, id)).returning();
     return updated;
+  }
+
+  async getMembershipPlansByTenant(tenantId: string): Promise<MembershipPlan[]> {
+    return db.select().from(membershipPlans).where(eq(membershipPlans.tenantId, tenantId)).orderBy(membershipPlans.sortOrder);
+  }
+
+  async getMembershipPlan(id: string): Promise<MembershipPlan | undefined> {
+    const [plan] = await db.select().from(membershipPlans).where(eq(membershipPlans.id, id));
+    return plan;
+  }
+
+  async createMembershipPlan(plan: InsertMembershipPlan): Promise<MembershipPlan> {
+    const [created] = await db.insert(membershipPlans).values(plan as any).returning();
+    return created;
+  }
+
+  async updateMembershipPlan(id: string, data: Partial<InsertMembershipPlan>): Promise<MembershipPlan | undefined> {
+    const [updated] = await db.update(membershipPlans).set(data as any).where(eq(membershipPlans.id, id)).returning();
+    return updated;
+  }
+
+  async deleteMembershipPlan(id: string): Promise<void> {
+    await db.update(membershipPlans).set({ isActive: false }).where(eq(membershipPlans.id, id));
   }
 
   async getAllPlans(): Promise<SubscriptionPlan[]> {

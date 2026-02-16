@@ -38,6 +38,7 @@ import TenantsPage from "@/pages/admin/tenants";
 import PlansPage from "@/pages/admin/plans";
 import AdminSettingsPage from "@/pages/admin/settings";
 import AdminReportsPage from "@/pages/admin/reports";
+import MembershipPlansPage from "@/pages/membership-plans";
 
 function LoadingScreen() {
   return (
@@ -106,6 +107,7 @@ function ManagerRouter() {
       <Route path="/schedule" component={SchedulePage} />
       <Route path="/check-in" component={CheckInPage} />
       <Route path="/branches" component={BranchesPage} />
+      <Route path="/membership-plans" component={MembershipPlansPage} />
       <Route path="/activity" component={ActivityPage} />
       <Route path="/notifications" component={NotificationsPage} />
       <Route path="/analytics" component={AnalyticsPage} />
@@ -137,6 +139,7 @@ function GymOwnerRouter() {
       <Route path="/notifications" component={NotificationsPage} />
       <Route path="/coupons" component={CouponsPage} />
       <Route path="/referrals" component={ReferralsPage} />
+      <Route path="/membership-plans" component={MembershipPlansPage} />
       <Route path="/analytics" component={AnalyticsPage} />
       <Route path="/reports" component={ReportsPage} />
       <Route path="/settings" component={SettingsPage} />
