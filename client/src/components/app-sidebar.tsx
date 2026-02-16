@@ -48,9 +48,6 @@ const platformAdminItems = [
 
 const memberItems = [
   { title: "My Portal", url: "/portal", icon: Home },
-  { title: "Schedule", url: "/schedule", icon: CalendarDays },
-  { title: "Notifications", url: "/notifications", icon: Bell },
-  { title: "Settings", url: "/settings", icon: Settings },
 ];
 
 const trainerItems = [
