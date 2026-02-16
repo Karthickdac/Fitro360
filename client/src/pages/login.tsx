@@ -244,6 +244,7 @@ export default function LoginPage() {
               <p className="text-xs text-muted-foreground font-semibold mb-2.5 uppercase tracking-wider">Demo Accounts</p>
               <div className="space-y-1.5 text-xs text-muted-foreground">
                 <p><span className="font-medium text-foreground/70">Gym Owner:</span> gymowner / gym123</p>
+                <p><span className="font-medium text-foreground/70">Manager:</span> manager1 / manager123</p>
                 <p><span className="font-medium text-foreground/70">Trainer:</span> trainer1 / trainer123</p>
                 <p><span className="font-medium text-foreground/70">Member:</span> member1 / member123</p>
               </div>

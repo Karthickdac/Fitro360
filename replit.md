@@ -89,6 +89,7 @@ shared/
 ## Demo Credentials
 - Platform Admin: admin / admin123
 - Gym Owner: gymowner / gym123
+- Manager: manager1 / manager123
 - Trainer: trainer1 / trainer123
 - Member: member1 / member123
 

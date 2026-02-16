@@ -130,6 +130,19 @@ export async function seedDatabase() {
     isActive: true,
   });
 
+  const managerPassword = await bcrypt.hash("manager123", 10);
+  await storage.createUser({
+    tenantId: tenant1.id,
+    username: "manager1",
+    email: "manager@irontemple.com",
+    password: managerPassword,
+    role: "manager",
+    firstName: "Rachel",
+    lastName: "Adams",
+    phone: "+1 555-0116",
+    isActive: true,
+  });
+
   const trainerPassword = await bcrypt.hash("trainer123", 10);
   await storage.createUser({
     tenantId: tenant1.id,
