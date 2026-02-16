@@ -3,10 +3,14 @@ import { createServer, type Server } from "http";
 import session from "express-session";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
-import { loginSchema, insertMemberSchema } from "@shared/schema";
+import { loginSchema } from "@shared/schema";
 import { z } from "zod";
 
-const SESSION_SECRET = process.env.SESSION_SECRET || "forgefit-dev-secret";
+const SESSION_SECRET = process.env.SESSION_SECRET || "fitro360-dev-secret";
+
+function paramId(req: Request): string {
+  return req.params.id as string;
+}
 
 declare module "express-session" {
   interface SessionData {
@@ -16,16 +20,13 @@ declare module "express-session" {
 
 async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const userId = req.session?.userId;
-
   if (!userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }
-
   const user = await storage.getUser(userId);
   if (!user) {
     return res.status(401).json({ message: "Unauthorized" });
   }
-
   (req as any).user = user;
   if (user.tenantId) {
     (req as any).tenant = await storage.getTenant(user.tenantId);
@@ -60,27 +61,18 @@ export async function registerRoutes(
     })
   );
 
+  // ─── Auth ──────────────────────────────────────────────
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
       const { username, password } = loginSchema.parse(req.body);
       const user = await storage.getUserByUsername(username);
-
-      if (!user) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-
+      if (!user) return res.status(401).json({ message: "Invalid credentials" });
       const valid = await bcrypt.compare(password, user.password);
-      if (!valid) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-
+      if (!valid) return res.status(401).json({ message: "Invalid credentials" });
       req.session.userId = user.id;
       const { password: _, ...safeUser } = user;
       let tenant = null;
-      if (user.tenantId) {
-        tenant = await storage.getTenant(user.tenantId);
-      }
-
+      if (user.tenantId) tenant = await storage.getTenant(user.tenantId);
       return res.json({ user: safeUser, tenant });
     } catch (error: any) {
       return res.status(400).json({ message: error.message });
@@ -88,21 +80,12 @@ export async function registerRoutes(
   });
 
   app.get("/api/auth/me", async (req: Request, res: Response) => {
-    if (!req.session?.userId) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
+    if (!req.session?.userId) return res.status(401).json({ message: "Not authenticated" });
     const user = await storage.getUser(req.session.userId);
-    if (!user) {
-      return res.status(401).json({ message: "User not found" });
-    }
-
+    if (!user) return res.status(401).json({ message: "User not found" });
     const { password: _, ...safeUser } = user;
     let tenant = null;
-    if (user.tenantId) {
-      tenant = await storage.getTenant(user.tenantId);
-    }
-
+    if (user.tenantId) tenant = await storage.getTenant(user.tenantId);
     return res.json({ user: safeUser, tenant });
   });
 
@@ -111,31 +94,32 @@ export async function registerRoutes(
     return res.json({ message: "Logged out" });
   });
 
+  // ─── Dashboard ─────────────────────────────────────────
   app.get("/api/dashboard/stats", authMiddleware, async (req: Request, res: Response) => {
     const user = (req as any).user;
-    if (!user.tenantId) {
-      return res.status(400).json({ message: "No tenant associated" });
-    }
+    if (!user.tenantId) return res.status(400).json({ message: "No tenant associated" });
     const stats = await storage.getDashboardStats(user.tenantId);
     return res.json(stats);
   });
 
+  // ─── Members ───────────────────────────────────────────
   app.get("/api/members", authMiddleware, async (req: Request, res: Response) => {
     const user = (req as any).user;
-    if (!user.tenantId) {
-      return res.json([]);
-    }
+    if (!user.tenantId) return res.json([]);
     const membersList = await storage.getMembersByTenant(user.tenantId);
     return res.json(membersList);
+  });
+
+  app.get("/api/members/:id", authMiddleware, async (req: Request, res: Response) => {
+    const member = await storage.getMember(paramId(req));
+    if (!member) return res.status(404).json({ message: "Member not found" });
+    return res.json(member);
   });
 
   app.post("/api/members", authMiddleware, async (req: Request, res: Response) => {
     try {
       const user = (req as any).user;
-      if (!user.tenantId) {
-        return res.status(400).json({ message: "No tenant associated" });
-      }
-
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant associated" });
       const memberInput = z.object({
         firstName: z.string().min(1),
         lastName: z.string().min(1),
@@ -143,39 +127,41 @@ export async function registerRoutes(
         phone: z.string().optional(),
         membershipType: z.string().min(1),
         status: z.string().optional(),
+        heightCm: z.string().optional(),
+        weightKg: z.string().optional(),
+        branchId: z.string().optional(),
       }).parse(req.body);
 
-      const data = memberInput;
       const now = new Date();
       let membershipEnd: Date;
+      switch (memberInput.membershipType) {
+        case "annual": membershipEnd = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); break;
+        case "quarterly": membershipEnd = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); break;
+        case "day_pass": membershipEnd = new Date(now.getTime() + 24 * 60 * 60 * 1000); break;
+        default: membershipEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      }
 
-      switch (data.membershipType) {
-        case "annual":
-          membershipEnd = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
-          break;
-        case "quarterly":
-          membershipEnd = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
-          break;
-        case "day_pass":
-          membershipEnd = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-          break;
-        default:
-          membershipEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      let bmi: string | undefined;
+      if (memberInput.heightCm && memberInput.weightKg) {
+        const h = parseFloat(memberInput.heightCm) / 100;
+        const w = parseFloat(memberInput.weightKg);
+        if (h > 0) bmi = (w / (h * h)).toFixed(1);
       }
 
       const member = await storage.createMember({
-        ...data,
+        ...memberInput,
         tenantId: user.tenantId,
         membershipStart: now,
         membershipEnd,
         status: "active",
+        bmi,
       });
 
       await storage.createActivity({
         tenantId: user.tenantId,
         userId: user.id,
         type: "member_added",
-        description: `${data.firstName} ${data.lastName} was added as a new member`,
+        description: `${memberInput.firstName} ${memberInput.lastName} was added as a new member`,
       });
 
       return res.json(member);
@@ -184,32 +170,559 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/members/:id", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const member = await storage.getMember(paramId(req));
+      if (!member || member.tenantId !== user.tenantId) {
+        return res.status(404).json({ message: "Member not found" });
+      }
+
+      const data = req.body;
+      if (data.heightCm && data.weightKg) {
+        const h = parseFloat(data.heightCm) / 100;
+        const w = parseFloat(data.weightKg);
+        if (h > 0) data.bmi = (w / (h * h)).toFixed(1);
+      }
+
+      if (data.status === "frozen" && member.status === "active") {
+        await storage.createActivity({
+          tenantId: user.tenantId,
+          userId: user.id,
+          type: "membership_frozen",
+          description: `${member.firstName} ${member.lastName}'s membership was frozen`,
+        });
+      }
+
+      if (data.status === "active" && member.status === "frozen") {
+        await storage.createActivity({
+          tenantId: user.tenantId,
+          userId: user.id,
+          type: "membership_unfrozen",
+          description: `${member.firstName} ${member.lastName}'s membership was reactivated`,
+        });
+      }
+
+      const updated = await storage.updateMember(paramId(req), data);
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/members/:id/renew", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const member = await storage.getMember(paramId(req));
+      if (!member || member.tenantId !== user.tenantId) {
+        return res.status(404).json({ message: "Member not found" });
+      }
+      const now = new Date();
+      let membershipEnd: Date;
+      switch (member.membershipType) {
+        case "annual": membershipEnd = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); break;
+        case "quarterly": membershipEnd = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); break;
+        default: membershipEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      }
+      const updated = await storage.updateMember(paramId(req), {
+        membershipStart: now,
+        membershipEnd,
+        status: "active",
+      });
+      await storage.createActivity({
+        tenantId: user.tenantId,
+        userId: user.id,
+        type: "member_renewed",
+        description: `${member.firstName} ${member.lastName} renewed their ${member.membershipType} membership`,
+      });
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  // ─── Attendance ────────────────────────────────────────
+  app.get("/api/attendance", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.json([]);
+    const date = req.query.date as string | undefined;
+    const list = await storage.getAttendanceByTenant(user.tenantId, date);
+    return res.json(list);
+  });
+
+  app.post("/api/attendance/checkin", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const { memberId, method } = z.object({
+        memberId: z.string().min(1),
+        method: z.string().optional(),
+      }).parse(req.body);
+
+      const member = await storage.getMember(memberId);
+      if (!member || member.tenantId !== user.tenantId) {
+        return res.status(404).json({ message: "Member not found" });
+      }
+
+      const record = await storage.createAttendance({
+        tenantId: user.tenantId,
+        memberId,
+        method: method || "manual",
+        checkInTime: new Date(),
+        branchId: member.branchId,
+      });
+
+      await storage.createActivity({
+        tenantId: user.tenantId,
+        userId: user.id,
+        type: "check_in",
+        description: `${member.firstName} ${member.lastName} checked in`,
+      });
+
+      return res.json(record);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/attendance/:id/checkout", authMiddleware, async (req: Request, res: Response) => {
+    const updated = await storage.updateAttendance(paramId(req), { checkOutTime: new Date() });
+    return res.json(updated);
+  });
+
+  // ─── Trainer Sessions ─────────────────────────────────
+  app.get("/api/sessions", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.json([]);
+    const start = req.query.start ? new Date(req.query.start as string) : undefined;
+    const end = req.query.end ? new Date(req.query.end as string) : undefined;
+    const list = await storage.getSessionsByTenant(user.tenantId, start, end);
+    return res.json(list);
+  });
+
+  app.post("/api/sessions", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const input = z.object({
+        trainerId: z.string().min(1),
+        title: z.string().min(1),
+        type: z.string().min(1),
+        startTime: z.string().min(1),
+        endTime: z.string().min(1),
+        capacity: z.number().min(1).optional(),
+        isRecurring: z.boolean().optional(),
+        recurringPattern: z.string().optional(),
+        notes: z.string().optional(),
+      }).parse(req.body);
+
+      const startTime = new Date(input.startTime);
+      const endTime = new Date(input.endTime);
+
+      const existingSessions = await storage.getSessionsByTrainer(input.trainerId);
+      const conflict = existingSessions.find(s => {
+        const sStart = new Date(s.startTime);
+        const sEnd = new Date(s.endTime);
+        return startTime < sEnd && endTime > sStart;
+      });
+      if (conflict) {
+        return res.status(400).json({ message: "Trainer has a conflicting session at this time" });
+      }
+
+      const session = await storage.createSession({
+        tenantId: user.tenantId,
+        trainerId: input.trainerId,
+        title: input.title,
+        type: input.type,
+        startTime,
+        endTime,
+        capacity: input.capacity || (input.type === "personal" ? 1 : 20),
+        isRecurring: input.isRecurring || false,
+        recurringPattern: input.recurringPattern,
+        notes: input.notes,
+        status: "scheduled",
+      });
+
+      return res.json(session);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/sessions/:id", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const data = req.body;
+      if (data.startTime) data.startTime = new Date(data.startTime);
+      if (data.endTime) data.endTime = new Date(data.endTime);
+      const updated = await storage.updateSession(paramId(req), data);
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/sessions/:id", authMiddleware, async (req: Request, res: Response) => {
+    await storage.deleteSession(paramId(req));
+    return res.json({ message: "Deleted" });
+  });
+
+  app.post("/api/sessions/:id/book", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const { memberId } = z.object({ memberId: z.string().min(1) }).parse(req.body);
+      const session = await storage.getSession(paramId(req));
+      if (!session) return res.status(404).json({ message: "Session not found" });
+      if ((session.enrolled || 0) >= (session.capacity || 1)) {
+        return res.status(400).json({ message: "Session is full" });
+      }
+      const booking = await storage.createBooking({ sessionId: paramId(req), memberId, status: "confirmed" });
+      return res.json(booking);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  // ─── Trainers ──────────────────────────────────────────
   app.get("/api/trainers", authMiddleware, async (req: Request, res: Response) => {
     const user = (req as any).user;
-    if (!user.tenantId) {
-      return res.json([]);
-    }
+    if (!user.tenantId) return res.json([]);
     const trainerList = await storage.getUsersByRole(user.tenantId, "trainer");
     const safeTrainers = trainerList.map(({ password: _, ...rest }) => rest);
     return res.json(safeTrainers);
   });
 
+  // ─── Branches ──────────────────────────────────────────
+  app.get("/api/branches", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.json([]);
+    const list = await storage.getBranchesByTenant(user.tenantId);
+    return res.json(list);
+  });
+
+  app.post("/api/branches", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const input = z.object({
+        name: z.string().min(1),
+        address: z.string().optional(),
+        phone: z.string().optional(),
+        email: z.string().optional(),
+      }).parse(req.body);
+      const branch = await storage.createBranch({ ...input, tenantId: user.tenantId });
+      await storage.createActivity({
+        tenantId: user.tenantId,
+        userId: user.id,
+        type: "branch_added",
+        description: `New branch "${input.name}" was added`,
+      });
+      return res.json(branch);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/branches/:id", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
+    const updated = await storage.updateBranch(paramId(req), req.body);
+    return res.json(updated);
+  });
+
+  app.delete("/api/branches/:id", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
+    await storage.deleteBranch(paramId(req));
+    return res.json({ message: "Deleted" });
+  });
+
+  // ─── Equipment ─────────────────────────────────────────
+  app.get("/api/equipment", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.json([]);
+    const list = await storage.getEquipmentByTenant(user.tenantId);
+    return res.json(list);
+  });
+
+  app.post("/api/equipment", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const input = z.object({
+        name: z.string().min(1),
+        category: z.string().min(1),
+        sku: z.string().optional(),
+        quantity: z.number().optional(),
+        minStock: z.number().optional(),
+        costPrice: z.string().optional(),
+        sellPrice: z.string().optional(),
+        supplierId: z.string().optional(),
+        branchId: z.string().optional(),
+      }).parse(req.body);
+      const item = await storage.createEquipment({ ...input, tenantId: user.tenantId });
+      return res.json(item);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/equipment/:id", authMiddleware, async (req: Request, res: Response) => {
+    const updated = await storage.updateEquipment(paramId(req), req.body);
+    return res.json(updated);
+  });
+
+  app.delete("/api/equipment/:id", authMiddleware, async (req: Request, res: Response) => {
+    await storage.deleteEquipment(paramId(req));
+    return res.json({ message: "Deleted" });
+  });
+
+  // ─── Suppliers ─────────────────────────────────────────
+  app.get("/api/suppliers", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.json([]);
+    const list = await storage.getSuppliersByTenant(user.tenantId);
+    return res.json(list);
+  });
+
+  app.post("/api/suppliers", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const input = z.object({
+        name: z.string().min(1),
+        contactPerson: z.string().optional(),
+        email: z.string().optional(),
+        phone: z.string().optional(),
+        address: z.string().optional(),
+        gstNumber: z.string().optional(),
+      }).parse(req.body);
+      const supplier = await storage.createSupplier({ ...input, tenantId: user.tenantId });
+      return res.json(supplier);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/suppliers/:id", authMiddleware, async (req: Request, res: Response) => {
+    const updated = await storage.updateSupplier(paramId(req), req.body);
+    return res.json(updated);
+  });
+
+  // ─── Invoices ──────────────────────────────────────────
+  app.get("/api/invoices", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.json([]);
+    const list = await storage.getInvoicesByTenant(user.tenantId);
+    return res.json(list);
+  });
+
+  app.post("/api/invoices", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const input = z.object({
+        type: z.string().optional(),
+        customerId: z.string().optional(),
+        items: z.array(z.object({
+          name: z.string(),
+          quantity: z.number(),
+          unitPrice: z.number(),
+          total: z.number(),
+        })),
+        gstRate: z.string().optional(),
+      }).parse(req.body);
+
+      const subtotal = input.items.reduce((sum, i) => sum + i.total, 0);
+      const gstRate = parseFloat(input.gstRate || "18");
+      const gstAmount = subtotal * (gstRate / 100);
+      const total = subtotal + gstAmount;
+
+      const allInvoices = await storage.getInvoicesByTenant(user.tenantId);
+      const invoiceNumber = `INV-${String(allInvoices.length + 1).padStart(4, "0")}`;
+
+      const invoice = await storage.createInvoice({
+        tenantId: user.tenantId,
+        invoiceNumber,
+        type: input.type || "sale",
+        customerId: input.customerId,
+        items: input.items,
+        subtotal: subtotal.toFixed(2),
+        gstRate: gstRate.toFixed(2),
+        gstAmount: gstAmount.toFixed(2),
+        total: total.toFixed(2),
+        status: "pending",
+      });
+
+      return res.json(invoice);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/invoices/:id", authMiddleware, async (req: Request, res: Response) => {
+    const updated = await storage.updateInvoice(paramId(req), req.body);
+    return res.json(updated);
+  });
+
+  // ─── Notifications ─────────────────────────────────────
+  app.get("/api/notifications", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    const list = user.tenantId
+      ? await storage.getNotificationsByTenant(user.tenantId)
+      : await storage.getNotificationsByUser(user.id);
+    return res.json(list);
+  });
+
+  app.post("/api/notifications", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const input = z.object({
+        type: z.string().min(1),
+        title: z.string().min(1),
+        message: z.string().min(1),
+        userId: z.string().optional(),
+        channel: z.string().optional(),
+      }).parse(req.body);
+      const notification = await storage.createNotification({
+        ...input,
+        tenantId: user.tenantId,
+      });
+      return res.json(notification);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/notifications/:id/read", authMiddleware, async (req: Request, res: Response) => {
+    await storage.markNotificationRead(paramId(req));
+    return res.json({ message: "Marked as read" });
+  });
+
+  // ─── Coupons ───────────────────────────────────────────
+  app.get("/api/coupons", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.json([]);
+    const list = await storage.getCouponsByTenant(user.tenantId);
+    return res.json(list);
+  });
+
+  app.post("/api/coupons", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const input = z.object({
+        code: z.string().min(1),
+        description: z.string().optional(),
+        discountType: z.string().min(1),
+        discountValue: z.string().min(1),
+        maxUses: z.number().optional(),
+        validFrom: z.string().optional(),
+        validUntil: z.string().optional(),
+      }).parse(req.body);
+      const coupon = await storage.createCoupon({
+        ...input,
+        tenantId: user.tenantId,
+        validFrom: input.validFrom ? new Date(input.validFrom) : new Date(),
+        validUntil: input.validUntil ? new Date(input.validUntil) : undefined,
+      });
+      return res.json(coupon);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/coupons/:id", authMiddleware, async (req: Request, res: Response) => {
+    const updated = await storage.updateCoupon(paramId(req), req.body);
+    return res.json(updated);
+  });
+
+  // ─── Referrals ─────────────────────────────────────────
+  app.get("/api/referrals", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.json([]);
+    const list = await storage.getReferralsByTenant(user.tenantId);
+    return res.json(list);
+  });
+
+  app.post("/api/referrals", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const input = z.object({
+        referrerId: z.string().min(1),
+        referralCode: z.string().min(1),
+        rewardType: z.string().optional(),
+        rewardValue: z.string().optional(),
+      }).parse(req.body);
+      const referral = await storage.createReferral({
+        ...input,
+        tenantId: user.tenantId,
+        status: "pending",
+      });
+      return res.json(referral);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  // ─── Activities ────────────────────────────────────────
   app.get("/api/activities", authMiddleware, async (req: Request, res: Response) => {
     const user = (req as any).user;
-    if (!user.tenantId) {
-      return res.json([]);
-    }
+    if (!user.tenantId) return res.json([]);
     const activityList = await storage.getActivities(user.tenantId);
     return res.json(activityList);
   });
 
+  // ─── Analytics Export ──────────────────────────────────
+  app.get("/api/analytics/export", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const type = req.query.type as string || "members";
+
+      let data: any[] = [];
+      let filename = "export.csv";
+      let headers: string[] = [];
+
+      if (type === "members") {
+        data = await storage.getMembersByTenant(user.tenantId);
+        headers = ["First Name", "Last Name", "Email", "Phone", "Membership Type", "Status", "Start Date", "End Date"];
+        filename = "members_export.csv";
+      } else if (type === "attendance") {
+        data = await storage.getAttendanceByTenant(user.tenantId);
+        headers = ["Member ID", "Check In", "Check Out", "Method"];
+        filename = "attendance_export.csv";
+      } else if (type === "equipment") {
+        data = await storage.getEquipmentByTenant(user.tenantId);
+        headers = ["Name", "Category", "SKU", "Quantity", "Cost Price", "Sell Price", "Status"];
+        filename = "equipment_export.csv";
+      } else if (type === "invoices") {
+        data = await storage.getInvoicesByTenant(user.tenantId);
+        headers = ["Invoice #", "Type", "Subtotal", "GST", "Total", "Status", "Date"];
+        filename = "invoices_export.csv";
+      }
+
+      let csv = headers.join(",") + "\n";
+      data.forEach(row => {
+        if (type === "members") {
+          csv += `"${row.firstName}","${row.lastName}","${row.email}","${row.phone || ""}","${row.membershipType}","${row.status}","${row.membershipStart || ""}","${row.membershipEnd || ""}"\n`;
+        } else if (type === "attendance") {
+          csv += `"${row.memberId}","${row.checkInTime || ""}","${row.checkOutTime || ""}","${row.method || ""}"\n`;
+        } else if (type === "equipment") {
+          csv += `"${row.name}","${row.category}","${row.sku || ""}","${row.quantity || 0}","${row.costPrice || ""}","${row.sellPrice || ""}","${row.status || ""}"\n`;
+        } else if (type === "invoices") {
+          csv += `"${row.invoiceNumber}","${row.type}","${row.subtotal}","${row.gstAmount}","${row.total}","${row.status}","${row.createdAt || ""}"\n`;
+        }
+      });
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      return res.send(csv);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  // ─── Tenant Settings ──────────────────────────────────
   app.patch("/api/tenant/settings", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
     try {
       const user = (req as any).user;
-      if (!user.tenantId) {
-        return res.status(400).json({ message: "No tenant associated" });
-      }
-
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant associated" });
       const updated = await storage.updateTenant(user.tenantId, req.body);
       return res.json(updated);
     } catch (error: any) {
@@ -217,6 +730,7 @@ export async function registerRoutes(
     }
   });
 
+  // ─── Platform Admin ────────────────────────────────────
   app.get("/api/admin/stats", authMiddleware, requireRole("platform_admin"), async (_req: Request, res: Response) => {
     const stats = await storage.getAdminStats();
     return res.json(stats);
@@ -230,35 +744,22 @@ export async function registerRoutes(
   app.post("/api/admin/tenants", authMiddleware, requireRole("platform_admin"), async (req: Request, res: Response) => {
     try {
       const { gymName, email, domain, subscriptionPlan, primaryColor, secondaryColor, ownerFirstName, ownerLastName, ownerUsername, ownerPassword } = req.body;
-
       const existingUser = await storage.getUserByUsername(ownerUsername);
-      if (existingUser) {
-        return res.status(400).json({ message: "Username already exists" });
-      }
-
+      if (existingUser) return res.status(400).json({ message: "Username already exists" });
       const tenant = await storage.createTenant({
-        gymName,
-        email,
+        gymName, email,
         domain: domain || null,
-        subscriptionPlan,
-        primaryColor,
-        secondaryColor,
+        subscriptionPlan, primaryColor, secondaryColor,
         appDisplayName: gymName,
         isActive: true,
       });
-
       const hashedPassword = await bcrypt.hash(ownerPassword, 10);
       await storage.createUser({
-        tenantId: tenant.id,
-        username: ownerUsername,
-        email,
-        password: hashedPassword,
-        role: "gym_owner",
-        firstName: ownerFirstName,
-        lastName: ownerLastName,
+        tenantId: tenant.id, username: ownerUsername, email,
+        password: hashedPassword, role: "gym_owner",
+        firstName: ownerFirstName, lastName: ownerLastName,
         isActive: true,
       });
-
       return res.json(tenant);
     } catch (error: any) {
       return res.status(400).json({ message: error.message });

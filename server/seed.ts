@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { db } from "./db";
-import { users, tenants, subscriptionPlans, members, activities } from "@shared/schema";
+import { users, tenants, subscriptionPlans, members, activities, branches, equipment, suppliers } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 export async function seedDatabase() {
@@ -223,6 +223,58 @@ export async function seedDatabase() {
       description: a.description,
     });
   }
+
+  await storage.createBranch({
+    tenantId: tenant1.id,
+    name: "Main Branch",
+    address: "123 Iron Street, Los Angeles, CA 90001",
+    phone: "+1 555-0101",
+    email: "main@irontemple.com",
+    isActive: true,
+  });
+
+  await storage.createBranch({
+    tenantId: tenant1.id,
+    name: "Downtown Branch",
+    address: "500 Fitness Ave, Los Angeles, CA 90012",
+    phone: "+1 555-0115",
+    email: "downtown@irontemple.com",
+    isActive: true,
+  });
+
+  const seedEquipment = [
+    { name: "Treadmill Pro X1", category: "Cardio", sku: "TRD-001", quantity: 8, minStock: 2, costPrice: "1200.00", sellPrice: "1800.00" },
+    { name: "Adjustable Dumbbells 5-50lb", category: "Strength", sku: "DUM-001", quantity: 20, minStock: 5, costPrice: "250.00", sellPrice: "399.00" },
+    { name: "Resistance Bands Set", category: "Accessories", sku: "ACC-001", quantity: 30, minStock: 10, costPrice: "12.00", sellPrice: "29.99" },
+    { name: "Whey Protein 2lb", category: "Supplements", sku: "SUP-001", quantity: 15, minStock: 5, costPrice: "22.00", sellPrice: "39.99" },
+    { name: "Yoga Mat Premium", category: "Accessories", sku: "ACC-002", quantity: 25, minStock: 8, costPrice: "15.00", sellPrice: "34.99" },
+    { name: "Stationary Bike V2", category: "Cardio", sku: "BIK-001", quantity: 1, minStock: 2, costPrice: "800.00", sellPrice: "1299.00" },
+  ];
+  for (const e of seedEquipment) {
+    await storage.createEquipment({ ...e, tenantId: tenant1.id });
+  }
+
+  await storage.createSupplier({
+    tenantId: tenant1.id,
+    name: "FitPro Supplies",
+    contactPerson: "John Baker",
+    email: "john@fitpro.com",
+    phone: "+1 555-9001",
+    address: "100 Supply Drive, Chicago, IL",
+    gstNumber: "GST001234",
+    isActive: true,
+  });
+
+  await storage.createSupplier({
+    tenantId: tenant1.id,
+    name: "MuscleTech Equipment",
+    contactPerson: "Lisa Wong",
+    email: "lisa@muscletech.com",
+    phone: "+1 555-9002",
+    address: "200 Equip Lane, Houston, TX",
+    gstNumber: "GST005678",
+    isActive: true,
+  });
 
   console.log("Database seeded successfully!");
 }

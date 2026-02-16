@@ -6,9 +6,17 @@ import {
   Settings,
   LogOut,
   Dumbbell,
-  UserCog,
   Activity,
   Shield,
+  CalendarDays,
+  Package,
+  Truck,
+  FileText,
+  UserCheck,
+  Bell,
+  Tag,
+  Gift,
+  GitBranch,
 } from "lucide-react";
 import {
   Sidebar,
@@ -33,13 +41,68 @@ const platformAdminItems = [
   { title: "Plans", url: "/admin/plans", icon: CreditCard },
 ];
 
-const gymOwnerItems = [
+const gymMainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Members", url: "/members", icon: Users },
+  { title: "Check-in", url: "/check-in", icon: UserCheck },
   { title: "Trainers", url: "/trainers", icon: Dumbbell },
+  { title: "Schedule", url: "/schedule", icon: CalendarDays },
+];
+
+const gymErpItems = [
+  { title: "Inventory", url: "/inventory", icon: Package },
+  { title: "Suppliers", url: "/suppliers", icon: Truck },
+  { title: "Invoices", url: "/invoicing", icon: FileText },
+];
+
+const gymMarketingItems = [
+  { title: "Coupons", url: "/coupons", icon: Tag },
+  { title: "Referrals", url: "/referrals", icon: Gift },
+];
+
+const gymSystemItems = [
+  { title: "Branches", url: "/branches", icon: GitBranch },
   { title: "Activity", url: "/activity", icon: Activity },
+  { title: "Notifications", url: "/notifications", icon: Bell },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
+
+function NavGroup({ label, items, location, navigate }: {
+  label: string;
+  items: { title: string; url: string; icon: any }[];
+  location: string;
+  navigate: (to: string) => void;
+}) {
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {items.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton
+                asChild
+                data-active={location === item.url}
+              >
+                <a
+                  href={item.url}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate(item.url);
+                  }}
+                  data-testid={`link-nav-${item.title.toLowerCase().replace(/\s/g, "-")}`}
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span>{item.title}</span>
+                </a>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
 
 export function AppSidebar() {
   const { user, tenant, logout } = useAuth();
@@ -48,8 +111,6 @@ export function AppSidebar() {
   if (!user) return null;
 
   const isPlatformAdmin = user.role === "platform_admin";
-  const items = isPlatformAdmin ? platformAdminItems : gymOwnerItems;
-
   const initials = `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase();
 
   return (
@@ -71,61 +132,42 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarSeparator />
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>
-            {isPlatformAdmin ? "Platform" : "Management"}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    data-active={location === item.url}
-                  >
-                    <a
-                      href={item.url}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        navigate(item.url);
-                      }}
-                      data-testid={`link-nav-${item.title.toLowerCase().replace(/\s/g, "-")}`}
+        {isPlatformAdmin ? (
+          <>
+            <NavGroup label="Platform" items={platformAdminItems} location={location} navigate={navigate} />
+            <SidebarGroup>
+              <SidebarGroupLabel>System</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      data-active={location === "/admin/settings"}
                     >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        {isPlatformAdmin && (
-          <SidebarGroup>
-            <SidebarGroupLabel>System</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    data-active={location === "/admin/settings"}
-                  >
-                    <a
-                      href="/admin/settings"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        navigate("/admin/settings");
-                      }}
-                      data-testid="link-nav-admin-settings"
-                    >
-                      <Shield className="h-4 w-4" />
-                      <span>Settings</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+                      <a
+                        href="/admin/settings"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          navigate("/admin/settings");
+                        }}
+                        data-testid="link-nav-admin-settings"
+                      >
+                        <Shield className="h-4 w-4" />
+                        <span>Settings</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        ) : (
+          <>
+            <NavGroup label="Gym Management" items={gymMainItems} location={location} navigate={navigate} />
+            <NavGroup label="Equipment & Sales" items={gymErpItems} location={location} navigate={navigate} />
+            <NavGroup label="Marketing" items={gymMarketingItems} location={location} navigate={navigate} />
+            <NavGroup label="System" items={gymSystemItems} location={location} navigate={navigate} />
+          </>
         )}
       </SidebarContent>
       <SidebarFooter className="p-3">
@@ -145,7 +187,7 @@ export function AppSidebar() {
           </div>
           <button
             onClick={logout}
-            className="p-1.5 rounded-md text-muted-foreground hover-elevate"
+            className="p-1.5 rounded-md text-muted-foreground hover:bg-muted"
             data-testid="button-logout"
           >
             <LogOut className="h-4 w-4" />

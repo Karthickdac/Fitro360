@@ -15,7 +15,16 @@ import DashboardPage from "@/pages/dashboard";
 import MembersPage from "@/pages/members";
 import TrainersPage from "@/pages/trainers";
 import ActivityPage from "@/pages/activity";
+import SchedulePage from "@/pages/schedule";
 import SettingsPage from "@/pages/settings";
+import InventoryPage from "@/pages/inventory";
+import SuppliersPage from "@/pages/suppliers";
+import InvoicingPage from "@/pages/invoicing";
+import BranchesPage from "@/pages/branches";
+import CheckInPage from "@/pages/check-in";
+import NotificationsPage from "@/pages/notifications";
+import CouponsPage from "@/pages/coupons";
+import ReferralsPage from "@/pages/referrals";
 import AdminDashboardPage from "@/pages/admin/dashboard";
 import TenantsPage from "@/pages/admin/tenants";
 import PlansPage from "@/pages/admin/plans";
@@ -51,7 +60,16 @@ function GymRouter() {
       <Route path="/dashboard" component={DashboardPage} />
       <Route path="/members" component={MembersPage} />
       <Route path="/trainers" component={TrainersPage} />
+      <Route path="/schedule" component={SchedulePage} />
       <Route path="/activity" component={ActivityPage} />
+      <Route path="/inventory" component={InventoryPage} />
+      <Route path="/suppliers" component={SuppliersPage} />
+      <Route path="/invoicing" component={InvoicingPage} />
+      <Route path="/branches" component={BranchesPage} />
+      <Route path="/check-in" component={CheckInPage} />
+      <Route path="/notifications" component={NotificationsPage} />
+      <Route path="/coupons" component={CouponsPage} />
+      <Route path="/referrals" component={ReferralsPage} />
       <Route path="/settings" component={SettingsPage} />
       <Route component={NotFound} />
     </Switch>
