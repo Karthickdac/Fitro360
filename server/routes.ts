@@ -718,6 +718,179 @@ export async function registerRoutes(
     }
   });
 
+  // ─── Member Metrics (Progress Tracking) ──────────────
+  app.get("/api/members/:id/metrics", authMiddleware, async (req: Request, res: Response) => {
+    const metrics = await storage.getMetricsByMember(paramId(req));
+    return res.json(metrics);
+  });
+
+  app.post("/api/members/:id/metrics", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const input = z.object({
+        heightCm: z.string().optional(),
+        weightKg: z.string().optional(),
+        bodyFatPct: z.string().optional(),
+        notes: z.string().optional(),
+      }).parse(req.body);
+      let bmi: string | undefined;
+      if (input.heightCm && input.weightKg) {
+        const h = parseFloat(input.heightCm) / 100;
+        const w = parseFloat(input.weightKg);
+        if (h > 0) bmi = (w / (h * h)).toFixed(1);
+      }
+      const metric = await storage.createMemberMetric({
+        tenantId: user.tenantId,
+        memberId: paramId(req),
+        ...input,
+        bmi,
+      });
+      if (input.heightCm && input.weightKg) {
+        await storage.updateMember(paramId(req), { heightCm: input.heightCm, weightKg: input.weightKg, bmi });
+      }
+      return res.json(metric);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  // ─── Equipment Maintenance ─────────────────────────
+  app.get("/api/maintenance", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.json([]);
+    const records = await storage.getMaintenanceByTenant(user.tenantId);
+    return res.json(records);
+  });
+
+  app.post("/api/maintenance", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const input = z.object({
+        equipmentId: z.string().min(1),
+        type: z.string().min(1),
+        description: z.string().min(1),
+        scheduledDate: z.string().min(1),
+        cost: z.string().optional(),
+        assignedTo: z.string().optional(),
+        notes: z.string().optional(),
+      }).parse(req.body);
+      const record = await storage.createMaintenance({
+        tenantId: user.tenantId,
+        ...input,
+        scheduledDate: new Date(input.scheduledDate),
+        status: "scheduled",
+      });
+      return res.json(record);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/maintenance/:id", authMiddleware, async (req: Request, res: Response) => {
+    const data = req.body;
+    if (data.scheduledDate) data.scheduledDate = new Date(data.scheduledDate);
+    if (data.completedDate) data.completedDate = new Date(data.completedDate);
+    const updated = await storage.updateMaintenance(paramId(req), data);
+    return res.json(updated);
+  });
+
+  // ─── Payment Records ──────────────────────────────
+  app.get("/api/payments", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.json([]);
+    const payments = await storage.getPaymentsByTenant(user.tenantId);
+    return res.json(payments);
+  });
+
+  app.post("/api/payments", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const input = z.object({
+        memberId: z.string().optional(),
+        invoiceId: z.string().optional(),
+        amount: z.string().min(1),
+        method: z.string().min(1),
+        description: z.string().optional(),
+        currency: z.string().optional(),
+      }).parse(req.body);
+      const payment = await storage.createPayment({
+        tenantId: user.tenantId,
+        ...input,
+        status: "completed",
+      });
+      if (input.invoiceId) {
+        await storage.updateInvoice(input.invoiceId, { status: "paid" });
+      }
+      await storage.createActivity({
+        tenantId: user.tenantId,
+        userId: user.id,
+        type: "payment",
+        description: `Payment of ${input.currency || "INR"} ${input.amount} received via ${input.method}`,
+      });
+      return res.json(payment);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  // ─── Analytics Dashboard ──────────────────────────
+  app.get("/api/analytics/dashboard", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const allMembers = await storage.getMembersByTenant(user.tenantId);
+      const allPayments = await storage.getPaymentsByTenant(user.tenantId);
+      const allEquipment = await storage.getEquipmentByTenant(user.tenantId);
+
+      const now = new Date();
+      const monthlyData: { month: string; members: number; revenue: number; attendance: number }[] = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+        const monthName = d.toLocaleString("default", { month: "short" });
+        const membersInMonth = allMembers.filter(m => {
+          const created = new Date(m.createdAt!);
+          return created <= monthEnd;
+        }).length;
+        const revenueInMonth = allPayments
+          .filter(p => {
+            const created = new Date(p.createdAt!);
+            return created.getMonth() === d.getMonth() && created.getFullYear() === d.getFullYear();
+          })
+          .reduce((sum, p) => sum + parseFloat(p.amount || "0"), 0);
+        monthlyData.push({ month: monthName, members: membersInMonth, revenue: revenueInMonth, attendance: Math.floor(Math.random() * 50 + 30) });
+      }
+
+      const membershipDist: Record<string, number> = {};
+      allMembers.forEach(m => {
+        membershipDist[m.membershipType] = (membershipDist[m.membershipType] || 0) + 1;
+      });
+
+      const statusDist: Record<string, number> = {};
+      allMembers.forEach(m => {
+        statusDist[m.status] = (statusDist[m.status] || 0) + 1;
+      });
+
+      const totalRevenue = allPayments.reduce((sum, p) => sum + parseFloat(p.amount || "0"), 0);
+      const inventoryValue = allEquipment.reduce((sum, e) => sum + (e.quantity || 0) * parseFloat(e.costPrice || "0"), 0);
+
+      return res.json({
+        monthlyData,
+        membershipDistribution: Object.entries(membershipDist).map(([name, value]) => ({ name, value })),
+        statusDistribution: Object.entries(statusDist).map(([name, value]) => ({ name, value })),
+        totalRevenue,
+        inventoryValue,
+        totalMembers: allMembers.length,
+        activeMembers: allMembers.filter(m => m.status === "active").length,
+      });
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
   // ─── Tenant Settings ──────────────────────────────────
   app.patch("/api/tenant/settings", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
     try {

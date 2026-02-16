@@ -12,21 +12,25 @@ Fitro360 is a white-label, multi-tenant SaaS platform for gym management. It sup
 ## Architecture
 - Multi-tenant with data isolation via `tenantId` foreign keys
 - Role-based access: `platform_admin`, `gym_owner`, `manager`, `trainer`, `member`, `sales_executive`
-- White-label branding stored per tenant (colors, logo, name)
-- Sidebar navigation organized into 4 groups: Gym Management, Equipment & Sales, Marketing, System
+- White-label branding stored per tenant (colors, logo, name) - auto-applies CSS variables on login
+- Role-based routing: separate routers per role (AdminRouter, MemberRouter, TrainerRouter, ManagerRouter, GymOwnerRouter)
+- Sidebar navigation adapts to user role (members see portal, trainers see workspace, owners see full admin)
 
 ## Database Tables
-- `tenants` - Gym organizations with branding config
+- `tenants` - Gym organizations with branding config (primaryColor, secondaryColor, domain)
 - `users` - All users across tenants with role-based access
 - `members` - Gym members with BMI tracking (height, weight, bmi)
+- `member_metrics` - Historical progress tracking (weight, BMI, body fat over time)
 - `subscription_plans` - SaaS pricing tiers (basic/pro/enterprise)
 - `activities` - Activity log per tenant
 - `branches` - Multi-branch support per tenant
 - `trainer_sessions` - Trainer scheduling with conflict detection
 - `attendance` - Member check-in/check-out tracking
 - `equipment` - Equipment inventory with stock management
+- `equipment_maintenance` - Maintenance scheduling with status/cost tracking
 - `suppliers` - Supplier management with GST numbers
 - `invoices` - Invoice management with GST calculations
+- `payment_records` - Payment tracking with method/status
 - `notifications` - In-app/SMS/email notification system
 - `coupons` - Promotional coupon codes
 - `referrals` - Member referral program tracking
@@ -34,20 +38,26 @@ Fitro360 is a white-label, multi-tenant SaaS platform for gym management. It sup
 ## Project Structure
 ```
 client/src/
-  App.tsx             - Main app with auth routing
-  lib/auth.tsx        - Auth context provider
+  App.tsx             - Main app with role-based routing
+  lib/auth.tsx        - Auth context with tenant branding
   lib/queryClient.ts  - API client + React Query config
   components/         - Shared components (sidebar, stat-card, theme)
   pages/
     login.tsx         - Login page
     dashboard.tsx     - Gym owner dashboard
     members.tsx       - Member CRUD with BMI, freeze/renew, export
+    member-detail.tsx - Member detail with progress charts, metrics history
+    member-portal.tsx - Member self-service portal (attendance, profile, sessions)
+    trainer-portal.tsx - Trainer workspace (my schedule, my members)
     trainers.tsx      - Trainer listing
     schedule.tsx      - Trainer calendar/scheduling (weekly view)
     check-in.tsx      - Attendance check-in/check-out
     inventory.tsx     - Equipment inventory management
+    maintenance.tsx   - Equipment maintenance scheduling with overdue alerts
     suppliers.tsx     - Supplier management
     invoicing.tsx     - Invoice management with GST
+    payments.tsx      - Payment records with revenue stats
+    analytics.tsx     - Analytics dashboard with 6 Recharts visualizations
     branches.tsx      - Multi-branch management
     notifications.tsx - Notification center with tabs
     coupons.tsx       - Coupon/promotion management

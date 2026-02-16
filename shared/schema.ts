@@ -192,6 +192,47 @@ export const referrals = pgTable("referrals", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const memberMetrics = pgTable("member_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  memberId: varchar("member_id").references(() => members.id).notNull(),
+  heightCm: decimal("height_cm", { precision: 5, scale: 1 }),
+  weightKg: decimal("weight_kg", { precision: 5, scale: 1 }),
+  bmi: decimal("bmi", { precision: 4, scale: 1 }),
+  bodyFatPct: decimal("body_fat_pct", { precision: 4, scale: 1 }),
+  notes: text("notes"),
+  recordedAt: timestamp("recorded_at").defaultNow(),
+});
+
+export const equipmentMaintenance = pgTable("equipment_maintenance", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  equipmentId: varchar("equipment_id").references(() => equipment.id).notNull(),
+  type: text("type").notNull().default("routine"),
+  description: text("description").notNull(),
+  status: text("status").notNull().default("scheduled"),
+  scheduledDate: timestamp("scheduled_date").notNull(),
+  completedDate: timestamp("completed_date"),
+  cost: decimal("cost", { precision: 10, scale: 2 }),
+  assignedTo: text("assigned_to"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const paymentRecords = pgTable("payment_records", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  memberId: varchar("member_id").references(() => members.id),
+  invoiceId: varchar("invoice_id"),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: text("currency").default("INR"),
+  method: text("method").notNull().default("cash"),
+  status: text("status").notNull().default("completed"),
+  description: text("description"),
+  stripePaymentId: text("stripe_payment_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const subscriptionPlans = pgTable("subscription_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
@@ -226,6 +267,9 @@ export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true,
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 export const insertCouponSchema = createInsertSchema(coupons).omit({ id: true, createdAt: true });
 export const insertReferralSchema = createInsertSchema(referrals).omit({ id: true, createdAt: true });
+export const insertMemberMetricSchema = createInsertSchema(memberMetrics).omit({ id: true, recordedAt: true });
+export const insertEquipmentMaintenanceSchema = createInsertSchema(equipmentMaintenance).omit({ id: true, createdAt: true });
+export const insertPaymentRecordSchema = createInsertSchema(paymentRecords).omit({ id: true, createdAt: true });
 export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({ id: true });
 export const insertActivitySchema = createInsertSchema(activities).omit({ id: true, createdAt: true });
 
@@ -262,5 +306,11 @@ export type InsertReferral = z.infer<typeof insertReferralSchema>;
 export type Referral = typeof referrals.$inferSelect;
 export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
 export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertMemberMetric = z.infer<typeof insertMemberMetricSchema>;
+export type MemberMetric = typeof memberMetrics.$inferSelect;
+export type InsertEquipmentMaintenance = z.infer<typeof insertEquipmentMaintenanceSchema>;
+export type EquipmentMaintenance = typeof equipmentMaintenance.$inferSelect;
+export type InsertPaymentRecord = z.infer<typeof insertPaymentRecordSchema>;
+export type PaymentRecord = typeof paymentRecords.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
 export type Activity = typeof activities.$inferSelect;

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import type { User, Tenant } from "@shared/schema";
 import { apiRequest } from "./queryClient";
+import { applyTenantBranding } from "@/components/theme-provider";
 
 type AuthUser = Omit<User, "password">;
 
@@ -34,6 +35,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await res.json();
         setUser(data.user);
         setTenant(data.tenant);
+        if (data.tenant) {
+          applyTenantBranding(data.tenant.primaryColor, data.tenant.secondaryColor);
+        }
       } else {
         setUser(null);
         setTenant(null);
@@ -55,12 +59,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await res.json();
     setUser(data.user);
     setTenant(data.tenant);
+    if (data.tenant) {
+      applyTenantBranding(data.tenant.primaryColor, data.tenant.secondaryColor);
+    }
   };
 
   const logout = async () => {
     await apiRequest("POST", "/api/auth/logout");
     setUser(null);
     setTenant(null);
+    const root = document.documentElement;
+    root.style.removeProperty("--primary");
+    root.style.removeProperty("--sidebar-primary");
+    root.style.removeProperty("--ring");
+    root.style.removeProperty("--primary-foreground");
+    root.style.removeProperty("--accent");
   };
 
   return (

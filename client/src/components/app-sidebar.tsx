@@ -17,6 +17,10 @@ import {
   Tag,
   Gift,
   GitBranch,
+  Wrench,
+  DollarSign,
+  BarChart3,
+  Home,
 } from "lucide-react";
 import {
   Sidebar,
@@ -41,6 +45,37 @@ const platformAdminItems = [
   { title: "Plans", url: "/admin/plans", icon: CreditCard },
 ];
 
+const memberItems = [
+  { title: "My Portal", url: "/portal", icon: Home },
+  { title: "Schedule", url: "/schedule", icon: CalendarDays },
+  { title: "Notifications", url: "/notifications", icon: Bell },
+  { title: "Settings", url: "/settings", icon: Settings },
+];
+
+const trainerItems = [
+  { title: "My Portal", url: "/portal", icon: Home },
+  { title: "Schedule", url: "/schedule", icon: CalendarDays },
+  { title: "Members", url: "/members", icon: Users },
+  { title: "Check-in", url: "/check-in", icon: UserCheck },
+  { title: "Notifications", url: "/notifications", icon: Bell },
+];
+
+const managerMainItems = [
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Members", url: "/members", icon: Users },
+  { title: "Check-in", url: "/check-in", icon: UserCheck },
+  { title: "Trainers", url: "/trainers", icon: Dumbbell },
+  { title: "Schedule", url: "/schedule", icon: CalendarDays },
+];
+
+const managerSystemItems = [
+  { title: "Branches", url: "/branches", icon: GitBranch },
+  { title: "Analytics", url: "/analytics", icon: BarChart3 },
+  { title: "Activity", url: "/activity", icon: Activity },
+  { title: "Notifications", url: "/notifications", icon: Bell },
+  { title: "Settings", url: "/settings", icon: Settings },
+];
+
 const gymMainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Members", url: "/members", icon: Users },
@@ -51,8 +86,10 @@ const gymMainItems = [
 
 const gymErpItems = [
   { title: "Inventory", url: "/inventory", icon: Package },
+  { title: "Maintenance", url: "/maintenance", icon: Wrench },
   { title: "Suppliers", url: "/suppliers", icon: Truck },
   { title: "Invoices", url: "/invoicing", icon: FileText },
+  { title: "Payments", url: "/payments", icon: DollarSign },
 ];
 
 const gymMarketingItems = [
@@ -62,6 +99,7 @@ const gymMarketingItems = [
 
 const gymSystemItems = [
   { title: "Branches", url: "/branches", icon: GitBranch },
+  { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Activity", url: "/activity", icon: Activity },
   { title: "Notifications", url: "/notifications", icon: Bell },
   { title: "Settings", url: "/settings", icon: Settings },
@@ -110,8 +148,15 @@ export function AppSidebar() {
 
   if (!user) return null;
 
-  const isPlatformAdmin = user.role === "platform_admin";
+  const role = user.role;
   const initials = `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase();
+
+  const roleLabel = role === "platform_admin" ? "Platform Admin"
+    : role === "member" ? "Member"
+    : role === "trainer" ? "Trainer"
+    : role === "manager" ? "Manager"
+    : role === "sales_executive" ? "Sales Executive"
+    : "Gym Owner";
 
   return (
     <Sidebar>
@@ -125,14 +170,14 @@ export function AppSidebar() {
               {tenant?.appDisplayName || tenant?.gymName || "Fitro360"}
             </span>
             <span className="text-xs text-muted-foreground truncate">
-              {isPlatformAdmin ? "Platform Admin" : tenant?.gymName || "Gym Management"}
+              {role === "platform_admin" ? "Platform Admin" : tenant?.gymName || "Gym Management"}
             </span>
           </div>
         </div>
       </SidebarHeader>
       <SidebarSeparator />
       <SidebarContent>
-        {isPlatformAdmin ? (
+        {role === "platform_admin" && (
           <>
             <NavGroup label="Platform" items={platformAdminItems} location={location} navigate={navigate} />
             <SidebarGroup>
@@ -140,18 +185,8 @@ export function AppSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      data-active={location === "/admin/settings"}
-                    >
-                      <a
-                        href="/admin/settings"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          navigate("/admin/settings");
-                        }}
-                        data-testid="link-nav-admin-settings"
-                      >
+                    <SidebarMenuButton asChild data-active={location === "/admin/settings"}>
+                      <a href="/admin/settings" onClick={(e) => { e.preventDefault(); navigate("/admin/settings"); }} data-testid="link-nav-admin-settings">
                         <Shield className="h-4 w-4" />
                         <span>Settings</span>
                       </a>
@@ -161,7 +196,20 @@ export function AppSidebar() {
               </SidebarGroupContent>
             </SidebarGroup>
           </>
-        ) : (
+        )}
+        {role === "member" && (
+          <NavGroup label="My Gym" items={memberItems} location={location} navigate={navigate} />
+        )}
+        {role === "trainer" && (
+          <NavGroup label="My Workspace" items={trainerItems} location={location} navigate={navigate} />
+        )}
+        {role === "manager" && (
+          <>
+            <NavGroup label="Gym Management" items={managerMainItems} location={location} navigate={navigate} />
+            <NavGroup label="System" items={managerSystemItems} location={location} navigate={navigate} />
+          </>
+        )}
+        {(role === "gym_owner" || role === "sales_executive") && (
           <>
             <NavGroup label="Gym Management" items={gymMainItems} location={location} navigate={navigate} />
             <NavGroup label="Equipment & Sales" items={gymErpItems} location={location} navigate={navigate} />
@@ -181,8 +229,8 @@ export function AppSidebar() {
             <span className="text-sm font-medium truncate" data-testid="text-user-name">
               {user.firstName} {user.lastName}
             </span>
-            <span className="text-xs text-muted-foreground capitalize truncate">
-              {user.role.replace("_", " ")}
+            <span className="text-xs text-muted-foreground truncate">
+              {roleLabel}
             </span>
           </div>
           <button

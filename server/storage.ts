@@ -4,6 +4,7 @@ import {
   tenants, users, members, subscriptionPlans, activities,
   branches, attendance, trainerSessions, sessionBookings,
   equipment, suppliers, invoices, notifications, coupons, referrals,
+  memberMetrics, equipmentMaintenance, paymentRecords,
   type Tenant, type InsertTenant,
   type User, type InsertUser,
   type Branch, type InsertBranch,
@@ -17,6 +18,9 @@ import {
   type Notification, type InsertNotification,
   type Coupon, type InsertCoupon,
   type Referral, type InsertReferral,
+  type MemberMetric, type InsertMemberMetric,
+  type EquipmentMaintenance, type InsertEquipmentMaintenance,
+  type PaymentRecord, type InsertPaymentRecord,
   type SubscriptionPlan, type InsertSubscriptionPlan,
   type Activity, type InsertActivity,
 } from "@shared/schema";
@@ -91,6 +95,19 @@ export interface IStorage {
 
   getAllPlans(): Promise<SubscriptionPlan[]>;
   createPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan>;
+
+  getMetricsByMember(memberId: string): Promise<MemberMetric[]>;
+  createMemberMetric(metric: InsertMemberMetric): Promise<MemberMetric>;
+
+  getMaintenanceByTenant(tenantId: string): Promise<EquipmentMaintenance[]>;
+  getMaintenanceByEquipment(equipmentId: string): Promise<EquipmentMaintenance[]>;
+  createMaintenance(record: InsertEquipmentMaintenance): Promise<EquipmentMaintenance>;
+  updateMaintenance(id: string, data: Partial<InsertEquipmentMaintenance>): Promise<EquipmentMaintenance | undefined>;
+
+  getPaymentsByTenant(tenantId: string): Promise<PaymentRecord[]>;
+  getPaymentsByMember(memberId: string): Promise<PaymentRecord[]>;
+  createPayment(payment: InsertPaymentRecord): Promise<PaymentRecord>;
+  updatePayment(id: string, data: Partial<InsertPaymentRecord>): Promise<PaymentRecord | undefined>;
 
   getActivities(tenantId: string): Promise<Activity[]>;
   createActivity(activity: InsertActivity): Promise<Activity>;
@@ -424,6 +441,61 @@ export class DatabaseStorage implements IStorage {
   async createActivity(activity: InsertActivity): Promise<Activity> {
     const [created] = await db.insert(activities).values(activity).returning();
     return created;
+  }
+
+  async getMetricsByMember(memberId: string): Promise<MemberMetric[]> {
+    return db.select().from(memberMetrics)
+      .where(eq(memberMetrics.memberId, memberId))
+      .orderBy(desc(memberMetrics.recordedAt));
+  }
+
+  async createMemberMetric(metric: InsertMemberMetric): Promise<MemberMetric> {
+    const [created] = await db.insert(memberMetrics).values(metric).returning();
+    return created;
+  }
+
+  async getMaintenanceByTenant(tenantId: string): Promise<EquipmentMaintenance[]> {
+    return db.select().from(equipmentMaintenance)
+      .where(eq(equipmentMaintenance.tenantId, tenantId))
+      .orderBy(desc(equipmentMaintenance.scheduledDate));
+  }
+
+  async getMaintenanceByEquipment(equipmentId: string): Promise<EquipmentMaintenance[]> {
+    return db.select().from(equipmentMaintenance)
+      .where(eq(equipmentMaintenance.equipmentId, equipmentId))
+      .orderBy(desc(equipmentMaintenance.scheduledDate));
+  }
+
+  async createMaintenance(record: InsertEquipmentMaintenance): Promise<EquipmentMaintenance> {
+    const [created] = await db.insert(equipmentMaintenance).values(record).returning();
+    return created;
+  }
+
+  async updateMaintenance(id: string, data: Partial<InsertEquipmentMaintenance>): Promise<EquipmentMaintenance | undefined> {
+    const [updated] = await db.update(equipmentMaintenance).set(data).where(eq(equipmentMaintenance.id, id)).returning();
+    return updated;
+  }
+
+  async getPaymentsByTenant(tenantId: string): Promise<PaymentRecord[]> {
+    return db.select().from(paymentRecords)
+      .where(eq(paymentRecords.tenantId, tenantId))
+      .orderBy(desc(paymentRecords.createdAt));
+  }
+
+  async getPaymentsByMember(memberId: string): Promise<PaymentRecord[]> {
+    return db.select().from(paymentRecords)
+      .where(eq(paymentRecords.memberId, memberId))
+      .orderBy(desc(paymentRecords.createdAt));
+  }
+
+  async createPayment(payment: InsertPaymentRecord): Promise<PaymentRecord> {
+    const [created] = await db.insert(paymentRecords).values(payment).returning();
+    return created;
+  }
+
+  async updatePayment(id: string, data: Partial<InsertPaymentRecord>): Promise<PaymentRecord | undefined> {
+    const [updated] = await db.update(paymentRecords).set(data).where(eq(paymentRecords.id, id)).returning();
+    return updated;
   }
 
   async getDashboardStats(tenantId: string) {
