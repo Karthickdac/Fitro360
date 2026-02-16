@@ -83,7 +83,7 @@ export default function AdminDashboardPage() {
         />
         <StatCard
           title="Monthly Revenue"
-          value={`$${(stats?.mrr || 0).toLocaleString()}`}
+          value={`AED ${(stats?.mrr || 0).toLocaleString()}`}
           icon={DollarSign}
           trend={{ value: stats?.mrrGrowth || 12, label: "vs last month" }}
         />
@@ -112,7 +112,7 @@ export default function AdminDashboardPage() {
                 <LineChart data={mrrData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickFormatter={(v) => `AED ${(v / 1000).toFixed(0)}k`} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
@@ -120,7 +120,7 @@ export default function AdminDashboardPage() {
                       borderRadius: "6px",
                       color: "hsl(var(--foreground))",
                     }}
-                    formatter={(value: number) => [`$${value.toLocaleString()}`, "MRR"]}
+                    formatter={(value: number) => [`AED ${value.toLocaleString()}`, "MRR"]}
                   />
                   <Line
                     type="monotone"

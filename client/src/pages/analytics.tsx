@@ -132,12 +132,12 @@ export default function AnalyticsPage() {
         />
         <StatCard
           title="Total Revenue"
-          value={`$${(data?.totalRevenue || 0).toLocaleString()}`}
+          value={`AED ${(data?.totalRevenue || 0).toLocaleString()}`}
           icon={DollarSign}
         />
         <StatCard
           title="Inventory Value"
-          value={`$${(data?.inventoryValue || 0).toLocaleString()}`}
+          value={`AED ${(data?.inventoryValue || 0).toLocaleString()}`}
           icon={Package}
         />
       </div>
@@ -187,10 +187,10 @@ export default function AnalyticsPage() {
                 <BarChart data={monthlyData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="month" className="text-xs" tick={axisTickStyle} />
-                  <YAxis className="text-xs" tick={axisTickStyle} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                  <YAxis className="text-xs" tick={axisTickStyle} tickFormatter={(v) => `AED ${(v / 1000).toFixed(0)}k`} />
                   <Tooltip
                     contentStyle={tooltipStyle}
-                    formatter={(value: number) => [`$${value.toLocaleString()}`, "Revenue"]}
+                    formatter={(value: number) => [`AED ${value.toLocaleString()}`, "Revenue"]}
                   />
                   <Legend />
                   <Bar dataKey="revenue" fill={CHART_COLORS[1]} radius={[4, 4, 0, 0]} name="Revenue" />

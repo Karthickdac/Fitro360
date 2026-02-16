@@ -371,10 +371,10 @@ export default function InventoryPage() {
                       <TableCell className="text-sm" data-testid={`text-qty-${item.id}`}>{item.quantity ?? 0}</TableCell>
                       <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">{item.minStock ?? 0}</TableCell>
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                        {item.costPrice ? `$${parseFloat(item.costPrice).toFixed(2)}` : "—"}
+                        {item.costPrice ? `AED ${parseFloat(item.costPrice).toFixed(2)}` : "—"}
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                        {item.sellPrice ? `$${parseFloat(item.sellPrice).toFixed(2)}` : "—"}
+                        {item.sellPrice ? `AED ${parseFloat(item.sellPrice).toFixed(2)}` : "—"}
                       </TableCell>
                       <TableCell>
                         <Badge variant={cfg.variant} className={cfg.className} data-testid={`badge-status-${item.id}`}>

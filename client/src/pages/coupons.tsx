@@ -324,7 +324,7 @@ export default function CouponsPage() {
                         <span className="text-sm" data-testid={`text-coupon-discount-${coupon.id}`}>
                           {coupon.discountType === "percentage"
                             ? `${coupon.discountValue}%`
-                            : `$${coupon.discountValue}`}
+                            : `AED ${coupon.discountValue}`}
                         </span>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">

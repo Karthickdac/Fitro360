@@ -420,7 +420,7 @@ export default function MaintenancePage() {
                         {record.assignedTo || "—"}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                        {record.cost ? `$${parseFloat(record.cost).toFixed(2)}` : "—"}
+                        {record.cost ? `AED ${parseFloat(record.cost).toFixed(2)}` : "—"}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">

@@ -55,7 +55,7 @@ const createInvoiceSchema = z.object({
   type: z.string().min(1),
   customerId: z.string().optional(),
   items: z.array(lineItemSchema).min(1, "At least one item required"),
-  gstRate: z.string().default("18"),
+  gstRate: z.string().default("5"),
 });
 
 type InvoiceFormValues = z.infer<typeof createInvoiceSchema>;
@@ -80,7 +80,7 @@ export default function InvoicingPage() {
       type: "sale",
       customerId: "",
       items: [{ name: "", quantity: 1, unitPrice: 0, total: 0 }],
-      gstRate: "18",
+      gstRate: "5",
     },
   });
 
@@ -93,7 +93,7 @@ export default function InvoicingPage() {
   const watchedGstRate = form.watch("gstRate");
 
   const subtotal = watchedItems.reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
-  const gstRate = parseFloat(watchedGstRate || "18");
+  const gstRate = parseFloat(watchedGstRate || "5");
   const gstAmount = subtotal * (gstRate / 100);
   const grandTotal = subtotal + gstAmount;
 
@@ -116,7 +116,7 @@ export default function InvoicingPage() {
         type: "sale",
         customerId: "",
         items: [{ name: "", quantity: 1, unitPrice: 0, total: 0 }],
-        gstRate: "18",
+        gstRate: "5",
       });
       setDialogOpen(false);
     },
@@ -144,7 +144,7 @@ export default function InvoicingPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Invoices</h1>
-          <p className="text-muted-foreground mt-1">Create and manage invoices with GST calculations</p>
+          <p className="text-muted-foreground mt-1">Create and manage invoices with VAT calculations</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -238,7 +238,7 @@ export default function InvoicingPage() {
                         />
                       </div>
                       <div className="col-span-2 text-sm text-right text-muted-foreground self-center" data-testid={`text-item-total-${index}`}>
-                        ${((watchedItems[index]?.quantity || 0) * (watchedItems[index]?.unitPrice || 0)).toFixed(2)}
+                        AED {((watchedItems[index]?.quantity || 0) * (watchedItems[index]?.unitPrice || 0)).toFixed(2)}
                       </div>
                       <div className="col-span-1 self-center">
                         {fields.length > 1 && (
@@ -262,7 +262,7 @@ export default function InvoicingPage() {
                   name="gstRate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>GST Rate (%)</FormLabel>
+                      <FormLabel>VAT Rate (%)</FormLabel>
                       <FormControl>
                         <Input type="number" step="0.01" {...field} data-testid="input-gst-rate" />
                       </FormControl>
@@ -274,15 +274,15 @@ export default function InvoicingPage() {
                 <div className="rounded-md border p-3 space-y-1.5 text-sm">
                   <div className="flex justify-between gap-2">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span data-testid="text-subtotal">${subtotal.toFixed(2)}</span>
+                    <span data-testid="text-subtotal">AED {subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <span className="text-muted-foreground">GST ({gstRate}%)</span>
-                    <span data-testid="text-gst-amount">${gstAmount.toFixed(2)}</span>
+                    <span className="text-muted-foreground">VAT ({gstRate}%)</span>
+                    <span data-testid="text-gst-amount">AED {gstAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between gap-2 font-semibold border-t pt-1.5">
                     <span>Grand Total</span>
-                    <span data-testid="text-grand-total">${grandTotal.toFixed(2)}</span>
+                    <span data-testid="text-grand-total">AED {grandTotal.toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -331,7 +331,7 @@ export default function InvoicingPage() {
                   <TableHead className="hidden sm:table-cell">Customer</TableHead>
                   <TableHead className="hidden md:table-cell">Items</TableHead>
                   <TableHead className="hidden md:table-cell">Subtotal</TableHead>
-                  <TableHead className="hidden lg:table-cell">GST</TableHead>
+                  <TableHead className="hidden lg:table-cell">VAT</TableHead>
                   <TableHead>Total</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="hidden sm:table-cell">Date</TableHead>
@@ -356,13 +356,13 @@ export default function InvoicingPage() {
                         {itemsArr.length}
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                        ${parseFloat(invoice.subtotal || "0").toFixed(2)}
+                        AED {parseFloat(invoice.subtotal || "0").toFixed(2)}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                        ${parseFloat(invoice.gstAmount || "0").toFixed(2)}
+                        AED {parseFloat(invoice.gstAmount || "0").toFixed(2)}
                       </TableCell>
                       <TableCell className="text-sm font-medium" data-testid={`text-invoice-total-${invoice.id}`}>
-                        ${parseFloat(invoice.total || "0").toFixed(2)}
+                        AED {parseFloat(invoice.total || "0").toFixed(2)}
                       </TableCell>
                       <TableCell>
                         <Select

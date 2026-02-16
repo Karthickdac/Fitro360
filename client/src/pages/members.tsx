@@ -224,7 +224,7 @@ export default function MembersPage() {
                   <FormField control={form.control} name="phone" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Phone</FormLabel>
-                      <FormControl><Input placeholder="+1 234 567 8900" {...field} data-testid="input-phone" /></FormControl>
+                      <FormControl><Input placeholder="+971 50 123 4567" {...field} data-testid="input-phone" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />

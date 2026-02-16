@@ -99,7 +99,7 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Monthly Revenue"
-          value={`$${(stats?.monthlyRevenue || 0).toLocaleString()}`}
+          value={`AED ${(stats?.monthlyRevenue || 0).toLocaleString()}`}
           icon={DollarSign}
           trend={{ value: stats?.revenueGrowth || 8, label: "vs last month" }}
         />
@@ -122,7 +122,7 @@ export default function DashboardPage() {
                 <BarChart data={revenueData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="month" className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                  <YAxis className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `AED ${(v / 1000).toFixed(0)}k`} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
@@ -130,7 +130,7 @@ export default function DashboardPage() {
                       borderRadius: "6px",
                       color: "hsl(var(--foreground))",
                     }}
-                    formatter={(value: number) => [`$${value.toLocaleString()}`, "Revenue"]}
+                    formatter={(value: number) => [`AED ${value.toLocaleString()}`, "Revenue"]}
                   />
                   <Bar dataKey="revenue" fill="hsl(217, 91%, 35%)" radius={[4, 4, 0, 0]} />
                 </BarChart>

@@ -34,7 +34,7 @@ const supplierSchema = z.object({
   email: z.string().optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
-  gstNumber: z.string().optional(),
+  trnNumber: z.string().optional(),
 });
 
 type SupplierFormValues = z.infer<typeof supplierSchema>;
@@ -56,7 +56,7 @@ export default function SuppliersPage() {
       email: "",
       phone: "",
       address: "",
-      gstNumber: "",
+      trnNumber: "",
     },
   });
 
@@ -101,7 +101,7 @@ export default function SuppliersPage() {
       email: supplier.email || "",
       phone: supplier.phone || "",
       address: supplier.address || "",
-      gstNumber: supplier.gstNumber || "",
+      trnNumber: supplier.trnNumber || "",
     });
     setDialogOpen(true);
   }
@@ -114,7 +114,7 @@ export default function SuppliersPage() {
       email: "",
       phone: "",
       address: "",
-      gstNumber: "",
+      trnNumber: "",
     });
     setDialogOpen(true);
   }
@@ -199,7 +199,7 @@ export default function SuppliersPage() {
                       <FormItem>
                         <FormLabel>Phone</FormLabel>
                         <FormControl>
-                          <Input placeholder="+91 98765 43210" {...field} data-testid="input-supplier-phone" />
+                          <Input placeholder="+971 50 123 4567" {...field} data-testid="input-supplier-phone" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -221,12 +221,12 @@ export default function SuppliersPage() {
                 />
                 <FormField
                   control={form.control}
-                  name="gstNumber"
+                  name="trnNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>GST Number</FormLabel>
+                      <FormLabel>TRN (Tax Registration Number)</FormLabel>
                       <FormControl>
-                        <Input placeholder="29ABCDE1234F1Z5" {...field} data-testid="input-supplier-gst" />
+                        <Input placeholder="100234567890003" {...field} data-testid="input-supplier-trn" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -317,10 +317,10 @@ export default function SuppliersPage() {
                     <span className="truncate">{supplier.address}</span>
                   </div>
                 )}
-                {supplier.gstNumber && (
+                {supplier.trnNumber && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <FileText className="h-3.5 w-3.5 shrink-0" />
-                    <span>GST: {supplier.gstNumber}</span>
+                    <span>TRN: {supplier.trnNumber}</span>
                   </div>
                 )}
               </CardContent>

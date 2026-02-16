@@ -139,10 +139,10 @@ function CommissionsTab() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Commissions" value={`$${totalAmount.toFixed(2)}`} icon={DollarSign} data-testid="stat-total-commissions" />
-        <StatCard title="Pending Amount" value={`$${pendingAmount.toFixed(2)}`} icon={DollarSign} data-testid="stat-pending-amount" />
-        <StatCard title="Paid Amount" value={`$${paidAmount.toFixed(2)}`} icon={Check} data-testid="stat-paid-amount" />
-        <StatCard title="This Month" value={`$${thisMonthAmount.toFixed(2)}`} icon={Calendar} data-testid="stat-this-month" />
+        <StatCard title="Total Commissions" value={`AED ${totalAmount.toFixed(2)}`} icon={DollarSign} data-testid="stat-total-commissions" />
+        <StatCard title="Pending Amount" value={`AED ${pendingAmount.toFixed(2)}`} icon={DollarSign} data-testid="stat-pending-amount" />
+        <StatCard title="Paid Amount" value={`AED ${paidAmount.toFixed(2)}`} icon={Check} data-testid="stat-paid-amount" />
+        <StatCard title="This Month" value={`AED ${thisMonthAmount.toFixed(2)}`} icon={Calendar} data-testid="stat-this-month" />
       </div>
 
       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -245,7 +245,7 @@ function CommissionsTab() {
                 <TableRow key={c.id} data-testid={`row-commission-${c.id}`}>
                   <TableCell className="font-medium">{trainerName(c.trainerId)}</TableCell>
                   <TableCell>{sessionTitle(c.sessionId)}</TableCell>
-                  <TableCell>${parseFloat(c.amount).toFixed(2)}</TableCell>
+                  <TableCell>AED {parseFloat(c.amount).toFixed(2)}</TableCell>
                   <TableCell><Badge variant="secondary">{c.type}</Badge></TableCell>
                   <TableCell>
                     <Badge variant={c.status === "paid" ? "default" : "secondary"}>
@@ -498,7 +498,7 @@ function PerformanceTab() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard title="Total Sessions" value={totalSessions} icon={Users} data-testid="stat-total-sessions" />
-        <StatCard title="Total Commission" value={`$${totalCommission.toFixed(2)}`} icon={DollarSign} data-testid="stat-total-commission" />
+        <StatCard title="Total Commission" value={`AED ${totalCommission.toFixed(2)}`} icon={DollarSign} data-testid="stat-total-commission" />
         <StatCard title="Avg Rating" value="4.5" icon={Award} data-testid="stat-avg-rating" />
       </div>
 

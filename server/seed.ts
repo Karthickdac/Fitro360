@@ -259,9 +259,9 @@ export async function seedDatabase() {
     name: "FitPro Supplies",
     contactPerson: "John Baker",
     email: "john@fitpro.com",
-    phone: "+1 555-9001",
-    address: "100 Supply Drive, Chicago, IL",
-    gstNumber: "GST001234",
+    phone: "+971 4 555 9001",
+    address: "Al Quoz Industrial Area, Dubai, UAE",
+    trnNumber: "100234567890003",
     isActive: true,
   });
 
@@ -270,9 +270,9 @@ export async function seedDatabase() {
     name: "MuscleTech Equipment",
     contactPerson: "Lisa Wong",
     email: "lisa@muscletech.com",
-    phone: "+1 555-9002",
-    address: "200 Equip Lane, Houston, TX",
-    gstNumber: "GST005678",
+    phone: "+971 4 555 9002",
+    address: "Dubai Investment Park, Dubai, UAE",
+    trnNumber: "100567890123004",
     isActive: true,
   });
 

@@ -175,7 +175,7 @@ export default function BranchesPage() {
                     <FormItem>
                       <FormLabel>Phone</FormLabel>
                       <FormControl>
-                        <Input placeholder="+1 234 567 8900" {...field} data-testid="input-branch-phone" />
+                        <Input placeholder="+971 50 123 4567" {...field} data-testid="input-branch-phone" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

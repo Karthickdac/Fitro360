@@ -120,7 +120,7 @@ export default function ReferralsPage() {
     { title: "Total Referrals", value: stats.total, icon: Users },
     { title: "Completed", value: stats.completed, icon: CheckCircle },
     { title: "Pending", value: stats.pending, icon: Clock },
-    { title: "Total Rewards", value: `$${stats.totalRewards.toFixed(2)}`, icon: Gift },
+    { title: "Total Rewards", value: `AED ${stats.totalRewards.toFixed(2)}`, icon: Gift },
   ];
 
   return (
@@ -334,7 +334,7 @@ export default function ReferralsPage() {
                         {referral.rewardType?.replace("_", " ") || "-"}
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-sm text-muted-foreground" data-testid={`text-reward-value-${referral.id}`}>
-                        {referral.rewardValue ? `$${referral.rewardValue}` : "-"}
+                        {referral.rewardValue ? `AED ${referral.rewardValue}` : "-"}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                         {referral.createdAt ? format(new Date(referral.createdAt), "MMM d, yyyy") : "N/A"}
