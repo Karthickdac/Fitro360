@@ -115,6 +115,7 @@ export default function MembersPage() {
       lastName: "",
       email: "",
       phone: "",
+      membershipPlanId: "",
       membershipType: "monthly",
       trainerId: "",
       heightCm: "",

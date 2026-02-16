@@ -266,11 +266,23 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} data-testid="tabs-member-portal">
-        <TabsList className="grid w-full grid-cols-4 bg-muted/60 p-1 rounded-xl" data-testid="tablist-member-portal">
-          <TabsTrigger value="dashboard" className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md" data-testid="tab-dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="progress" className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white data-[state=active]:shadow-md" data-testid="tab-progress">My Progress</TabsTrigger>
-          <TabsTrigger value="sessions" className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-md" data-testid="tab-sessions">Book Sessions</TabsTrigger>
-          <TabsTrigger value="profile" className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-rose-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md" data-testid="tab-profile">My Profile</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto bg-muted/60 p-1 rounded-xl gap-1" data-testid="tablist-member-portal">
+          <TabsTrigger value="dashboard" className="flex-1 min-w-0 rounded-lg text-xs sm:text-sm px-2 sm:px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md" data-testid="tab-dashboard">
+            <span className="sm:hidden">Home</span>
+            <span className="hidden sm:inline">Dashboard</span>
+          </TabsTrigger>
+          <TabsTrigger value="progress" className="flex-1 min-w-0 rounded-lg text-xs sm:text-sm px-2 sm:px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white data-[state=active]:shadow-md" data-testid="tab-progress">
+            <span className="sm:hidden">Progress</span>
+            <span className="hidden sm:inline">My Progress</span>
+          </TabsTrigger>
+          <TabsTrigger value="sessions" className="flex-1 min-w-0 rounded-lg text-xs sm:text-sm px-2 sm:px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-md" data-testid="tab-sessions">
+            <span className="sm:hidden">Sessions</span>
+            <span className="hidden sm:inline">Book Sessions</span>
+          </TabsTrigger>
+          <TabsTrigger value="profile" className="flex-1 min-w-0 rounded-lg text-xs sm:text-sm px-2 sm:px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-rose-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md" data-testid="tab-profile">
+            <span className="sm:hidden">Profile</span>
+            <span className="hidden sm:inline">My Profile</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6 mt-6" data-testid="panel-dashboard">
@@ -319,33 +331,35 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
                     No attendance records found
                   </p>
                 ) : (
-                  <Table data-testid="table-attendance">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Check-in</TableHead>
-                        <TableHead>Check-out</TableHead>
-                        <TableHead>Duration</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {myAttendance.slice(0, 5).map((record) => {
-                        const checkIn = record.checkInTime ? new Date(record.checkInTime) : null;
-                        const checkOut = record.checkOutTime ? new Date(record.checkOutTime) : null;
-                        const duration = checkIn && checkOut ? differenceInMinutes(checkOut, checkIn) : null;
-                        return (
-                          <TableRow key={record.id} data-testid={`row-attendance-${record.id}`}>
-                            <TableCell>{checkIn ? format(checkIn, "MMM d, yyyy") : "—"}</TableCell>
-                            <TableCell>{checkIn ? format(checkIn, "h:mm a") : "—"}</TableCell>
-                            <TableCell>{checkOut ? format(checkOut, "h:mm a") : "—"}</TableCell>
-                            <TableCell>
-                              {duration !== null ? `${Math.floor(duration / 60)}h ${duration % 60}m` : "—"}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                  <div className="overflow-x-auto -mx-4 sm:mx-0">
+                    <Table data-testid="table-attendance" className="min-w-[400px]">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Check-in</TableHead>
+                          <TableHead>Check-out</TableHead>
+                          <TableHead>Duration</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {myAttendance.slice(0, 5).map((record) => {
+                          const checkIn = record.checkInTime ? new Date(record.checkInTime) : null;
+                          const checkOut = record.checkOutTime ? new Date(record.checkOutTime) : null;
+                          const duration = checkIn && checkOut ? differenceInMinutes(checkOut, checkIn) : null;
+                          return (
+                            <TableRow key={record.id} data-testid={`row-attendance-${record.id}`}>
+                              <TableCell className="text-xs sm:text-sm whitespace-nowrap">{checkIn ? format(checkIn, "MMM d") : "—"}</TableCell>
+                              <TableCell className="text-xs sm:text-sm whitespace-nowrap">{checkIn ? format(checkIn, "h:mm a") : "—"}</TableCell>
+                              <TableCell className="text-xs sm:text-sm whitespace-nowrap">{checkOut ? format(checkOut, "h:mm a") : "—"}</TableCell>
+                              <TableCell className="text-xs sm:text-sm whitespace-nowrap">
+                                {duration !== null ? `${Math.floor(duration / 60)}h ${duration % 60}m` : "—"}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -440,12 +454,12 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
         </TabsContent>
 
         <TabsContent value="progress" className="space-y-6 mt-6" data-testid="panel-progress">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold">My Progress</h2>
               <p className="text-sm text-muted-foreground">Track your fitness journey over time</p>
             </div>
-            <Button className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/20" onClick={() => {
+            <Button className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/20 w-full sm:w-auto" onClick={() => {
               metricForm.reset({
                 heightCm: member?.heightCm || "",
                 weightKg: member?.weightKg || "",
@@ -459,7 +473,7 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <Card className="border-0 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-1">
@@ -590,30 +604,32 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
                   No progress records yet
                 </p>
               ) : (
-                <Table data-testid="table-metrics">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Height (cm)</TableHead>
-                      <TableHead>Weight (kg)</TableHead>
-                      <TableHead>BMI</TableHead>
-                      <TableHead>Body Fat %</TableHead>
-                      <TableHead>Notes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {metrics.map((m) => (
-                      <TableRow key={m.id} data-testid={`row-metric-${m.id}`}>
-                        <TableCell>{m.recordedAt ? format(new Date(m.recordedAt), "MMM d, yyyy") : "—"}</TableCell>
-                        <TableCell>{m.heightCm || "—"}</TableCell>
-                        <TableCell>{m.weightKg || "—"}</TableCell>
-                        <TableCell>{m.bmi || "—"}</TableCell>
-                        <TableCell>{m.bodyFatPct ? `${m.bodyFatPct}%` : "—"}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">{m.notes || "—"}</TableCell>
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <Table data-testid="table-metrics" className="min-w-[500px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Height</TableHead>
+                        <TableHead>Weight</TableHead>
+                        <TableHead>BMI</TableHead>
+                        <TableHead>Fat %</TableHead>
+                        <TableHead>Notes</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {metrics.map((m) => (
+                        <TableRow key={m.id} data-testid={`row-metric-${m.id}`}>
+                          <TableCell className="text-xs sm:text-sm whitespace-nowrap">{m.recordedAt ? format(new Date(m.recordedAt), "MMM d") : "—"}</TableCell>
+                          <TableCell className="text-xs sm:text-sm">{m.heightCm || "—"}</TableCell>
+                          <TableCell className="text-xs sm:text-sm">{m.weightKg || "—"}</TableCell>
+                          <TableCell className="text-xs sm:text-sm">{m.bmi || "—"}</TableCell>
+                          <TableCell className="text-xs sm:text-sm">{m.bodyFatPct ? `${m.bodyFatPct}%` : "—"}</TableCell>
+                          <TableCell className="max-w-[150px] sm:max-w-[200px] truncate text-xs sm:text-sm">{m.notes || "—"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -719,13 +735,13 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
         </TabsContent>
 
         <TabsContent value="profile" className="space-y-6 mt-6" data-testid="panel-profile">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold">My Profile</h2>
               <p className="text-sm text-muted-foreground">View and manage your personal information</p>
             </div>
             <Button
-              className="bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-md shadow-rose-500/20"
+              className="bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-md shadow-rose-500/20 w-full sm:w-auto"
               onClick={() => {
                 profileForm.reset({
                   phone: member?.phone || "",
@@ -885,15 +901,15 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-900/20 text-center">
-                    <p className="text-2xl font-bold text-amber-600 dark:text-amber-400" data-testid="text-profile-visits">
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                  <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-900/20 text-center">
+                    <p className="text-xl sm:text-2xl font-bold text-amber-600 dark:text-amber-400" data-testid="text-profile-visits">
                       {myAttendance.length}
                     </p>
                     <p className="text-[10px] text-amber-700/70 dark:text-amber-300/60 font-medium uppercase tracking-wider mt-0.5">Total Visits</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-900/20 text-center">
-                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400" data-testid="text-profile-this-month">
+                  <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-900/20 text-center">
+                    <p className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400" data-testid="text-profile-this-month">
                       {myAttendance.filter(a => {
                         const d = a.checkInTime ? new Date(a.checkInTime) : null;
                         const now = new Date();
@@ -902,8 +918,8 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
                     </p>
                     <p className="text-[10px] text-emerald-700/70 dark:text-emerald-300/60 font-medium uppercase tracking-wider mt-0.5">This Month</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-900/20 text-center">
-                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400" data-testid="text-profile-bookings">
+                  <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-900/20 text-center">
+                    <p className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400" data-testid="text-profile-bookings">
                       {myBookings?.filter(b => b.status === "confirmed").length || 0}
                     </p>
                     <p className="text-[10px] text-blue-700/70 dark:text-blue-300/60 font-medium uppercase tracking-wider mt-0.5">Booked</p>
