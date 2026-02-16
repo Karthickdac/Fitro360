@@ -138,6 +138,9 @@ export async function registerRoutes(
     const user = (req as any).user;
     if (!user.tenantId) return res.json([]);
     const membersList = await storage.getMembersByTenant(user.tenantId);
+    if (user.role === "trainer") {
+      return res.json(membersList.filter((m: any) => m.trainerId === user.id));
+    }
     return res.json(membersList);
   });
 
