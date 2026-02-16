@@ -68,7 +68,10 @@ export interface IStorage {
   updateSession(id: string, data: Partial<InsertTrainerSession>): Promise<TrainerSession | undefined>;
   deleteSession(id: string): Promise<void>;
   getBookingsBySession(sessionId: string): Promise<SessionBooking[]>;
+  getBookingsByMember(memberId: string): Promise<SessionBooking[]>;
   createBooking(booking: InsertSessionBooking): Promise<SessionBooking>;
+  cancelBooking(bookingId: string): Promise<void>;
+  getMemberByEmail(tenantId: string, email: string): Promise<Member | undefined>;
 
   getEquipmentByTenant(tenantId: string): Promise<Equipment[]>;
   getEquipment(id: string): Promise<Equipment | undefined>;
@@ -339,12 +342,31 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(sessionBookings).where(eq(sessionBookings.sessionId, sessionId));
   }
 
+  async getBookingsByMember(memberId: string): Promise<SessionBooking[]> {
+    return db.select().from(sessionBookings).where(eq(sessionBookings.memberId, memberId));
+  }
+
   async createBooking(booking: InsertSessionBooking): Promise<SessionBooking> {
     const [created] = await db.insert(sessionBookings).values(booking).returning();
     await db.update(trainerSessions)
       .set({ enrolled: sql`${trainerSessions.enrolled} + 1` })
       .where(eq(trainerSessions.id, booking.sessionId));
     return created;
+  }
+
+  async cancelBooking(bookingId: string): Promise<void> {
+    const [booking] = await db.select().from(sessionBookings).where(eq(sessionBookings.id, bookingId));
+    if (booking) {
+      await db.delete(sessionBookings).where(eq(sessionBookings.id, bookingId));
+      await db.update(trainerSessions)
+        .set({ enrolled: sql`GREATEST(${trainerSessions.enrolled} - 1, 0)` })
+        .where(eq(trainerSessions.id, booking.sessionId));
+    }
+  }
+
+  async getMemberByEmail(tenantId: string, email: string): Promise<Member | undefined> {
+    const [member] = await db.select().from(members).where(and(eq(members.tenantId, tenantId), eq(members.email, email)));
+    return member;
   }
 
   async getEquipmentByTenant(tenantId: string): Promise<Equipment[]> {

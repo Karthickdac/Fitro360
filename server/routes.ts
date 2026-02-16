@@ -882,6 +882,140 @@ export async function registerRoutes(
     }
   });
 
+  // ─── Member Portal (Self-service) ──────────────────
+  app.get("/api/member/me", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+    const member = await storage.getMemberByEmail(user.tenantId, user.email);
+    if (!member) return res.status(404).json({ message: "Member profile not found" });
+    return res.json(member);
+  });
+
+  app.patch("/api/member/me", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const member = await storage.getMemberByEmail(user.tenantId, user.email);
+      if (!member) return res.status(404).json({ message: "Member profile not found" });
+      const input = z.object({
+        phone: z.string().optional(),
+        emergencyContact: z.string().optional(),
+        heightCm: z.string().optional(),
+        weightKg: z.string().optional(),
+      }).parse(req.body);
+      let bmi: string | undefined;
+      if (input.heightCm && input.weightKg) {
+        const h = parseFloat(input.heightCm) / 100;
+        const w = parseFloat(input.weightKg);
+        if (h > 0) bmi = (w / (h * h)).toFixed(1);
+      }
+      const updated = await storage.updateMember(member.id, { ...input, ...(bmi ? { bmi } : {}) });
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/member/me/metrics", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+    const member = await storage.getMemberByEmail(user.tenantId, user.email);
+    if (!member) return res.status(404).json({ message: "Member profile not found" });
+    const metrics = await storage.getMetricsByMember(member.id);
+    return res.json(metrics);
+  });
+
+  app.post("/api/member/me/metrics", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const member = await storage.getMemberByEmail(user.tenantId, user.email);
+      if (!member) return res.status(404).json({ message: "Member profile not found" });
+      const input = z.object({
+        heightCm: z.string().optional(),
+        weightKg: z.string().optional(),
+        bodyFatPct: z.string().optional(),
+        notes: z.string().optional(),
+      }).parse(req.body);
+      let bmi: string | undefined;
+      if (input.heightCm && input.weightKg) {
+        const h = parseFloat(input.heightCm) / 100;
+        const w = parseFloat(input.weightKg);
+        if (h > 0) bmi = (w / (h * h)).toFixed(1);
+      }
+      const metric = await storage.createMemberMetric({
+        tenantId: user.tenantId,
+        memberId: member.id,
+        ...input,
+        bmi,
+      });
+      if (input.heightCm && input.weightKg) {
+        await storage.updateMember(member.id, { heightCm: input.heightCm, weightKg: input.weightKg, bmi });
+      }
+      return res.json(metric);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/member/me/attendance", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+    const member = await storage.getMemberByEmail(user.tenantId, user.email);
+    if (!member) return res.status(404).json({ message: "Member profile not found" });
+    const records = await storage.getAttendanceByMember(member.id);
+    return res.json(records);
+  });
+
+  app.get("/api/member/me/bookings", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+    const member = await storage.getMemberByEmail(user.tenantId, user.email);
+    if (!member) return res.status(404).json({ message: "Member profile not found" });
+    const bookings = await storage.getBookingsByMember(member.id);
+    return res.json(bookings);
+  });
+
+  app.post("/api/member/me/book/:sessionId", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const member = await storage.getMemberByEmail(user.tenantId, user.email);
+      if (!member) return res.status(404).json({ message: "Member profile not found" });
+      const sessionId = req.params.sessionId as string;
+      const session = await storage.getSession(sessionId);
+      if (!session) return res.status(404).json({ message: "Session not found" });
+      if (session.tenantId !== user.tenantId) return res.status(403).json({ message: "Access denied" });
+      if ((session.enrolled || 0) >= (session.capacity || 1)) {
+        return res.status(400).json({ message: "Session is full" });
+      }
+      const existingBookings = await storage.getBookingsByMember(member.id);
+      if (existingBookings.some(b => b.sessionId === sessionId && b.status === "confirmed")) {
+        return res.status(400).json({ message: "Already booked for this session" });
+      }
+      const booking = await storage.createBooking({ sessionId, memberId: member.id, status: "confirmed" });
+      return res.json(booking);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/member/me/book/:bookingId", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const member = await storage.getMemberByEmail(user.tenantId, user.email);
+      if (!member) return res.status(404).json({ message: "Member profile not found" });
+      const bookings = await storage.getBookingsByMember(member.id);
+      const booking = bookings.find(b => b.id === req.params.bookingId);
+      if (!booking) return res.status(403).json({ message: "Booking not found or access denied" });
+      await storage.cancelBooking(req.params.bookingId as string);
+      return res.json({ message: "Booking cancelled" });
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
   // ─── Equipment Maintenance ─────────────────────────
   app.get("/api/maintenance", authMiddleware, async (req: Request, res: Response) => {
     const user = (req as any).user;

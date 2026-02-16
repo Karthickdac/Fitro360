@@ -86,6 +86,7 @@ shared/
 - Platform Admin: admin / admin123
 - Gym Owner: gymowner / gym123
 - Trainer: trainer1 / trainer123
+- Member: member1 / member123
 
 ## Running
 - `npm run dev` - Start dev server (port 5000)
