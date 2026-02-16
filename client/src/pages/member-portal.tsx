@@ -107,6 +107,7 @@ export default function MemberPortalPage() {
 
   const upcomingSessions = sessions?.filter(
     (s) => s.status === "scheduled" && new Date(s.startTime) >= new Date()
+      && (!member?.trainerId || s.trainerId === member.trainerId)
   ) || [];
 
   const bookedSessionIds = new Set(myBookings?.filter(b => b.status === "confirmed").map(b => b.sessionId) || []);
@@ -553,7 +554,11 @@ export default function MemberPortalPage() {
         <TabsContent value="sessions" className="space-y-6 mt-6" data-testid="panel-sessions">
           <div>
             <h2 className="text-lg font-semibold">Available Sessions</h2>
-            <p className="text-sm text-muted-foreground">Browse and book upcoming training sessions</p>
+            <p className="text-sm text-muted-foreground">
+              {member?.trainerId
+                ? `Showing sessions from your assigned trainer: ${trainerMap.get(member.trainerId) || "Trainer"}`
+                : "Browse and book upcoming training sessions"}
+            </p>
           </div>
 
           {upcomingSessions.length === 0 ? (

@@ -46,12 +46,12 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Search, Users, MoreHorizontal, Snowflake, RefreshCw, Ruler, Download } from "lucide-react";
+import { Plus, Search, Users, MoreHorizontal, Snowflake, RefreshCw, Ruler, Download, UserCheck } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { useMarket } from "@/hooks/use-market";
-import type { Member } from "@shared/schema";
+import type { Member, User } from "@shared/schema";
 
 const addMemberSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -59,6 +59,7 @@ const addMemberSchema = z.object({
   email: z.string().email("Valid email required"),
   phone: z.string().optional(),
   membershipType: z.string().min(1, "Membership type is required"),
+  trainerId: z.string().optional(),
   heightCm: z.string().optional(),
   weightKg: z.string().optional(),
 });
@@ -79,6 +80,29 @@ export default function MembersPage() {
     queryKey: ["/api/members"],
   });
 
+  const { data: trainers } = useQuery<User[]>({
+    queryKey: ["/api/trainers"],
+  });
+
+  const [assignTrainerDialogOpen, setAssignTrainerDialogOpen] = useState(false);
+  const [assignTrainerMember, setAssignTrainerMember] = useState<Member | null>(null);
+  const [selectedTrainerId, setSelectedTrainerId] = useState<string>("");
+
+  const assignTrainerMutation = useMutation({
+    mutationFn: async ({ id, trainerId }: { id: string; trainerId: string | null }) => {
+      const res = await apiRequest("PATCH", `/api/members/${id}`, { trainerId });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/members"] });
+      toast({ title: "Trainer assigned successfully" });
+      setAssignTrainerDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to assign trainer", description: error.message, variant: "destructive" });
+    },
+  });
+
   const form = useForm({
     resolver: zodResolver(addMemberSchema),
     defaultValues: {
@@ -87,6 +111,7 @@ export default function MembersPage() {
       email: "",
       phone: "",
       membershipType: "monthly",
+      trainerId: "",
       heightCm: "",
       weightKg: "",
     },
@@ -247,6 +272,22 @@ export default function MembersPage() {
                       <FormMessage />
                     </FormItem>
                   )} />
+                  <FormField control={form.control} name="trainerId" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Assign Trainer</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-trainer"><SelectValue placeholder="Select trainer (optional)" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {(trainers || []).map((t) => (
+                            <SelectItem key={t.id} value={t.id}>{t.firstName} {t.lastName}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                   <div className="grid grid-cols-2 gap-4">
                     <FormField control={form.control} name="heightCm" render={({ field }) => (
                       <FormItem>
@@ -328,6 +369,7 @@ export default function MembersPage() {
                   <TableHead>Member</TableHead>
                   <TableHead className="hidden md:table-cell">Email</TableHead>
                   <TableHead className="hidden sm:table-cell">Membership</TableHead>
+                  <TableHead className="hidden lg:table-cell">Trainer</TableHead>
                   <TableHead className="hidden lg:table-cell">BMI</TableHead>
                   <TableHead className="hidden lg:table-cell">Expires</TableHead>
                   <TableHead>Status</TableHead>
@@ -355,6 +397,16 @@ export default function MembersPage() {
                       <Badge variant="secondary" className="capitalize">
                         {member.membershipType.replace("_", " ")}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell text-sm">
+                      {member.trainerId ? (
+                        <Badge variant="outline" className="gap-1">
+                          <UserCheck className="h-3 w-3" />
+                          {trainers?.find(t => t.id === member.trainerId)?.firstName || "Assigned"}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">Unassigned</span>
+                      )}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                       {member.bmi ? (
@@ -415,6 +467,17 @@ export default function MembersPage() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={() => {
+                              setAssignTrainerMember(member);
+                              setSelectedTrainerId(member.trainerId || "");
+                              setAssignTrainerDialogOpen(true);
+                            }}
+                            data-testid={`action-assign-trainer-${member.id}`}
+                          >
+                            <UserCheck className="h-4 w-4 mr-2" />
+                            Assign Trainer
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
                               setBmiMember(member);
                               setBmiHeight(member.heightCm || "");
                               setBmiWeight(member.weightKg || "");
@@ -435,6 +498,57 @@ export default function MembersPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={assignTrainerDialogOpen} onOpenChange={setAssignTrainerDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Assign Trainer</DialogTitle>
+            <DialogDescription>
+              {assignTrainerMember ? `${assignTrainerMember.firstName} ${assignTrainerMember.lastName}` : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Select value={selectedTrainerId} onValueChange={setSelectedTrainerId}>
+              <SelectTrigger data-testid="select-assign-trainer">
+                <SelectValue placeholder="Select a trainer" />
+              </SelectTrigger>
+              <SelectContent>
+                {(trainers || []).map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.firstName} {t.lastName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex gap-2">
+              <Button
+                className="flex-1"
+                disabled={!selectedTrainerId || assignTrainerMutation.isPending}
+                onClick={() => {
+                  if (assignTrainerMember && selectedTrainerId) {
+                    assignTrainerMutation.mutate({ id: assignTrainerMember.id, trainerId: selectedTrainerId });
+                  }
+                }}
+                data-testid="button-save-trainer"
+              >
+                {assignTrainerMutation.isPending ? "Saving..." : "Assign"}
+              </Button>
+              {assignTrainerMember?.trainerId && (
+                <Button
+                  variant="outline"
+                  disabled={assignTrainerMutation.isPending}
+                  onClick={() => {
+                    if (assignTrainerMember) {
+                      assignTrainerMutation.mutate({ id: assignTrainerMember.id, trainerId: null });
+                    }
+                  }}
+                  data-testid="button-remove-trainer"
+                >
+                  Remove
+                </Button>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={bmiDialogOpen} onOpenChange={setBmiDialogOpen}>
         <DialogContent className="sm:max-w-sm">

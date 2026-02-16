@@ -158,6 +158,7 @@ export async function registerRoutes(
         phone: z.string().optional(),
         membershipType: z.string().min(1),
         status: z.string().optional(),
+        trainerId: z.string().optional(),
         heightCm: z.string().optional(),
         weightKg: z.string().optional(),
         branchId: z.string().optional(),
@@ -210,6 +211,9 @@ export async function registerRoutes(
       }
 
       const data = req.body;
+      if (data.trainerId !== undefined && !["gym_owner", "manager", "platform_admin"].includes(user.role)) {
+        return res.status(403).json({ message: "Only gym owners and managers can assign trainers" });
+      }
       if (data.heightCm && data.weightKg) {
         const h = parseFloat(data.heightCm) / 100;
         const w = parseFloat(data.weightKg);
@@ -986,6 +990,9 @@ export async function registerRoutes(
       const session = await storage.getSession(sessionId);
       if (!session) return res.status(404).json({ message: "Session not found" });
       if (session.tenantId !== user.tenantId) return res.status(403).json({ message: "Access denied" });
+      if (member.trainerId && session.trainerId !== member.trainerId) {
+        return res.status(403).json({ message: "You can only book sessions with your assigned trainer" });
+      }
       if ((session.enrolled || 0) >= (session.capacity || 1)) {
         return res.status(400).json({ message: "Session is full" });
       }

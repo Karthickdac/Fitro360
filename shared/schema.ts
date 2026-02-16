@@ -74,6 +74,7 @@ export const members = pgTable("members", {
   heightCm: decimal("height_cm", { precision: 5, scale: 1 }),
   weightKg: decimal("weight_kg", { precision: 5, scale: 1 }),
   bmi: decimal("bmi", { precision: 4, scale: 1 }),
+  trainerId: varchar("trainer_id").references(() => users.id),
   referralCode: text("referral_code"),
   referredBy: varchar("referred_by"),
   createdAt: timestamp("created_at").defaultNow(),
