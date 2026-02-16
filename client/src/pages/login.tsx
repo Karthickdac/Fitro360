@@ -72,15 +72,13 @@ export default function LoginPage() {
 
   const displayName = branding?.gymName || "Fitro360";
   const isSubdomain = !!branding;
-  const brandColor = branding?.primaryColor || "hsl(217, 91%, 35%)";
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row" data-testid="page-login">
       <div className="hidden lg:flex lg:flex-1 relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
         <div className="absolute inset-0">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-          <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }} />
+          <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl" />
           <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "40px 40px" }} />
         </div>
 
@@ -97,7 +95,7 @@ export default function LoginPage() {
           </div>
 
           <div className="flex-1 flex flex-col justify-center max-w-lg">
-            <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight tracking-tight mb-4">
+            <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight tracking-tight mb-4" data-testid="text-hero-title">
               {isSubdomain
                 ? `Welcome to ${displayName}`
                 : "Power Your Fitness Business"
@@ -111,9 +109,9 @@ export default function LoginPage() {
             </p>
 
             {!isSubdomain && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4" data-testid="section-features">
                 {features.map((f, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
+                  <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm" data-testid={`card-feature-${i}`}>
                     <div className="flex-shrink-0 mt-0.5 h-9 w-9 rounded-lg bg-blue-500/15 flex items-center justify-center">
                       <f.icon className="h-4.5 w-4.5 text-blue-300" />
                     </div>
@@ -128,19 +126,19 @@ export default function LoginPage() {
           </div>
 
           {!isSubdomain && (
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-8" data-testid="section-stats">
               <div>
-                <div className="text-3xl font-bold text-white">1000+</div>
+                <div className="text-3xl font-bold text-white" data-testid="text-stat-gyms">1000+</div>
                 <div className="text-xs text-blue-200/50 font-medium uppercase tracking-wider mt-1">Gyms Powered</div>
               </div>
               <div className="h-10 w-px bg-white/10" />
               <div>
-                <div className="text-3xl font-bold text-white">50K+</div>
+                <div className="text-3xl font-bold text-white" data-testid="text-stat-members">50K+</div>
                 <div className="text-xs text-blue-200/50 font-medium uppercase tracking-wider mt-1">Active Members</div>
               </div>
               <div className="h-10 w-px bg-white/10" />
               <div>
-                <div className="text-3xl font-bold text-white">99.9%</div>
+                <div className="text-3xl font-bold text-white" data-testid="text-stat-uptime">99.9%</div>
                 <div className="text-xs text-blue-200/50 font-medium uppercase tracking-wider mt-1">Uptime</div>
               </div>
             </div>
@@ -167,7 +165,7 @@ export default function LoginPage() {
           </div>
 
           <div className="mb-8">
-            <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
+            <h2 className="text-2xl font-bold tracking-tight" data-testid="text-login-heading">Welcome back</h2>
             <p className="text-muted-foreground mt-2 text-sm">Sign in to your account to continue</p>
           </div>
 
@@ -182,7 +180,6 @@ export default function LoginPage() {
                     <FormControl>
                       <Input
                         placeholder="Enter your username"
-                        className="h-11"
                         {...field}
                         data-testid="input-username"
                       />
@@ -202,7 +199,7 @@ export default function LoginPage() {
                         <Input
                           type={showPassword ? "text" : "password"}
                           placeholder="Enter your password"
-                          className="h-11 pr-10"
+                          className="pr-10"
                           {...field}
                           data-testid="input-password"
                         />
@@ -222,7 +219,7 @@ export default function LoginPage() {
               />
               <Button
                 type="submit"
-                className="w-full h-11 text-sm font-semibold"
+                className="w-full text-sm font-semibold"
                 disabled={isLoading}
                 data-testid="button-login"
                 style={branding?.primaryColor ? { backgroundColor: branding.primaryColor } : undefined}
@@ -243,7 +240,7 @@ export default function LoginPage() {
           </Form>
 
           {!isSubdomain && (
-            <div className="mt-8 p-4 rounded-xl bg-muted/40 border border-border/50">
+            <div className="mt-8 p-4 rounded-xl bg-muted/40 border border-border/50" data-testid="section-demo-accounts">
               <p className="text-xs text-muted-foreground font-semibold mb-2.5 uppercase tracking-wider">Demo Accounts</p>
               <div className="space-y-1.5 text-xs text-muted-foreground">
                 <p><span className="font-medium text-foreground/70">Platform Admin:</span> admin / admin123</p>

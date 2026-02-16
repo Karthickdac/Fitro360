@@ -70,11 +70,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (username: string, password: string) => {
     const res = await apiRequest("POST", "/api/auth/login", { username, password });
     const data = await res.json();
-    setUser(data.user);
-    setTenant(data.tenant);
     if (data.tenant) {
       applyTenantBranding(data.tenant.primaryColor, data.tenant.secondaryColor);
     }
+    const role = data.user?.role;
+    const dashboardMap: Record<string, string> = {
+      platform_admin: "/admin",
+      member: "/portal",
+      trainer: "/portal",
+      manager: "/dashboard",
+      gym_owner: "/dashboard",
+      sales_executive: "/dashboard",
+    };
+    const target = dashboardMap[role] || "/dashboard";
+    window.history.replaceState(null, "", target);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    setTenant(data.tenant);
+    setUser(data.user);
   };
 
   const logout = async () => {
@@ -87,6 +99,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     root.style.removeProperty("--ring");
     root.style.removeProperty("--primary-foreground");
     root.style.removeProperty("--accent");
+    window.history.replaceState(null, "", "/");
+    window.dispatchEvent(new PopStateEvent("popstate"));
   };
 
   return (
