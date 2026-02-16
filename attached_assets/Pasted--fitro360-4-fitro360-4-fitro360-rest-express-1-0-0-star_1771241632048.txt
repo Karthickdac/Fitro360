@@ -1,0 +1,27 @@
+|fitro360 | 
+4|fitro360 | 
+4|fitro360 | > rest-express@1.0.0 start
+4|fitro360 | > NODE_ENV=production node dist/index.cjs
+4|fitro360 | 
+4|fitro360 | 
+4|fitro360 | > rest-express@1.0.0 start
+4|fitro360 | > NODE_ENV=production node dist/index.cjs
+4|fitro360 | 
+
+/root/.pm2/logs/fitro360-error.log last 20 lines:
+4|fitro360 | t.user;if(!i.tenantId)return r.status(400).json({message:"No tenant"});let a=S.object({code:S.string().min(1),description:S.string().optional(),discountType:S.string().min(1),discountValue:S.string().min(1),maxUses:S.number().optional(),validFrom:S.string().optional(),validUntil:S.string().optional()}).parse(t.body),s=await C.createCoupon({...a,tenantId:i.tenantId,validFrom:a.validFrom?new Date(a.validFrom):new Date,validUntil:a.validUntil?new Date(a.validUntil):void 0});return r.json(s)}catch(i){return r.status(400).json({message:i.message})}}),e.patch("/api/coupons/:id",z,async(t,r)=>{let i=await C.updateCoupon(ge(t),t.body);return r.json(i)}),e.get("/api/referrals",z,async(t,r)=>{let i=t.user;if(!i.tenantId)return r.json([]);let a=await C.getReferralsByTenant(i.tenantId);return r.json(a)}),e.post("/api/referrals",z,async(t,r)=>{try{let i=t.user;if(!i.tenantId)return r.status(400).json({message:"No tenant"});let a=S.object({referrerId:S.string().min(1),referralCode:S.string().min(1),rewardType:S.string().optional(),rewardValue:S.string().optional()}).parse(t.body),s=await C.createReferral({...a,tenantId:i.tenantId,status:"pending"});return r.json(s)}catch(i){return r.status(400).json({message:i.message})}}),e.get("/api/activities",z,async(t,r)=>{let i=t.user;if(!i.tenantId)return r.json([]);let a=await C.getActivities(i.tenantId);return r.json(a)}),e.get("/api/analytics/export",z,async(t,r)=>{try{let i=t.user;if(!i.tenantId)return r.status(400).json({message:"No tenant"});let a=t.query.type||"members",s=[],o="export.csv",l=[];a==="members"?(s=await C.getMembersByTenant(i.tenantId),l=["First Name","Last Name","Email","Phone","Membership Type","Status","Start Date","End Date"],o="members_export.csv"):a==="attendance"?(s=await C.getAttendanceByTenant(i.tenantId),l=["Member ID","Check In","Check Out","Method"],o="attendance_export.csv"):a==="equipment"?(s=await C.getEquipmentByTenant(i.tenantId),l=["Name","Category","SKU","Quantity","Cost Price","Sell Price","Status"],o="equipment_export.csv"):a==="invoices"&&(s=await C.getInvoicesByTenant(i.tenantId),l=["Invoice #","Type","Subtotal","VAT","Total","Status","Date"],o="invoices_export.csv");let u=l.join(",")+`
+4|fitro360 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+4|fitro360 | 
+4|fitro360 | Error: DATABASE_URL must be set
+4|fitro360 |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:117395
+4|fitro360 |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:1:225
+4|fitro360 |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:117553
+4|fitro360 |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:1:225
+4|fitro360 |     at Object.<anonymous> (/home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:133589)
+4|fitro360 |     at Module._compile (node:internal/modules/cjs/loader:1706:14)
+4|fitro360 |     at Object..js (node:internal/modules/cjs/loader:1839:10)
+4|fitro360 |     at Module.load (node:internal/modules/cjs/loader:1441:32)
+4|fitro360 |     at Function._load (node:internal/modules/cjs/loader:1263:12)
+4|fitro360 |     at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+4|fitro360 | 
+4|fitro360 | Node.js v22.22.0
