@@ -1567,5 +1567,45 @@ export async function registerRoutes(
     return res.json(plans);
   });
 
+  app.post("/api/admin/plans", authMiddleware, requireRole("platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const input = z.object({
+        name: z.string().min(1),
+        priceMonthly: z.string().min(1),
+        priceAnnual: z.string().min(1),
+        maxMembers: z.coerce.number().optional().nullable(),
+        features: z.array(z.string()).optional().default([]),
+        isPopular: z.boolean().optional().default(false),
+        isActive: z.boolean().optional().default(true),
+      }).parse(req.body);
+      const plan = await storage.createPlan(input);
+      return res.json(plan);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/admin/plans/:id", authMiddleware, requireRole("platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const existing = await storage.getPlan(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Plan not found" });
+      const plan = await storage.updatePlan(req.params.id, req.body);
+      return res.json(plan);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/admin/plans/:id", authMiddleware, requireRole("platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const existing = await storage.getPlan(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Plan not found" });
+      await storage.deletePlan(req.params.id);
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
   return httpServer;
 }

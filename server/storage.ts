@@ -118,7 +118,10 @@ export interface IStorage {
   deleteMembershipPlan(id: string): Promise<void>;
 
   getAllPlans(): Promise<SubscriptionPlan[]>;
+  getPlan(id: string): Promise<SubscriptionPlan | undefined>;
   createPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan>;
+  updatePlan(id: string, data: Partial<InsertSubscriptionPlan>): Promise<SubscriptionPlan | undefined>;
+  deletePlan(id: string): Promise<void>;
 
   getMetricsByMember(memberId: string): Promise<MemberMetric[]>;
   createMemberMetric(metric: InsertMemberMetric): Promise<MemberMetric>;
@@ -552,9 +555,23 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(subscriptionPlans);
   }
 
+  async getPlan(id: string): Promise<SubscriptionPlan | undefined> {
+    const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, id));
+    return plan;
+  }
+
   async createPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan> {
     const [created] = await db.insert(subscriptionPlans).values(plan as any).returning();
     return created;
+  }
+
+  async updatePlan(id: string, data: Partial<InsertSubscriptionPlan>): Promise<SubscriptionPlan | undefined> {
+    const [updated] = await db.update(subscriptionPlans).set(data as any).where(eq(subscriptionPlans.id, id)).returning();
+    return updated;
+  }
+
+  async deletePlan(id: string): Promise<void> {
+    await db.delete(subscriptionPlans).where(eq(subscriptionPlans.id, id));
   }
 
   async getActivities(tenantId: string): Promise<Activity[]> {
