@@ -83,15 +83,15 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4" data-testid="logo-header">
             {branding?.logoUrl ? (
-              <img src={branding.logoUrl} alt={displayName} className="h-10 w-10 rounded-xl object-cover" />
+              <img src={branding.logoUrl} alt={displayName} className="h-12 w-12 rounded-xl object-cover" />
             ) : (
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
-                <Dumbbell className="h-6 w-6 text-white" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10">
+                <Dumbbell className="h-8 w-8 text-white" />
               </div>
             )}
-            <span className="text-xl font-bold text-white tracking-tight">{displayName}</span>
+            <span className="text-3xl font-extrabold text-white tracking-tight">{displayName}</span>
           </div>
 
           <div className="flex-1 flex flex-col justify-center max-w-lg">
@@ -104,7 +104,7 @@ export default function LoginPage() {
             <p className="text-lg text-blue-100/70 leading-relaxed mb-10">
               {isSubdomain
                 ? "Sign in to access your gym management portal."
-                : "Enterprise-grade gym management platform with white-label branding, multi-tenant support, and real-time analytics."
+                : "Complete gym management platform with multi-tenant support, real-time analytics, and powerful scheduling tools."
               }
             </p>
 
@@ -152,16 +152,16 @@ export default function LoginPage() {
         <div className="w-full max-w-[380px] relative z-10">
           <div className="flex items-center gap-3 mb-10 lg:hidden">
             {branding?.logoUrl ? (
-              <img src={branding.logoUrl} alt={displayName} className="h-10 w-10 rounded-xl object-cover" />
+              <img src={branding.logoUrl} alt={displayName} className="h-12 w-12 rounded-xl object-cover" />
             ) : (
               <div
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary"
+                className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary"
                 style={branding?.primaryColor ? { backgroundColor: branding.primaryColor } : undefined}
               >
-                <Dumbbell className="h-5 w-5 text-primary-foreground" />
+                <Dumbbell className="h-6 w-6 text-primary-foreground" />
               </div>
             )}
-            <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
+            <h1 className="text-3xl font-extrabold tracking-tight">{displayName}</h1>
           </div>
 
           <div className="mb-8">
@@ -243,7 +243,6 @@ export default function LoginPage() {
             <div className="mt-8 p-4 rounded-xl bg-muted/40 border border-border/50" data-testid="section-demo-accounts">
               <p className="text-xs text-muted-foreground font-semibold mb-2.5 uppercase tracking-wider">Demo Accounts</p>
               <div className="space-y-1.5 text-xs text-muted-foreground">
-                <p><span className="font-medium text-foreground/70">Platform Admin:</span> admin / admin123</p>
                 <p><span className="font-medium text-foreground/70">Gym Owner:</span> gymowner / gym123</p>
                 <p><span className="font-medium text-foreground/70">Trainer:</span> trainer1 / trainer123</p>
                 <p><span className="font-medium text-foreground/70">Member:</span> member1 / member123</p>

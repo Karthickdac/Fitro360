@@ -1,7 +1,7 @@
-# Fitro360 - White-Label Multi-Tenant Gym Management SaaS
+# Fitro360 - Multi-Tenant Gym Management SaaS
 
 ## Overview
-Fitro360 is a white-label, multi-tenant SaaS platform for gym management. It supports multiple gym tenants with custom branding, role-based access control, member management, trainer scheduling, equipment ERP, multi-branch support, and platform-level administration.
+Fitro360 is a multi-tenant SaaS platform for gym management. It supports multiple gym tenants with custom branding, role-based access control, member management, trainer scheduling, equipment ERP, multi-branch support, and platform-level administration.
 
 ## Tech Stack
 - **Frontend**: React (Vite), Tailwind CSS, shadcn/ui, Recharts, wouter routing
@@ -12,7 +12,7 @@ Fitro360 is a white-label, multi-tenant SaaS platform for gym management. It sup
 ## Architecture
 - Multi-tenant with data isolation via `tenantId` foreign keys
 - Role-based access: `platform_admin`, `gym_owner`, `manager`, `trainer`, `member`, `sales_executive`
-- White-label branding stored per tenant (colors, logo, name) - auto-applies CSS variables on login
+- Tenant branding stored per tenant (colors, logo, name) - auto-applies CSS variables on login
 - Role-based routing: separate routers per role (AdminRouter, MemberRouter, TrainerRouter, ManagerRouter, GymOwnerRouter)
 - Sidebar navigation adapts to user role (members see portal, trainers see workspace, owners see full admin)
 

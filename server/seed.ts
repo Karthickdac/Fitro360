@@ -56,7 +56,7 @@ export async function seedDatabase() {
       "Everything in Pro",
       "Multi-branch support",
       "Equipment sales ERP",
-      "White-label mobile app",
+      "Custom branded mobile app",
       "Dedicated support",
       "Custom integrations",
       "API access",
