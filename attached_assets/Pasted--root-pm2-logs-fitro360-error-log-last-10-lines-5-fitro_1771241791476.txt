@@ -1,0 +1,42 @@
+/root/.pm2/logs/fitro360-error.log last 10 lines:
+5|fitro360 |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:117553
+5|fitro360 |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:1:225
+5|fitro360 |     at Object.<anonymous> (/home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:133589)
+5|fitro360 |     at Module._compile (node:internal/modules/cjs/loader:1706:14)
+5|fitro360 |     at Object..js (node:internal/modules/cjs/loader:1839:10)
+5|fitro360 |     at Module.load (node:internal/modules/cjs/loader:1441:32)
+5|fitro360 |     at Function._load (node:internal/modules/cjs/loader:1263:12)
+5|fitro360 |     at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+5|fitro360 | 
+5|fitro360 | Node.js v22.22.0
+
+5|fitro360  | > rest-express@1.0.0 start
+5|fitro360  | > NODE_ENV=production node dist/index.cjs
+5|fitro360  | Seed error: error: relation "subscription_plans" does not exist
+5|fitro360  |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:74:13326
+5|fitro360  |     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+5|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:37959
+5|fitro360  |     at async YF (/home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:126185)
+5|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:85:10961 {
+5|fitro360  |   length: 118,
+5|fitro360  |   severity: 'ERROR',
+5|fitro360  |   code: '42P01',
+5|fitro360  |   detail: undefined,
+5|fitro360  |   hint: undefined,
+5|fitro360  |   position: '113',
+5|fitro360  |   internalPosition: undefined,
+5|fitro360  |   internalQuery: undefined,
+5|fitro360  |   where: undefined,
+5|fitro360  |   schema: undefined,
+5|fitro360  |   table: undefined,
+5|fitro360  |   column: undefined,
+5|fitro360  |   dataType: undefined,
+5|fitro360  |   constraint: undefined,
+5|fitro360  |   file: 'parse_relation.c',
+5|fitro360  |   line: '1449',
+5|fitro360  |   routine: 'parserOpenTable'
+5|fitro360  | }
+5|fitro360  | Warning: connect.session() MemoryStore is not
+5|fitro360  | designed for a production environment, as it will leak
+5|fitro360  | memory, and will not scale past a single process.
+5|fitro360  | 11:36:15 AM [express] serving on port 4000
