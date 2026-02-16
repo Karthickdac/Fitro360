@@ -13,7 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useAuth } from "@/lib/auth";
-import { Dumbbell, Eye, EyeOff, Loader2, Zap, Users, Shield, BarChart3, ArrowRight, Star, CheckCircle2 } from "lucide-react";
+import { Dumbbell, Eye, EyeOff, Loader2, Zap, Users, Shield, BarChart3, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const loginFormSchema = z.object({
@@ -33,15 +33,6 @@ const features = [
   { icon: BarChart3, label: "Analytics & Reports", desc: "Real-time insights for your gym" },
   { icon: Shield, label: "Multi-Tenant Security", desc: "Isolated data per gym tenant" },
   { icon: Zap, label: "Instant Scheduling", desc: "Drag & drop trainer sessions" },
-];
-
-const highlights = [
-  "QR Code Check-in",
-  "Trainer Scheduling",
-  "Payment Tracking",
-  "Equipment ERP",
-  "Multi-Branch",
-  "Custom Branding",
 ];
 
 export default function LoginPage() {
@@ -161,79 +152,26 @@ export default function LoginPage() {
         <div className="absolute inset-0">
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/15 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-500/15 rounded-full blur-3xl" />
-          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "30px 30px" }} />
         </div>
 
-        <div className="relative z-10 px-6 pt-8 pb-6">
-          <div className="flex items-center gap-3 mb-6" data-testid="mobile-logo">
-            {branding?.logoUrl ? (
-              <img src={branding.logoUrl} alt={displayName} className="h-10 w-10 rounded-xl object-cover" />
-            ) : (
-              <div
-                className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30"
-              >
-                <Dumbbell className="h-6 w-6 text-white" />
-              </div>
-            )}
-            <div>
-              <h1 className="text-xl font-extrabold text-white tracking-tight">{displayName}</h1>
-              {!isSubdomain && (
-                <p className="text-[11px] text-blue-200/60 font-medium uppercase tracking-wider">Gym Management Platform</p>
-              )}
+        <div className="relative z-10 px-6 pt-10 pb-8 flex flex-col items-center text-center" data-testid="mobile-hero">
+          {branding?.logoUrl ? (
+            <img src={branding.logoUrl} alt={displayName} className="h-14 w-14 rounded-2xl object-cover mb-4 shadow-lg" />
+          ) : (
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30 mb-4">
+              <Dumbbell className="h-7 w-7 text-white" />
             </div>
-          </div>
-
-          {!isSubdomain && (
-            <>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-3" data-testid="text-mobile-hero">
-                Power Your Fitness Business
-              </h2>
-              <p className="text-sm text-blue-100/60 leading-relaxed mb-5">
-                All-in-one platform for managing members, trainers, schedules, payments, and analytics.
-              </p>
-
-              <div className="flex flex-wrap gap-2 mb-5" data-testid="mobile-highlights">
-                {highlights.map((h, i) => (
-                  <span key={i} className="inline-flex items-center gap-1.5 text-[11px] font-medium text-blue-100/80 bg-white/[0.07] border border-white/[0.08] rounded-full px-3 py-1.5 backdrop-blur-sm">
-                    <CheckCircle2 className="h-3 w-3 text-blue-400/80" />
-                    {h}
-                  </span>
-                ))}
-              </div>
-
-              <div className="flex items-center gap-5" data-testid="mobile-stats">
-                <div className="text-center">
-                  <div className="text-xl font-bold text-white">1000+</div>
-                  <div className="text-[10px] text-blue-200/50 font-medium uppercase tracking-wider">Gyms</div>
-                </div>
-                <div className="h-8 w-px bg-white/10" />
-                <div className="text-center">
-                  <div className="text-xl font-bold text-white">50K+</div>
-                  <div className="text-[10px] text-blue-200/50 font-medium uppercase tracking-wider">Members</div>
-                </div>
-                <div className="h-8 w-px bg-white/10" />
-                <div className="text-center">
-                  <div className="text-xl font-bold text-white">99.9%</div>
-                  <div className="text-[10px] text-blue-200/50 font-medium uppercase tracking-wider">Uptime</div>
-                </div>
-                <div className="h-8 w-px bg-white/10" />
-                <div className="flex items-center gap-1 text-center">
-                  <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
-                  <div>
-                    <div className="text-xl font-bold text-white">4.9</div>
-                    <div className="text-[10px] text-blue-200/50 font-medium uppercase tracking-wider">Rating</div>
-                  </div>
-                </div>
-              </div>
-            </>
           )}
-
+          <h1 className="text-2xl font-extrabold text-white tracking-tight" data-testid="mobile-logo">{displayName}</h1>
+          {!isSubdomain && (
+            <p className="text-sm text-blue-200/60 mt-1.5">Gym Management, Simplified.</p>
+          )}
           {isSubdomain && (
-            <h2 className="text-xl font-bold text-white">Welcome to {displayName}</h2>
+            <p className="text-sm text-blue-200/60 mt-1.5">Welcome back</p>
           )}
         </div>
 
-        <div className="relative z-10 h-4 bg-background rounded-t-3xl" />
+        <div className="relative z-10 h-5 bg-background rounded-t-[2rem]" />
       </div>
 
       {/* Login Form Section */}
@@ -241,7 +179,7 @@ export default function LoginPage() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
         <div className="w-full max-w-[380px] relative z-10">
-          <div className="mb-8 lg:mt-0 -mt-2">
+          <div className="mb-8 lg:mt-0 -mt-2 lg:text-left text-center">
             <h2 className="text-2xl font-bold tracking-tight" data-testid="text-login-heading">Welcome back</h2>
             <p className="text-muted-foreground mt-2 text-sm">Sign in to your account to continue</p>
           </div>
@@ -317,35 +255,15 @@ export default function LoginPage() {
           </Form>
 
           {!isSubdomain && (
-            <>
-              <div className="mt-8 p-4 rounded-xl bg-muted/40 border border-border/50" data-testid="section-demo-accounts">
-                <p className="text-xs text-muted-foreground font-semibold mb-2.5 uppercase tracking-wider">Demo Accounts</p>
-                <div className="space-y-1.5 text-xs text-muted-foreground">
-                  <p><span className="font-medium text-foreground/70">Gym Owner:</span> gymowner / gym123</p>
-                  <p><span className="font-medium text-foreground/70">Manager:</span> manager1 / manager123</p>
-                  <p><span className="font-medium text-foreground/70">Trainer:</span> trainer1 / trainer123</p>
-                  <p><span className="font-medium text-foreground/70">Member:</span> member1 / member123</p>
-                </div>
+            <div className="mt-8 p-4 rounded-xl bg-muted/40 border border-border/50 lg:text-left text-center" data-testid="section-demo-accounts">
+              <p className="text-xs text-muted-foreground font-semibold mb-2.5 uppercase tracking-wider">Demo Accounts</p>
+              <div className="space-y-1.5 text-xs text-muted-foreground">
+                <p><span className="font-medium text-foreground/70">Gym Owner:</span> gymowner / gym123</p>
+                <p><span className="font-medium text-foreground/70">Manager:</span> manager1 / manager123</p>
+                <p><span className="font-medium text-foreground/70">Trainer:</span> trainer1 / trainer123</p>
+                <p><span className="font-medium text-foreground/70">Member:</span> member1 / member123</p>
               </div>
-
-              {/* Mobile Feature Cards */}
-              <div className="mt-6 lg:hidden" data-testid="mobile-features">
-                <p className="text-xs text-muted-foreground font-semibold mb-3 uppercase tracking-wider">Why Fitro360?</p>
-                <div className="grid grid-cols-2 gap-2.5">
-                  {features.map((f, i) => (
-                    <div key={i} className="flex items-center gap-2.5 p-3 rounded-xl bg-muted/30 border border-border/40" data-testid={`mobile-feature-${i}`}>
-                      <div className="flex-shrink-0 h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <f.icon className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold">{f.label}</div>
-                        <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">{f.desc}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
+            </div>
           )}
 
           {isSubdomain && (
