@@ -94,6 +94,28 @@ export async function registerRoutes(
     return res.json({ message: "Logged out" });
   });
 
+  // ─── Domain-based Branding ────────────────────────
+  app.get("/api/branding", async (req: Request, res: Response) => {
+    try {
+      const host = req.headers.host || "";
+      const domain = host.split(":")[0];
+      const tenant = await storage.getTenantByDomain(domain);
+      if (tenant) {
+        return res.json({
+          gymName: tenant.gymName,
+          appDisplayName: tenant.appDisplayName,
+          logoUrl: tenant.logoUrl,
+          primaryColor: tenant.primaryColor,
+          secondaryColor: tenant.secondaryColor,
+          faviconUrl: (tenant as any).faviconUrl,
+        });
+      }
+      return res.json({ gymName: "ForgeFit", primaryColor: "#1e40af", secondaryColor: "#3b82f6" });
+    } catch {
+      return res.json({ gymName: "ForgeFit", primaryColor: "#1e40af", secondaryColor: "#3b82f6" });
+    }
+  });
+
   // ─── Dashboard ─────────────────────────────────────────
   app.get("/api/dashboard/stats", authMiddleware, async (req: Request, res: Response) => {
     const user = (req as any).user;
@@ -355,6 +377,7 @@ export async function registerRoutes(
       if (data.startTime) data.startTime = new Date(data.startTime);
       if (data.endTime) data.endTime = new Date(data.endTime);
       const updated = await storage.updateSession(paramId(req), data);
+      if (!updated) return res.status(404).json({ message: "Session not found" });
       return res.json(updated);
     } catch (error: any) {
       return res.status(400).json({ message: error.message });
@@ -718,6 +741,99 @@ export async function registerRoutes(
     }
   });
 
+  // ─── QR Code Check-in ────────────────────────────────
+  app.get("/api/members/:id/qrcode", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const QRCode = require("qrcode");
+      const member = await storage.getMember(paramId(req));
+      if (!member) return res.status(404).json({ message: "Member not found" });
+      const qrData = JSON.stringify({ memberId: member.id, name: `${member.firstName} ${member.lastName}`, type: "checkin" });
+      const qrDataUrl = await QRCode.toDataURL(qrData, { width: 300, margin: 2 });
+      return res.json({ qrCode: qrDataUrl, memberId: member.id });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/attendance/qr-checkin", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const { memberId } = req.body;
+      if (!memberId) return res.status(400).json({ message: "Member ID required" });
+      const member = await storage.getMember(memberId);
+      if (!member) return res.status(404).json({ message: "Member not found" });
+      if (member.tenantId !== user.tenantId) return res.status(403).json({ message: "Member does not belong to this gym" });
+      const att = await storage.createAttendance({ tenantId: user.tenantId, memberId, method: "qr" });
+      await storage.createActivity({ tenantId: user.tenantId, userId: user.id, type: "checkin", description: `QR check-in: ${member.firstName} ${member.lastName}` });
+      return res.json(att);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  // ─── Trainer Commissions ─────────────────────────
+  app.get("/api/commissions", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.json([]);
+    const comms = await storage.getCommissionsByTenant(user.tenantId);
+    return res.json(comms);
+  });
+
+  app.post("/api/commissions", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const input = z.object({
+        trainerId: z.string().min(1),
+        sessionId: z.string().optional(),
+        amount: z.string().min(1),
+        type: z.string().optional(),
+        notes: z.string().optional(),
+      }).parse(req.body);
+      const comm = await storage.createCommission({ tenantId: user.tenantId, ...input, status: "pending" });
+      return res.json(comm);
+    } catch (error: any) { return res.status(400).json({ message: error.message }); }
+  });
+
+  app.patch("/api/commissions/:id", authMiddleware, async (req: Request, res: Response) => {
+    const data = req.body;
+    if (data.paidAt) data.paidAt = new Date(data.paidAt);
+    const updated = await storage.updateCommission(paramId(req), data);
+    return res.json(updated);
+  });
+
+  // ─── Trainer Leaves ─────────────────────────────
+  app.get("/api/leaves", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.json([]);
+    const lvs = await storage.getLeavesByTenant(user.tenantId);
+    return res.json(lvs);
+  });
+
+  app.post("/api/leaves", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const input = z.object({
+        trainerId: z.string().min(1),
+        startDate: z.string().min(1),
+        endDate: z.string().min(1),
+        reason: z.string().optional(),
+      }).parse(req.body);
+      const leave = await storage.createLeave({ tenantId: user.tenantId, trainerId: input.trainerId, startDate: new Date(input.startDate), endDate: new Date(input.endDate), reason: input.reason, status: "pending" });
+      return res.json(leave);
+    } catch (error: any) { return res.status(400).json({ message: error.message }); }
+  });
+
+  app.patch("/api/leaves/:id", authMiddleware, async (req: Request, res: Response) => {
+    const data = req.body;
+    if (data.startDate) data.startDate = new Date(data.startDate);
+    if (data.endDate) data.endDate = new Date(data.endDate);
+    const updated = await storage.updateLeave(paramId(req), data);
+    return res.json(updated);
+  });
+
   // ─── Member Metrics (Progress Tracking) ──────────────
   app.get("/api/members/:id/metrics", authMiddleware, async (req: Request, res: Response) => {
     const metrics = await storage.getMetricsByMember(paramId(req));
@@ -831,6 +947,74 @@ export async function registerRoutes(
         description: `Payment of ${input.currency || "INR"} ${input.amount} received via ${input.method}`,
       });
       return res.json(payment);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  // ─── Stripe Payment Integration ─────────────────────
+  app.post("/api/payments/create-checkout", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const stripeKey = process.env.STRIPE_SECRET_KEY;
+      if (!stripeKey) {
+        return res.status(400).json({ message: "Stripe is not configured. Record payments manually or connect Stripe in settings." });
+      }
+      const stripe = require("stripe")(stripeKey);
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const { amount, currency, description, memberId, invoiceId } = req.body;
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: [{
+          price_data: {
+            currency: currency || "inr",
+            product_data: { name: description || "Gym Payment" },
+            unit_amount: Math.round(parseFloat(amount) * 100),
+          },
+          quantity: 1,
+        }],
+        mode: "payment",
+        success_url: `${req.headers.origin || "http://localhost:5000"}/payments?success=true`,
+        cancel_url: `${req.headers.origin || "http://localhost:5000"}/payments?cancelled=true`,
+        metadata: { tenantId: user.tenantId, memberId: memberId || "", invoiceId: invoiceId || "" },
+      });
+      return res.json({ url: session.url, sessionId: session.id });
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/webhooks/stripe", async (req: Request, res: Response) => {
+    try {
+      const stripeKey = process.env.STRIPE_SECRET_KEY;
+      const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+      if (!stripeKey || !webhookSecret) return res.status(400).json({ message: "Stripe not configured" });
+      const stripe = require("stripe")(stripeKey);
+      const sig = req.headers["stripe-signature"];
+      const rawBody = (req as any).rawBody;
+      if (!rawBody) return res.status(400).json({ message: "Missing raw body" });
+      const event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+      if (event.type === "checkout.session.completed") {
+        const session = event.data.object;
+        const { tenantId, memberId, invoiceId } = session.metadata;
+        if (tenantId) {
+          await storage.createPayment({
+            tenantId,
+            memberId: memberId || undefined,
+            invoiceId: invoiceId || undefined,
+            amount: (session.amount_total / 100).toString(),
+            currency: session.currency?.toUpperCase() || "INR",
+            method: "card",
+            status: "completed",
+            stripePaymentId: session.payment_intent,
+            description: "Stripe online payment",
+          });
+          if (invoiceId) {
+            await storage.updateInvoice(invoiceId, { status: "paid" });
+          }
+        }
+      }
+      return res.json({ received: true });
     } catch (error: any) {
       return res.status(400).json({ message: error.message });
     }

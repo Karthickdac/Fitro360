@@ -15,6 +15,12 @@ export const tenants = pgTable("tenants", {
   email: text("email"),
   phone: text("phone"),
   address: text("address"),
+  faviconUrl: text("favicon_url"),
+  emailTemplateBg: text("email_template_bg").default("#ffffff"),
+  emailTemplateAccent: text("email_template_accent"),
+  smsSenderId: text("sms_sender_id"),
+  invoiceHeader: text("invoice_header"),
+  invoiceFooter: text("invoice_footer"),
   isActive: boolean("is_active").default(true),
   trialEndsAt: timestamp("trial_ends_at"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -233,6 +239,31 @@ export const paymentRecords = pgTable("payment_records", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const trainerCommissions = pgTable("trainer_commissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  trainerId: varchar("trainer_id").references(() => users.id).notNull(),
+  sessionId: varchar("session_id").references(() => trainerSessions.id),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  type: text("type").notNull().default("session"),
+  status: text("status").notNull().default("pending"),
+  paidAt: timestamp("paid_at"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const trainerLeaves = pgTable("trainer_leaves", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  trainerId: varchar("trainer_id").references(() => users.id).notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  reason: text("reason"),
+  status: text("status").notNull().default("pending"),
+  approvedBy: varchar("approved_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const subscriptionPlans = pgTable("subscription_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
@@ -271,6 +302,8 @@ export const insertMemberMetricSchema = createInsertSchema(memberMetrics).omit({
 export const insertEquipmentMaintenanceSchema = createInsertSchema(equipmentMaintenance).omit({ id: true, createdAt: true });
 export const insertPaymentRecordSchema = createInsertSchema(paymentRecords).omit({ id: true, createdAt: true });
 export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({ id: true });
+export const insertTrainerCommissionSchema = createInsertSchema(trainerCommissions).omit({ id: true, createdAt: true });
+export const insertTrainerLeaveSchema = createInsertSchema(trainerLeaves).omit({ id: true, createdAt: true });
 export const insertActivitySchema = createInsertSchema(activities).omit({ id: true, createdAt: true });
 
 export const loginSchema = z.object({
@@ -312,5 +345,9 @@ export type InsertEquipmentMaintenance = z.infer<typeof insertEquipmentMaintenan
 export type EquipmentMaintenance = typeof equipmentMaintenance.$inferSelect;
 export type InsertPaymentRecord = z.infer<typeof insertPaymentRecordSchema>;
 export type PaymentRecord = typeof paymentRecords.$inferSelect;
+export type InsertTrainerCommission = z.infer<typeof insertTrainerCommissionSchema>;
+export type TrainerCommission = typeof trainerCommissions.$inferSelect;
+export type InsertTrainerLeave = z.infer<typeof insertTrainerLeaveSchema>;
+export type TrainerLeave = typeof trainerLeaves.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
 export type Activity = typeof activities.$inferSelect;

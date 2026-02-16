@@ -21,6 +21,7 @@ import {
   DollarSign,
   BarChart3,
   Home,
+  Award,
 } from "lucide-react";
 import {
   Sidebar,
@@ -81,6 +82,7 @@ const gymMainItems = [
   { title: "Members", url: "/members", icon: Users },
   { title: "Check-in", url: "/check-in", icon: UserCheck },
   { title: "Trainers", url: "/trainers", icon: Dumbbell },
+  { title: "Trainer Mgmt", url: "/trainer-management", icon: Award },
   { title: "Schedule", url: "/schedule", icon: CalendarDays },
 ];
 

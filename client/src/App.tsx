@@ -31,6 +31,7 @@ import MaintenancePage from "@/pages/maintenance";
 import PaymentsPage from "@/pages/payments";
 import MemberPortalPage from "@/pages/member-portal";
 import TrainerPortalPage from "@/pages/trainer-portal";
+import TrainerManagementPage from "@/pages/trainer-management";
 import AdminDashboardPage from "@/pages/admin/dashboard";
 import TenantsPage from "@/pages/admin/tenants";
 import PlansPage from "@/pages/admin/plans";
@@ -114,6 +115,7 @@ function GymOwnerRouter() {
       <Route path="/members" component={MembersPage} />
       <Route path="/members/:id" component={MemberDetailPage} />
       <Route path="/trainers" component={TrainersPage} />
+      <Route path="/trainer-management" component={TrainerManagementPage} />
       <Route path="/schedule" component={SchedulePage} />
       <Route path="/check-in" component={CheckInPage} />
       <Route path="/activity" component={ActivityPage} />

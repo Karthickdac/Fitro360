@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -17,7 +18,7 @@ import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
-import { Loader2, Palette, Building2 } from "lucide-react";
+import { Loader2, Palette, Building2, FileText, Globe, Image, Mail, MessageSquare } from "lucide-react";
 
 const settingsSchema = z.object({
   gymName: z.string().min(1, "Gym name is required"),
@@ -27,6 +28,14 @@ const settingsSchema = z.object({
   address: z.string().optional(),
   primaryColor: z.string().min(1),
   secondaryColor: z.string().min(1),
+  logoUrl: z.string().optional().or(z.literal("")),
+  faviconUrl: z.string().optional().or(z.literal("")),
+  domain: z.string().optional().or(z.literal("")),
+  smsSenderId: z.string().max(6).optional().or(z.literal("")),
+  invoiceHeader: z.string().optional().or(z.literal("")),
+  invoiceFooter: z.string().optional().or(z.literal("")),
+  emailTemplateBg: z.string().optional(),
+  emailTemplateAccent: z.string().optional(),
 });
 
 export default function SettingsPage() {
@@ -43,6 +52,14 @@ export default function SettingsPage() {
       address: tenant?.address || "",
       primaryColor: tenant?.primaryColor || "#1e40af",
       secondaryColor: tenant?.secondaryColor || "#3b82f6",
+      logoUrl: (tenant as any)?.logoUrl || "",
+      faviconUrl: (tenant as any)?.faviconUrl || "",
+      domain: (tenant as any)?.domain || "",
+      smsSenderId: (tenant as any)?.smsSenderId || "",
+      invoiceHeader: (tenant as any)?.invoiceHeader || "",
+      invoiceFooter: (tenant as any)?.invoiceFooter || "",
+      emailTemplateBg: (tenant as any)?.emailTemplateBg || "#ffffff",
+      emailTemplateAccent: (tenant as any)?.emailTemplateAccent || "#1e40af",
     },
   });
 
@@ -222,6 +239,204 @@ export default function SettingsPage() {
                     className="h-10 w-10 rounded-md"
                     style={{ backgroundColor: form.watch("secondaryColor") }}
                   />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10">
+                  <Image className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Advanced Branding</CardTitle>
+                  <CardDescription>Logo, favicon, domain, and invoice customization</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="logoUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Logo URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://example.com/logo.png" {...field} data-testid="input-logo-url" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="faviconUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Favicon URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://example.com/favicon.ico" {...field} data-testid="input-favicon-url" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="domain"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1">
+                        <Globe className="h-3.5 w-3.5" />
+                        Custom Domain
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="yourgym.example.com" {...field} data-testid="input-domain" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="smsSenderId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1">
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        SMS Sender ID
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="GYMFIT" maxLength={6} {...field} data-testid="input-sms-sender-id" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="invoiceHeader"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-1">
+                      <FileText className="h-3.5 w-3.5" />
+                      Invoice Header
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Custom text for invoice headers..." {...field} data-testid="input-invoice-header" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="invoiceFooter"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-1">
+                      <FileText className="h-3.5 w-3.5" />
+                      Invoice Footer
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Custom text for invoice footers..." {...field} data-testid="input-invoice-footer" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10">
+                  <Mail className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Email Template</CardTitle>
+                  <CardDescription>Customize email appearance</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="emailTemplateBg"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Background Color</FormLabel>
+                      <FormControl>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={field.value || "#ffffff"}
+                            onChange={field.onChange}
+                            className="h-9 w-12 rounded-md border cursor-pointer"
+                            data-testid="input-email-bg-color"
+                          />
+                          <Input {...field} className="flex-1" data-testid="input-email-bg-text" />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="emailTemplateAccent"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Accent Color</FormLabel>
+                      <FormControl>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={field.value || "#1e40af"}
+                            onChange={field.onChange}
+                            className="h-9 w-12 rounded-md border cursor-pointer"
+                            data-testid="input-email-accent-color"
+                          />
+                          <Input {...field} className="flex-1" data-testid="input-email-accent-text" />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="mt-4 p-4 rounded-md border" data-testid="email-template-preview">
+                <p className="text-sm text-muted-foreground mb-3">Preview</p>
+                <div
+                  className="rounded-md p-6 border"
+                  style={{ backgroundColor: form.watch("emailTemplateBg") || "#ffffff" }}
+                >
+                  <div
+                    className="rounded-md p-4 mb-3"
+                    style={{ backgroundColor: form.watch("emailTemplateAccent") || "#1e40af" }}
+                  >
+                    <p className="text-sm font-semibold text-white">{tenant?.gymName || "Your Gym"}</p>
+                  </div>
+                  <div className="space-y-2 px-1">
+                    <p className="text-sm font-medium" style={{ color: "#333333" }}>Welcome to your gym!</p>
+                    <p className="text-xs" style={{ color: "#666666" }}>
+                      This is a preview of how your emails will look with the selected colors.
+                    </p>
+                    <div
+                      className="inline-block rounded-md px-4 py-2 mt-2"
+                      style={{ backgroundColor: form.watch("emailTemplateAccent") || "#1e40af" }}
+                    >
+                      <span className="text-xs font-medium text-white">Action Button</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>

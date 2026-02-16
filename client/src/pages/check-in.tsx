@@ -20,6 +20,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Search,
   UserCheck,
   Users,
@@ -27,6 +33,7 @@ import {
   Timer,
   CalendarDays,
   LogOut,
+  QrCode,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -38,6 +45,12 @@ export default function CheckInPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [memberSearch, setMemberSearch] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [checkinMode, setCheckinMode] = useState<"search" | "qr">("search");
+  const [qrInput, setQrInput] = useState("");
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [qrDialogMemberId, setQrDialogMemberId] = useState<string | null>(null);
+  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
+  const [qrLoading, setQrLoading] = useState(false);
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
@@ -107,6 +120,54 @@ export default function CheckInPage() {
     },
   });
 
+  const qrCheckInMutation = useMutation({
+    mutationFn: async (memberId: string) => {
+      const res = await apiRequest("POST", "/api/attendance/qr-checkin", { memberId });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
+      toast({ title: "QR check-in successful" });
+      setQrInput("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "QR check-in failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleQrCheckIn = () => {
+    try {
+      const parsed = JSON.parse(qrInput);
+      if (!parsed.memberId) {
+        toast({ title: "Invalid QR data", description: "Missing memberId", variant: "destructive" });
+        return;
+      }
+      qrCheckInMutation.mutate(parsed.memberId);
+    } catch {
+      toast({ title: "Invalid QR data", description: "Could not parse QR code JSON", variant: "destructive" });
+    }
+  };
+
+  const handleGenerateQr = async (memberId: string) => {
+    setQrDialogMemberId(memberId);
+    setQrDialogOpen(true);
+    setQrLoading(true);
+    setQrImageUrl(null);
+    try {
+      const res = await apiRequest("GET", `/api/members/${memberId}/qrcode`);
+      const data = await res.json();
+      setQrImageUrl(data.qrCode);
+    } catch {
+      toast({ title: "Failed to generate QR code", variant: "destructive" });
+    } finally {
+      setQrLoading(false);
+    }
+  };
+
   const totalCheckIns = attendanceList?.length || 0;
   const currentlyIn = attendanceList?.filter((a) => !a.checkOutTime).length || 0;
   const avgDuration = useMemo(() => {
@@ -133,6 +194,8 @@ export default function CheckInPage() {
     if (mins < 60) return `${mins}m`;
     return `${Math.floor(mins / 60)}h ${mins % 60}m`;
   }
+
+  const qrDialogMember = qrDialogMemberId ? membersMap.get(qrDialogMemberId) : null;
 
   return (
     <div className="p-6 space-y-6" data-testid="page-check-in">
@@ -213,49 +276,108 @@ export default function CheckInPage() {
           <CardTitle className="text-base">Quick Check-in</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search member by name..."
-              value={memberSearch}
-              onChange={(e) => setMemberSearch(e.target.value)}
-              className="pl-9"
-              data-testid="input-search-member-checkin"
-            />
+          <div className="flex gap-2">
+            <Button
+              variant={checkinMode === "search" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setCheckinMode("search")}
+              data-testid="button-mode-search"
+            >
+              <Search className="h-4 w-4 mr-1" />
+              Search
+            </Button>
+            <Button
+              variant={checkinMode === "qr" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setCheckinMode("qr")}
+              data-testid="button-mode-qr"
+            >
+              <QrCode className="h-4 w-4 mr-1" />
+              QR Code
+            </Button>
           </div>
-          {filteredMembers.length > 0 && (
-            <div className="border rounded-md divide-y">
-              {filteredMembers.map((member) => (
-                <div
-                  key={member.id}
-                  className="flex items-center justify-between gap-3 p-3"
-                  data-testid={`row-search-member-${member.id}`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-medium">
-                      {member.firstName[0]}
-                      {member.lastName[0]}
+
+          {checkinMode === "search" && (
+            <>
+              <div className="relative max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search member by name..."
+                  value={memberSearch}
+                  onChange={(e) => setMemberSearch(e.target.value)}
+                  className="pl-9"
+                  data-testid="input-search-member-checkin"
+                />
+              </div>
+              {filteredMembers.length > 0 && (
+                <div className="border rounded-md divide-y">
+                  {filteredMembers.map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between gap-3 p-3"
+                      data-testid={`row-search-member-${member.id}`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-medium">
+                          {member.firstName[0]}
+                          {member.lastName[0]}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {member.firstName} {member.lastName}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {member.email}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleGenerateQr(member.id)}
+                          data-testid={`button-generate-qr-${member.id}`}
+                        >
+                          <QrCode className="h-4 w-4 mr-1" />
+                          QR
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => checkInMutation.mutate(member.id)}
+                          disabled={checkInMutation.isPending}
+                          data-testid={`button-checkin-member-${member.id}`}
+                        >
+                          <UserCheck className="h-4 w-4 mr-1" />
+                          Check In
+                        </Button>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {member.firstName} {member.lastName}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {member.email}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => checkInMutation.mutate(member.id)}
-                    disabled={checkInMutation.isPending}
-                    data-testid={`button-checkin-member-${member.id}`}
-                  >
-                    <UserCheck className="h-4 w-4 mr-1" />
-                    Check In
-                  </Button>
+                  ))}
                 </div>
-              ))}
+              )}
+            </>
+          )}
+
+          {checkinMode === "qr" && (
+            <div className="space-y-3 max-w-sm">
+              <label className="text-sm font-medium" htmlFor="qr-scan-input">
+                Scan QR Code
+              </label>
+              <Input
+                id="qr-scan-input"
+                placeholder='Paste QR code data here...'
+                value={qrInput}
+                onChange={(e) => setQrInput(e.target.value)}
+                data-testid="input-qr-scan"
+              />
+              <Button
+                onClick={handleQrCheckIn}
+                disabled={!qrInput.trim() || qrCheckInMutation.isPending}
+                data-testid="button-qr-checkin"
+              >
+                <UserCheck className="h-4 w-4 mr-1" />
+                Check In
+              </Button>
             </div>
           )}
         </CardContent>
@@ -362,6 +484,32 @@ export default function CheckInPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
+        <DialogContent data-testid="dialog-qr-code">
+          <DialogHeader>
+            <DialogTitle data-testid="text-qr-dialog-title">
+              {qrDialogMember
+                ? `QR Code — ${qrDialogMember.firstName} ${qrDialogMember.lastName}`
+                : "QR Code"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            {qrLoading ? (
+              <Skeleton className="h-[300px] w-[300px]" />
+            ) : qrImageUrl ? (
+              <img
+                src={qrImageUrl}
+                alt="Member QR Code"
+                className="w-[300px] h-[300px]"
+                data-testid="img-qr-code"
+              />
+            ) : (
+              <p className="text-muted-foreground text-sm">Failed to load QR code</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

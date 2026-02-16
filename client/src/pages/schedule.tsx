@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,7 @@ import {
   Clock,
   Users,
   X,
+  GripVertical,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -81,6 +82,11 @@ export default function SchedulePage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [trainerFilter, setTrainerFilter] = useState("all");
   const [selectedSession, setSelectedSession] = useState<TrainerSession | null>(null);
+  const [showRescheduleForm, setShowRescheduleForm] = useState(false);
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleStart, setRescheduleStart] = useState("");
+  const [rescheduleEnd, setRescheduleEnd] = useState("");
+  const [dragOverCell, setDragOverCell] = useState<string | null>(null);
 
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 1 });
@@ -161,6 +167,85 @@ export default function SchedulePage() {
       toast({ title: "Failed to delete session", description: error.message, variant: "destructive" });
     },
   });
+
+  const rescheduleMutation = useMutation({
+    mutationFn: async ({ id, startTime, endTime }: { id: string; startTime: string; endTime: string }) => {
+      const res = await apiRequest("PATCH", `/api/sessions/${id}`, { startTime, endTime });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
+      toast({ title: "Session rescheduled successfully" });
+      setSelectedSession(null);
+      setShowRescheduleForm(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to reschedule", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleDragStart = useCallback((e: React.DragEvent, session: TrainerSession) => {
+    e.dataTransfer.setData("sessionId", session.id);
+    e.dataTransfer.setData("startTime", typeof session.startTime === "string" ? session.startTime : new Date(session.startTime).toISOString());
+    e.dataTransfer.setData("endTime", typeof session.endTime === "string" ? session.endTime : new Date(session.endTime).toISOString());
+    e.dataTransfer.effectAllowed = "move";
+    (e.currentTarget as HTMLElement).style.opacity = "0.5";
+  }, []);
+
+  const handleDragEnd = useCallback((e: React.DragEvent) => {
+    (e.currentTarget as HTMLElement).style.opacity = "1";
+    setDragOverCell(null);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, cellKey: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverCell(cellKey);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverCell(null);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent, day: Date, hour: number) => {
+    e.preventDefault();
+    setDragOverCell(null);
+    const sessionId = e.dataTransfer.getData("sessionId");
+    const oldStart = e.dataTransfer.getData("startTime");
+    const oldEnd = e.dataTransfer.getData("endTime");
+    if (!sessionId || !oldStart || !oldEnd) return;
+
+    const duration = new Date(oldEnd).getTime() - new Date(oldStart).getTime();
+    const newStart = new Date(day);
+    newStart.setHours(hour, 0, 0, 0);
+    const newEnd = new Date(newStart.getTime() + duration);
+
+    rescheduleMutation.mutate({
+      id: sessionId,
+      startTime: newStart.toISOString(),
+      endTime: newEnd.toISOString(),
+    });
+  }, [rescheduleMutation]);
+
+  const openRescheduleForm = useCallback((session: TrainerSession) => {
+    const start = new Date(session.startTime);
+    const end = new Date(session.endTime);
+    setRescheduleDate(format(start, "yyyy-MM-dd"));
+    setRescheduleStart(format(start, "HH:mm"));
+    setRescheduleEnd(format(end, "HH:mm"));
+    setShowRescheduleForm(true);
+  }, []);
+
+  const handleRescheduleSubmit = useCallback(() => {
+    if (!selectedSession || !rescheduleDate || !rescheduleStart || !rescheduleEnd) return;
+    const newStart = new Date(`${rescheduleDate}T${rescheduleStart}:00`);
+    const newEnd = new Date(`${rescheduleDate}T${rescheduleEnd}:00`);
+    rescheduleMutation.mutate({
+      id: selectedSession.id,
+      startTime: newStart.toISOString(),
+      endTime: newEnd.toISOString(),
+    });
+  }, [selectedSession, rescheduleDate, rescheduleStart, rescheduleEnd, rescheduleMutation]);
 
   const trainerMap = useMemo(() => {
     const map: Record<string, User> = {};
@@ -469,41 +554,54 @@ export default function SchedulePage() {
                       {weekDays.map((day, dayIdx) => {
                         const slotSessions = getSessionsForSlot(day, hour);
                         const isToday = isSameDay(day, new Date());
+                        const cellKey = `${format(day, "yyyy-MM-dd")}-${hour}`;
+                        const isDragOver = dragOverCell === cellKey;
                         return (
                           <td
                             key={dayIdx}
-                            className={`border-b border-r p-1 align-top h-14 ${isToday ? "bg-primary/5" : ""}`}
-                            data-testid={`cell-${format(day, "yyyy-MM-dd")}-${hour}`}
+                            className={`border-b border-r p-1 align-top h-14 transition-colors ${isToday ? "bg-primary/5" : ""} ${isDragOver ? "border-2 border-blue-500 bg-blue-500/10" : ""}`}
+                            data-testid={`cell-${cellKey}`}
+                            onDragOver={(e) => handleDragOver(e, cellKey)}
+                            onDragLeave={handleDragLeave}
+                            onDrop={(e) => handleDrop(e, day, hour)}
                           >
                             {slotSessions.map((session) => {
                               const trainer = trainerMap[session.trainerId];
                               const isPersonal = session.type === "personal";
                               return (
-                                <button
+                                <div
                                   key={session.id}
-                                  className={`w-full text-left rounded-md p-1.5 mb-1 text-xs cursor-pointer border-0 ${
+                                  draggable
+                                  onDragStart={(e) => handleDragStart(e, session)}
+                                  onDragEnd={handleDragEnd}
+                                  className={`w-full text-left rounded-md p-1.5 mb-1 text-xs cursor-grab active:cursor-grabbing ${
                                     isPersonal
                                       ? "bg-blue-500/15 text-blue-700 dark:text-blue-300"
                                       : "bg-green-500/15 text-green-700 dark:text-green-300"
                                   }`}
-                                  onClick={() => setSelectedSession(session)}
                                   data-testid={`session-block-${session.id}`}
                                 >
-                                  <div className="font-medium truncate">{session.title}</div>
-                                  {trainer && (
-                                    <div className="truncate opacity-80">
-                                      {trainer.firstName} {trainer.lastName}
+                                  <button
+                                    className="w-full text-left border-0 bg-transparent p-0 text-inherit cursor-pointer"
+                                    onClick={() => setSelectedSession(session)}
+                                    data-testid={`session-click-${session.id}`}
+                                  >
+                                    <div className="font-medium truncate">{session.title}</div>
+                                    {trainer && (
+                                      <div className="truncate opacity-80">
+                                        {trainer.firstName} {trainer.lastName}
+                                      </div>
+                                    )}
+                                    <div className="flex items-center justify-between gap-1 mt-0.5 opacity-70">
+                                      <span>
+                                        {format(new Date(session.startTime), "h:mm a")}
+                                      </span>
+                                      <span>
+                                        {session.enrolled || 0}/{session.capacity || 1}
+                                      </span>
                                     </div>
-                                  )}
-                                  <div className="flex items-center justify-between gap-1 mt-0.5 opacity-70">
-                                    <span>
-                                      {format(new Date(session.startTime), "h:mm a")}
-                                    </span>
-                                    <span>
-                                      {session.enrolled || 0}/{session.capacity || 1}
-                                    </span>
-                                  </div>
-                                </button>
+                                  </button>
+                                </div>
                               );
                             })}
                           </td>
@@ -518,7 +616,7 @@ export default function SchedulePage() {
         </Card>
       )}
 
-      <Dialog open={!!selectedSession} onOpenChange={(open) => !open && setSelectedSession(null)}>
+      <Dialog open={!!selectedSession} onOpenChange={(open) => { if (!open) { setSelectedSession(null); setShowRescheduleForm(false); } }}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Session Details</DialogTitle>
@@ -574,16 +672,78 @@ export default function SchedulePage() {
                   )}
                 </div>
               </div>
-              <Button
-                variant="destructive"
-                className="w-full"
-                onClick={() => deleteSessionMutation.mutate(selectedSession.id)}
-                disabled={deleteSessionMutation.isPending}
-                data-testid="button-delete-session"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                {deleteSessionMutation.isPending ? "Deleting..." : "Delete Session"}
-              </Button>
+              {showRescheduleForm ? (
+                <div className="space-y-3" data-testid="reschedule-form">
+                  <div>
+                    <label className="text-sm font-medium">Date</label>
+                    <Input
+                      type="date"
+                      value={rescheduleDate}
+                      onChange={(e) => setRescheduleDate(e.target.value)}
+                      data-testid="input-reschedule-date"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm font-medium">Start Time</label>
+                      <Input
+                        type="time"
+                        value={rescheduleStart}
+                        onChange={(e) => setRescheduleStart(e.target.value)}
+                        data-testid="input-reschedule-start"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">End Time</label>
+                      <Input
+                        type="time"
+                        value={rescheduleEnd}
+                        onChange={(e) => setRescheduleEnd(e.target.value)}
+                        data-testid="input-reschedule-end"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      className="flex-1"
+                      onClick={handleRescheduleSubmit}
+                      disabled={rescheduleMutation.isPending}
+                      data-testid="button-confirm-reschedule"
+                    >
+                      {rescheduleMutation.isPending ? "Saving..." : "Confirm Reschedule"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowRescheduleForm(false)}
+                      data-testid="button-cancel-reschedule"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => openRescheduleForm(selectedSession)}
+                    data-testid="button-reschedule"
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    Reschedule
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={() => deleteSessionMutation.mutate(selectedSession.id)}
+                    disabled={deleteSessionMutation.isPending}
+                    data-testid="button-delete-session"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {deleteSessionMutation.isPending ? "Deleting..." : "Delete"}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

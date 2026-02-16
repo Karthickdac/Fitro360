@@ -30,6 +30,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUser = async () => {
     try {
+      const brandingRes = await fetch("/api/branding");
+      if (brandingRes.ok) {
+        const branding = await brandingRes.json();
+        if (branding.primaryColor) {
+          applyTenantBranding(branding.primaryColor, branding.secondaryColor);
+        }
+        if (branding.faviconUrl) {
+          const link = document.querySelector("link[rel='icon']") as HTMLLinkElement;
+          if (link) link.href = branding.faviconUrl;
+        }
+      }
+    } catch {}
+    try {
       const res = await fetch("/api/auth/me", { credentials: "include" });
       if (res.ok) {
         const data = await res.json();

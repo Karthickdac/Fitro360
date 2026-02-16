@@ -5,6 +5,7 @@ import {
   branches, attendance, trainerSessions, sessionBookings,
   equipment, suppliers, invoices, notifications, coupons, referrals,
   memberMetrics, equipmentMaintenance, paymentRecords,
+  trainerCommissions, trainerLeaves,
   type Tenant, type InsertTenant,
   type User, type InsertUser,
   type Branch, type InsertBranch,
@@ -23,6 +24,8 @@ import {
   type PaymentRecord, type InsertPaymentRecord,
   type SubscriptionPlan, type InsertSubscriptionPlan,
   type Activity, type InsertActivity,
+  type TrainerCommission, type InsertTrainerCommission,
+  type TrainerLeave, type InsertTrainerLeave,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -108,6 +111,16 @@ export interface IStorage {
   getPaymentsByMember(memberId: string): Promise<PaymentRecord[]>;
   createPayment(payment: InsertPaymentRecord): Promise<PaymentRecord>;
   updatePayment(id: string, data: Partial<InsertPaymentRecord>): Promise<PaymentRecord | undefined>;
+
+  getCommissionsByTenant(tenantId: string): Promise<TrainerCommission[]>;
+  getCommissionsByTrainer(trainerId: string): Promise<TrainerCommission[]>;
+  createCommission(commission: InsertTrainerCommission): Promise<TrainerCommission>;
+  updateCommission(id: string, data: Partial<InsertTrainerCommission>): Promise<TrainerCommission | undefined>;
+
+  getLeavesByTenant(tenantId: string): Promise<TrainerLeave[]>;
+  getLeavesByTrainer(trainerId: string): Promise<TrainerLeave[]>;
+  createLeave(leave: InsertTrainerLeave): Promise<TrainerLeave>;
+  updateLeave(id: string, data: Partial<InsertTrainerLeave>): Promise<TrainerLeave | undefined>;
 
   getActivities(tenantId: string): Promise<Activity[]>;
   createActivity(activity: InsertActivity): Promise<Activity>;
@@ -495,6 +508,42 @@ export class DatabaseStorage implements IStorage {
 
   async updatePayment(id: string, data: Partial<InsertPaymentRecord>): Promise<PaymentRecord | undefined> {
     const [updated] = await db.update(paymentRecords).set(data).where(eq(paymentRecords.id, id)).returning();
+    return updated;
+  }
+
+  async getCommissionsByTenant(tenantId: string): Promise<TrainerCommission[]> {
+    return db.select().from(trainerCommissions).where(eq(trainerCommissions.tenantId, tenantId)).orderBy(desc(trainerCommissions.createdAt));
+  }
+
+  async getCommissionsByTrainer(trainerId: string): Promise<TrainerCommission[]> {
+    return db.select().from(trainerCommissions).where(eq(trainerCommissions.trainerId, trainerId)).orderBy(desc(trainerCommissions.createdAt));
+  }
+
+  async createCommission(commission: InsertTrainerCommission): Promise<TrainerCommission> {
+    const [created] = await db.insert(trainerCommissions).values(commission).returning();
+    return created;
+  }
+
+  async updateCommission(id: string, data: Partial<InsertTrainerCommission>): Promise<TrainerCommission | undefined> {
+    const [updated] = await db.update(trainerCommissions).set(data).where(eq(trainerCommissions.id, id)).returning();
+    return updated;
+  }
+
+  async getLeavesByTenant(tenantId: string): Promise<TrainerLeave[]> {
+    return db.select().from(trainerLeaves).where(eq(trainerLeaves.tenantId, tenantId)).orderBy(desc(trainerLeaves.createdAt));
+  }
+
+  async getLeavesByTrainer(trainerId: string): Promise<TrainerLeave[]> {
+    return db.select().from(trainerLeaves).where(eq(trainerLeaves.trainerId, trainerId)).orderBy(desc(trainerLeaves.createdAt));
+  }
+
+  async createLeave(leave: InsertTrainerLeave): Promise<TrainerLeave> {
+    const [created] = await db.insert(trainerLeaves).values(leave).returning();
+    return created;
+  }
+
+  async updateLeave(id: string, data: Partial<InsertTrainerLeave>): Promise<TrainerLeave | undefined> {
+    const [updated] = await db.update(trainerLeaves).set(data).where(eq(trainerLeaves.id, id)).returning();
     return updated;
   }
 
