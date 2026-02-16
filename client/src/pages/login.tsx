@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -14,7 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useAuth } from "@/lib/auth";
-import { Dumbbell, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Dumbbell, Eye, EyeOff, Loader2, Zap, Users, Shield, BarChart3, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const loginFormSchema = z.object({
@@ -28,6 +27,13 @@ type BrandingInfo = {
   primaryColor?: string;
   secondaryColor?: string;
 };
+
+const features = [
+  { icon: Users, label: "Member Management", desc: "Track members, progress & attendance" },
+  { icon: BarChart3, label: "Analytics & Reports", desc: "Real-time insights for your gym" },
+  { icon: Shield, label: "Multi-Tenant Security", desc: "Isolated data per gym tenant" },
+  { icon: Zap, label: "Instant Scheduling", desc: "Drag & drop trainer sessions" },
+];
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -66,65 +72,92 @@ export default function LoginPage() {
 
   const displayName = branding?.gymName || "Fitro360";
   const isSubdomain = !!branding;
+  const brandColor = branding?.primaryColor || "hsl(217, 91%, 35%)";
 
   return (
-    <div className="min-h-screen flex" data-testid="page-login">
-      <div className="hidden lg:flex lg:flex-1 relative">
-        <img
-          src="/images/gym-hero.png"
-          alt="Gym"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/50 to-black/70" />
-        <div className="relative z-10 flex flex-col justify-end p-12">
-          <div className="flex items-center gap-3 mb-6">
+    <div className="min-h-screen flex flex-col lg:flex-row" data-testid="page-login">
+      <div className="hidden lg:flex lg:flex-1 relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+          <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }} />
+          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "40px 40px" }} />
+        </div>
+
+        <div className="relative z-10 flex flex-col justify-between p-12 w-full">
+          <div className="flex items-center gap-3">
             {branding?.logoUrl ? (
-              <img src={branding.logoUrl} alt={displayName} className="h-12 w-12 rounded-lg object-cover" />
+              <img src={branding.logoUrl} alt={displayName} className="h-10 w-10 rounded-xl object-cover" />
             ) : (
-              <div
-                className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm border border-white/20"
-                style={branding?.primaryColor ? { backgroundColor: branding.primaryColor + "33" } : undefined}
-              >
-                <Dumbbell className="h-7 w-7 text-white" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                <Dumbbell className="h-6 w-6 text-white" />
               </div>
             )}
-            <h1 className="text-3xl font-bold text-white tracking-tight">{displayName}</h1>
+            <span className="text-xl font-bold text-white tracking-tight">{displayName}</span>
           </div>
-          <p className="text-lg text-white/80 max-w-md leading-relaxed">
-            {isSubdomain
-              ? `Welcome to ${displayName}. Sign in to access your gym management portal.`
-              : "The complete white-label gym management platform. Power your fitness business with enterprise-grade tools."
-            }
-          </p>
+
+          <div className="flex-1 flex flex-col justify-center max-w-lg">
+            <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight tracking-tight mb-4">
+              {isSubdomain
+                ? `Welcome to ${displayName}`
+                : "Power Your Fitness Business"
+              }
+            </h1>
+            <p className="text-lg text-blue-100/70 leading-relaxed mb-10">
+              {isSubdomain
+                ? "Sign in to access your gym management portal."
+                : "Enterprise-grade gym management platform with white-label branding, multi-tenant support, and real-time analytics."
+              }
+            </p>
+
+            {!isSubdomain && (
+              <div className="grid grid-cols-2 gap-4">
+                {features.map((f, i) => (
+                  <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
+                    <div className="flex-shrink-0 mt-0.5 h-9 w-9 rounded-lg bg-blue-500/15 flex items-center justify-center">
+                      <f.icon className="h-4.5 w-4.5 text-blue-300" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-white">{f.label}</div>
+                      <div className="text-xs text-blue-200/50 mt-0.5">{f.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {!isSubdomain && (
-            <div className="flex gap-6 mt-8">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-white">1000+</div>
-                <div className="text-sm text-white/60">Gyms Powered</div>
+            <div className="flex items-center gap-8">
+              <div>
+                <div className="text-3xl font-bold text-white">1000+</div>
+                <div className="text-xs text-blue-200/50 font-medium uppercase tracking-wider mt-1">Gyms Powered</div>
               </div>
-              <div className="w-px bg-white/20" />
-              <div className="text-center">
-                <div className="text-2xl font-bold text-white">50K+</div>
-                <div className="text-sm text-white/60">Active Members</div>
+              <div className="h-10 w-px bg-white/10" />
+              <div>
+                <div className="text-3xl font-bold text-white">50K+</div>
+                <div className="text-xs text-blue-200/50 font-medium uppercase tracking-wider mt-1">Active Members</div>
               </div>
-              <div className="w-px bg-white/20" />
-              <div className="text-center">
-                <div className="text-2xl font-bold text-white">99.9%</div>
-                <div className="text-sm text-white/60">Uptime</div>
+              <div className="h-10 w-px bg-white/10" />
+              <div>
+                <div className="text-3xl font-bold text-white">99.9%</div>
+                <div className="text-xs text-blue-200/50 font-medium uppercase tracking-wider mt-1">Uptime</div>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-6 bg-background">
-        <div className="w-full max-w-sm">
-          <div className="flex items-center gap-3 mb-8 lg:hidden">
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-8 bg-background relative">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+
+        <div className="w-full max-w-[380px] relative z-10">
+          <div className="flex items-center gap-3 mb-10 lg:hidden">
             {branding?.logoUrl ? (
-              <img src={branding.logoUrl} alt={displayName} className="h-10 w-10 rounded-lg object-cover" />
+              <img src={branding.logoUrl} alt={displayName} className="h-10 w-10 rounded-xl object-cover" />
             ) : (
               <div
-                className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary"
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary"
                 style={branding?.primaryColor ? { backgroundColor: branding.primaryColor } : undefined}
               >
                 <Dumbbell className="h-5 w-5 text-primary-foreground" />
@@ -134,21 +167,22 @@ export default function LoginPage() {
           </div>
 
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold tracking-tight">Welcome back</h2>
-            <p className="text-muted-foreground mt-1">Sign in to your account to continue</p>
+            <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
+            <p className="text-muted-foreground mt-2 text-sm">Sign in to your account to continue</p>
           </div>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
               <FormField
                 control={form.control}
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Username</FormLabel>
+                    <FormLabel className="text-sm font-medium">Username</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Enter your username"
+                        className="h-11"
                         {...field}
                         data-testid="input-username"
                       />
@@ -162,19 +196,20 @@ export default function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel className="text-sm font-medium">Password</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
                           type={showPassword ? "text" : "password"}
                           placeholder="Enter your password"
+                          className="h-11 pr-10"
                           {...field}
                           data-testid="input-password"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                           data-testid="button-toggle-password"
                         >
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -187,7 +222,7 @@ export default function LoginPage() {
               />
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full h-11 text-sm font-semibold"
                 disabled={isLoading}
                 data-testid="button-login"
                 style={branding?.primaryColor ? { backgroundColor: branding.primaryColor } : undefined}
@@ -198,26 +233,30 @@ export default function LoginPage() {
                     Signing in...
                   </>
                 ) : (
-                  "Sign in"
+                  <>
+                    Sign in
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
                 )}
               </Button>
             </form>
           </Form>
 
           {!isSubdomain && (
-            <div className="mt-8 p-4 rounded-md bg-muted/50">
-              <p className="text-xs text-muted-foreground font-medium mb-2">Demo Accounts:</p>
-              <div className="space-y-1 text-xs text-muted-foreground">
-                <p><span className="font-medium">Platform Admin:</span> admin / admin123</p>
-                <p><span className="font-medium">Gym Owner:</span> gymowner / gym123</p>
-                <p><span className="font-medium">Trainer:</span> trainer1 / trainer123</p>
+            <div className="mt-8 p-4 rounded-xl bg-muted/40 border border-border/50">
+              <p className="text-xs text-muted-foreground font-semibold mb-2.5 uppercase tracking-wider">Demo Accounts</p>
+              <div className="space-y-1.5 text-xs text-muted-foreground">
+                <p><span className="font-medium text-foreground/70">Platform Admin:</span> admin / admin123</p>
+                <p><span className="font-medium text-foreground/70">Gym Owner:</span> gymowner / gym123</p>
+                <p><span className="font-medium text-foreground/70">Trainer:</span> trainer1 / trainer123</p>
+                <p><span className="font-medium text-foreground/70">Member:</span> member1 / member123</p>
               </div>
             </div>
           )}
 
           {isSubdomain && (
-            <p className="mt-6 text-center text-xs text-muted-foreground">
-              Powered by Fitro360
+            <p className="mt-8 text-center text-xs text-muted-foreground">
+              Powered by <span className="font-semibold">Fitro360</span>
             </p>
           )}
         </div>
