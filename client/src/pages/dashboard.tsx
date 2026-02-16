@@ -17,6 +17,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { useMarket } from "@/hooks/use-market";
 import type { Member, Activity as ActivityType } from "@shared/schema";
 
 const CHART_COLORS = [
@@ -28,6 +29,7 @@ const CHART_COLORS = [
 ];
 
 export default function DashboardPage() {
+  const { fmt, fmtShort } = useMarket();
   const { data: stats, isLoading: statsLoading } = useQuery<{
     totalMembers: number;
     activeMembers: number;
@@ -99,7 +101,7 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Monthly Revenue"
-          value={`AED ${(stats?.monthlyRevenue || 0).toLocaleString()}`}
+          value={fmt(stats?.monthlyRevenue || 0)}
           icon={DollarSign}
           trend={{ value: stats?.revenueGrowth || 8, label: "vs last month" }}
         />
@@ -122,7 +124,7 @@ export default function DashboardPage() {
                 <BarChart data={revenueData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="month" className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `AED ${(v / 1000).toFixed(0)}k`} />
+                  <YAxis className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v: number) => fmtShort(v)} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
@@ -130,7 +132,7 @@ export default function DashboardPage() {
                       borderRadius: "6px",
                       color: "hsl(var(--foreground))",
                     }}
-                    formatter={(value: number) => [`AED ${value.toLocaleString()}`, "Revenue"]}
+                    formatter={(value: number) => [fmt(value), "Revenue"]}
                   />
                   <Bar dataKey="revenue" fill="hsl(217, 91%, 35%)" radius={[4, 4, 0, 0]} />
                 </BarChart>

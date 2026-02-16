@@ -261,7 +261,7 @@ export async function seedDatabase() {
     email: "john@fitpro.com",
     phone: "+971 4 555 9001",
     address: "Al Quoz Industrial Area, Dubai, UAE",
-    trnNumber: "100234567890003",
+    taxNumber: "100234567890003",
     isActive: true,
   });
 
@@ -272,7 +272,7 @@ export async function seedDatabase() {
     email: "lisa@muscletech.com",
     phone: "+971 4 555 9002",
     address: "Dubai Investment Park, Dubai, UAE",
-    trnNumber: "100567890123004",
+    taxNumber: "100567890123004",
     isActive: true,
   });
 

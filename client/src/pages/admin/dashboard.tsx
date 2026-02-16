@@ -16,9 +16,11 @@ import {
   LineChart,
   Line,
 } from "recharts";
+import { useMarket } from "@/hooks/use-market";
 import type { Tenant } from "@shared/schema";
 
 export default function AdminDashboardPage() {
+  const { fmt, fmtShort } = useMarket();
   const { data: stats, isLoading } = useQuery<{
     totalTenants: number;
     activeTenants: number;
@@ -83,7 +85,7 @@ export default function AdminDashboardPage() {
         />
         <StatCard
           title="Monthly Revenue"
-          value={`AED ${(stats?.mrr || 0).toLocaleString()}`}
+          value={fmt(stats?.mrr || 0)}
           icon={DollarSign}
           trend={{ value: stats?.mrrGrowth || 12, label: "vs last month" }}
         />
@@ -112,7 +114,7 @@ export default function AdminDashboardPage() {
                 <LineChart data={mrrData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickFormatter={(v) => `AED ${(v / 1000).toFixed(0)}k`} />
+                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickFormatter={(v: number) => fmtShort(v)} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
@@ -120,7 +122,7 @@ export default function AdminDashboardPage() {
                       borderRadius: "6px",
                       color: "hsl(var(--foreground))",
                     }}
-                    formatter={(value: number) => [`AED ${value.toLocaleString()}`, "MRR"]}
+                    formatter={(value: number) => [fmt(value), "MRR"]}
                   />
                   <Line
                     type="monotone"

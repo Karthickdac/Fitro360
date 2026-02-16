@@ -42,6 +42,7 @@ import { Plus, Users, Gift, Clock, CheckCircle } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { useMarket } from "@/hooks/use-market";
 import type { Referral, Member } from "@shared/schema";
 
 function generateReferralCode(): string {
@@ -61,6 +62,7 @@ const createReferralSchema = z.object({
 });
 
 export default function ReferralsPage() {
+  const { fmt } = useMarket();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -120,7 +122,7 @@ export default function ReferralsPage() {
     { title: "Total Referrals", value: stats.total, icon: Users },
     { title: "Completed", value: stats.completed, icon: CheckCircle },
     { title: "Pending", value: stats.pending, icon: Clock },
-    { title: "Total Rewards", value: `AED ${stats.totalRewards.toFixed(2)}`, icon: Gift },
+    { title: "Total Rewards", value: fmt(stats.totalRewards), icon: Gift },
   ];
 
   return (
@@ -334,7 +336,7 @@ export default function ReferralsPage() {
                         {referral.rewardType?.replace("_", " ") || "-"}
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-sm text-muted-foreground" data-testid={`text-reward-value-${referral.id}`}>
-                        {referral.rewardValue ? `AED ${referral.rewardValue}` : "-"}
+                        {referral.rewardValue ? fmt(referral.rewardValue) : "-"}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                         {referral.createdAt ? format(new Date(referral.createdAt), "MMM d, yyyy") : "N/A"}

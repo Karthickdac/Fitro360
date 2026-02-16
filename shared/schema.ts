@@ -21,6 +21,7 @@ export const tenants = pgTable("tenants", {
   smsSenderId: text("sms_sender_id"),
   invoiceHeader: text("invoice_header"),
   invoiceFooter: text("invoice_footer"),
+  market: text("market").default("uae"),
   isActive: boolean("is_active").default(true),
   trialEndsAt: timestamp("trial_ends_at"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -138,7 +139,7 @@ export const suppliers = pgTable("suppliers", {
   email: text("email"),
   phone: text("phone"),
   address: text("address"),
-  trnNumber: text("gst_number"),
+  taxNumber: text("gst_number"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });

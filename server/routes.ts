@@ -512,7 +512,7 @@ export async function registerRoutes(
         email: z.string().optional(),
         phone: z.string().optional(),
         address: z.string().optional(),
-        trnNumber: z.string().optional(),
+        taxNumber: z.string().optional(),
       }).parse(req.body);
       const supplier = await storage.createSupplier({ ...input, tenantId: user.tenantId });
       return res.json(supplier);
@@ -551,7 +551,9 @@ export async function registerRoutes(
       }).parse(req.body);
 
       const subtotal = input.items.reduce((sum, i) => sum + i.total, 0);
-      const gstRate = parseFloat(input.gstRate || "5");
+      const tenantObj = (req as any).tenant;
+      const defaultTaxRate = tenantObj?.market === "india" ? "18" : "5";
+      const gstRate = parseFloat(input.gstRate || defaultTaxRate);
       const gstAmount = subtotal * (gstRate / 100);
       const total = subtotal + gstAmount;
 
@@ -940,11 +942,13 @@ export async function registerRoutes(
       if (input.invoiceId) {
         await storage.updateInvoice(input.invoiceId, { status: "paid" });
       }
+      const tenant = (req as any).tenant;
+      const defaultCurrency = tenant?.market === "india" ? "INR" : "AED";
       await storage.createActivity({
         tenantId: user.tenantId,
         userId: user.id,
         type: "payment",
-        description: `Payment of ${input.currency || "AED"} ${input.amount} received via ${input.method}`,
+        description: `Payment of ${input.currency || defaultCurrency} ${input.amount} received via ${input.method}`,
       });
       return res.json(payment);
     } catch (error: any) {
@@ -967,7 +971,7 @@ export async function registerRoutes(
         payment_method_types: ["card"],
         line_items: [{
           price_data: {
-            currency: currency || "aed",
+            currency: currency || (tenant?.market === "india" ? "inr" : "aed"),
             product_data: { name: description || "Gym Payment" },
             unit_amount: Math.round(parseFloat(amount) * 100),
           },
@@ -1004,6 +1008,7 @@ export async function registerRoutes(
             invoiceId: invoiceId || undefined,
             amount: (session.amount_total / 100).toString(),
             currency: session.currency?.toUpperCase() || "AED",
+
             method: "card",
             status: "completed",
             stripePaymentId: session.payment_intent,

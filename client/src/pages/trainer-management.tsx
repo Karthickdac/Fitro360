@@ -46,6 +46,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { StatCard } from "@/components/stat-card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useMarket } from "@/hooks/use-market";
 import type { User, TrainerSession, TrainerCommission, TrainerLeave } from "@shared/schema";
 
 const commissionSchema = z.object({
@@ -64,6 +65,7 @@ const leaveSchema = z.object({
 });
 
 function CommissionsTab() {
+  const { fmt } = useMarket();
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
@@ -139,10 +141,10 @@ function CommissionsTab() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Commissions" value={`AED ${totalAmount.toFixed(2)}`} icon={DollarSign} data-testid="stat-total-commissions" />
-        <StatCard title="Pending Amount" value={`AED ${pendingAmount.toFixed(2)}`} icon={DollarSign} data-testid="stat-pending-amount" />
-        <StatCard title="Paid Amount" value={`AED ${paidAmount.toFixed(2)}`} icon={Check} data-testid="stat-paid-amount" />
-        <StatCard title="This Month" value={`AED ${thisMonthAmount.toFixed(2)}`} icon={Calendar} data-testid="stat-this-month" />
+        <StatCard title="Total Commissions" value={fmt(totalAmount)} icon={DollarSign} data-testid="stat-total-commissions" />
+        <StatCard title="Pending Amount" value={fmt(pendingAmount)} icon={DollarSign} data-testid="stat-pending-amount" />
+        <StatCard title="Paid Amount" value={fmt(paidAmount)} icon={Check} data-testid="stat-paid-amount" />
+        <StatCard title="This Month" value={fmt(thisMonthAmount)} icon={Calendar} data-testid="stat-this-month" />
       </div>
 
       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -245,7 +247,7 @@ function CommissionsTab() {
                 <TableRow key={c.id} data-testid={`row-commission-${c.id}`}>
                   <TableCell className="font-medium">{trainerName(c.trainerId)}</TableCell>
                   <TableCell>{sessionTitle(c.sessionId)}</TableCell>
-                  <TableCell>AED {parseFloat(c.amount).toFixed(2)}</TableCell>
+                  <TableCell>{fmt(c.amount)}</TableCell>
                   <TableCell><Badge variant="secondary">{c.type}</Badge></TableCell>
                   <TableCell>
                     <Badge variant={c.status === "paid" ? "default" : "secondary"}>
@@ -455,6 +457,7 @@ function LeavesTab() {
 }
 
 function PerformanceTab() {
+  const { fmt } = useMarket();
   const { data: trainers, isLoading: loadingTrainers } = useQuery<User[]>({ queryKey: ["/api/trainers"] });
   const { data: sessions } = useQuery<TrainerSession[]>({ queryKey: ["/api/sessions"] });
   const { data: commissions } = useQuery<TrainerCommission[]>({ queryKey: ["/api/commissions"] });
@@ -498,7 +501,7 @@ function PerformanceTab() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard title="Total Sessions" value={totalSessions} icon={Users} data-testid="stat-total-sessions" />
-        <StatCard title="Total Commission" value={`AED ${totalCommission.toFixed(2)}`} icon={DollarSign} data-testid="stat-total-commission" />
+        <StatCard title="Total Commission" value={fmt(totalCommission)} icon={DollarSign} data-testid="stat-total-commission" />
         <StatCard title="Avg Rating" value="4.5" icon={Award} data-testid="stat-avg-rating" />
       </div>
 

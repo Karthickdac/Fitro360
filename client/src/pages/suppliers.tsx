@@ -26,6 +26,7 @@ import { z } from "zod";
 import { Plus, Truck, Mail, Phone, MapPin, FileText, Pencil } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useMarket } from "@/hooks/use-market";
 import type { Supplier } from "@shared/schema";
 
 const supplierSchema = z.object({
@@ -34,12 +35,13 @@ const supplierSchema = z.object({
   email: z.string().optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
-  trnNumber: z.string().optional(),
+  taxNumber: z.string().optional(),
 });
 
 type SupplierFormValues = z.infer<typeof supplierSchema>;
 
 export default function SuppliersPage() {
+  const { config } = useMarket();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
@@ -56,7 +58,7 @@ export default function SuppliersPage() {
       email: "",
       phone: "",
       address: "",
-      trnNumber: "",
+      taxNumber: "",
     },
   });
 
@@ -101,7 +103,7 @@ export default function SuppliersPage() {
       email: supplier.email || "",
       phone: supplier.phone || "",
       address: supplier.address || "",
-      trnNumber: supplier.trnNumber || "",
+      taxNumber: supplier.taxNumber || "",
     });
     setDialogOpen(true);
   }
@@ -114,7 +116,7 @@ export default function SuppliersPage() {
       email: "",
       phone: "",
       address: "",
-      trnNumber: "",
+      taxNumber: "",
     });
     setDialogOpen(true);
   }
@@ -199,7 +201,7 @@ export default function SuppliersPage() {
                       <FormItem>
                         <FormLabel>Phone</FormLabel>
                         <FormControl>
-                          <Input placeholder="+971 50 123 4567" {...field} data-testid="input-supplier-phone" />
+                          <Input placeholder={config.phonePlaceholder} {...field} data-testid="input-supplier-phone" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -221,12 +223,12 @@ export default function SuppliersPage() {
                 />
                 <FormField
                   control={form.control}
-                  name="trnNumber"
+                  name="taxNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>TRN (Tax Registration Number)</FormLabel>
+                      <FormLabel>{config.taxIdLabel}</FormLabel>
                       <FormControl>
-                        <Input placeholder="100234567890003" {...field} data-testid="input-supplier-trn" />
+                        <Input placeholder={config.taxIdPlaceholder} {...field} data-testid="input-supplier-trn" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -317,10 +319,10 @@ export default function SuppliersPage() {
                     <span className="truncate">{supplier.address}</span>
                   </div>
                 )}
-                {supplier.trnNumber && (
+                {supplier.taxNumber && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <FileText className="h-3.5 w-3.5 shrink-0" />
-                    <span>TRN: {supplier.trnNumber}</span>
+                    <span>{config.taxLabel === "GST" ? "GST" : "TRN"}: {supplier.taxNumber}</span>
                   </div>
                 )}
               </CardContent>

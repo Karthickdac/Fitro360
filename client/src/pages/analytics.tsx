@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { BarChart3, TrendingUp, Users, DollarSign, Download, Package } from "lucide-react";
+import { useMarket } from "@/hooks/use-market";
 import {
   LineChart,
   Line,
@@ -51,6 +52,7 @@ const tooltipStyle = {
 const axisTickStyle = { fill: "hsl(var(--muted-foreground))" };
 
 export default function AnalyticsPage() {
+  const { fmt, fmtShort } = useMarket();
   const { toast } = useToast();
 
   const { data, isLoading } = useQuery<DashboardData>({
@@ -132,12 +134,12 @@ export default function AnalyticsPage() {
         />
         <StatCard
           title="Total Revenue"
-          value={`AED ${(data?.totalRevenue || 0).toLocaleString()}`}
+          value={fmt(data?.totalRevenue || 0)}
           icon={DollarSign}
         />
         <StatCard
           title="Inventory Value"
-          value={`AED ${(data?.inventoryValue || 0).toLocaleString()}`}
+          value={fmt(data?.inventoryValue || 0)}
           icon={Package}
         />
       </div>
@@ -187,10 +189,10 @@ export default function AnalyticsPage() {
                 <BarChart data={monthlyData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="month" className="text-xs" tick={axisTickStyle} />
-                  <YAxis className="text-xs" tick={axisTickStyle} tickFormatter={(v) => `AED ${(v / 1000).toFixed(0)}k`} />
+                  <YAxis className="text-xs" tick={axisTickStyle} tickFormatter={(v: number) => fmtShort(v)} />
                   <Tooltip
                     contentStyle={tooltipStyle}
-                    formatter={(value: number) => [`AED ${value.toLocaleString()}`, "Revenue"]}
+                    formatter={(value: number) => [fmt(value), "Revenue"]}
                   />
                   <Legend />
                   <Bar dataKey="revenue" fill={CHART_COLORS[1]} radius={[4, 4, 0, 0]} name="Revenue" />

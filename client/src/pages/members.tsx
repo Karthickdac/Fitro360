@@ -50,6 +50,7 @@ import { Plus, Search, Users, MoreHorizontal, Snowflake, RefreshCw, Ruler, Downl
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { useMarket } from "@/hooks/use-market";
 import type { Member } from "@shared/schema";
 
 const addMemberSchema = z.object({
@@ -63,6 +64,7 @@ const addMemberSchema = z.object({
 });
 
 export default function MembersPage() {
+  const { config } = useMarket();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -224,7 +226,7 @@ export default function MembersPage() {
                   <FormField control={form.control} name="phone" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Phone</FormLabel>
-                      <FormControl><Input placeholder="+971 50 123 4567" {...field} data-testid="input-phone" /></FormControl>
+                      <FormControl><Input placeholder={config.phonePlaceholder} {...field} data-testid="input-phone" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />

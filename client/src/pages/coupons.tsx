@@ -42,6 +42,7 @@ import { Plus, Tag, ToggleLeft, ToggleRight } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { useMarket } from "@/hooks/use-market";
 import type { Coupon } from "@shared/schema";
 
 function generateCouponCode(): string {
@@ -71,6 +72,7 @@ function getCouponStatus(coupon: Coupon): "active" | "expired" | "used_up" {
 }
 
 export default function CouponsPage() {
+  const { fmt } = useMarket();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -324,7 +326,7 @@ export default function CouponsPage() {
                         <span className="text-sm" data-testid={`text-coupon-discount-${coupon.id}`}>
                           {coupon.discountType === "percentage"
                             ? `${coupon.discountValue}%`
-                            : `AED ${coupon.discountValue}`}
+                            : fmt(coupon.discountValue || 0)}
                         </span>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">

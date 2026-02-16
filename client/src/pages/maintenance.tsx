@@ -43,6 +43,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { StatCard } from "@/components/stat-card";
+import { useMarket } from "@/hooks/use-market";
 import type { EquipmentMaintenance, Equipment } from "@shared/schema";
 
 const maintenanceTypes = ["routine", "repair", "inspection", "replacement"] as const;
@@ -74,6 +75,7 @@ const typeLabels: Record<string, string> = {
 };
 
 export default function MaintenancePage() {
+  const { fmt } = useMarket();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<EquipmentMaintenance | null>(null);
@@ -420,7 +422,7 @@ export default function MaintenancePage() {
                         {record.assignedTo || "—"}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                        {record.cost ? `AED ${parseFloat(record.cost).toFixed(2)}` : "—"}
+                        {record.cost ? fmt(record.cost) : "—"}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">

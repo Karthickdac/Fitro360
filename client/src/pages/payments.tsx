@@ -43,6 +43,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { StatCard } from "@/components/stat-card";
+import { useMarket } from "@/hooks/use-market";
 import type { PaymentRecord, Member, Invoice } from "@shared/schema";
 
 const paymentSchema = z.object({
@@ -71,6 +72,7 @@ const statusConfig: Record<string, { label: string; variant: "default" | "second
 };
 
 export default function PaymentsPage() {
+  const { config, fmt } = useMarket();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -94,7 +96,7 @@ export default function PaymentsPage() {
       method: "",
       description: "",
       invoiceId: "",
-      currency: "AED",
+      currency: config.currency,
     },
   });
 
@@ -104,7 +106,7 @@ export default function PaymentsPage() {
         amount: data.amount,
         method: data.method,
         description: data.description,
-        currency: data.currency || "AED",
+        currency: data.currency || config.currency,
       };
       if (data.memberId) payload.memberId = data.memberId;
       if (data.invoiceId) payload.invoiceId = data.invoiceId;
@@ -115,7 +117,7 @@ export default function PaymentsPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       toast({ title: "Payment recorded successfully" });
-      form.reset({ memberId: "", amount: "", method: "", description: "", invoiceId: "", currency: "AED" });
+      form.reset({ memberId: "", amount: "", method: "", description: "", invoiceId: "", currency: config.currency });
       setDialogOpen(false);
     },
     onError: (error: Error) => {
@@ -243,7 +245,7 @@ export default function PaymentsPage() {
                         </FormControl>
                         <SelectContent>
                           {(invoicesList || []).map((inv) => (
-                            <SelectItem key={inv.id} value={inv.id}>{inv.invoiceNumber} — AED {parseFloat(inv.total || "0").toFixed(2)}</SelectItem>
+                            <SelectItem key={inv.id} value={inv.id}>{inv.invoiceNumber} — {fmt(inv.total || "0")}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -273,10 +275,10 @@ export default function PaymentsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Total Revenue" value={`AED ${totalRevenue.toFixed(2)}`} icon={DollarSign} />
-          <StatCard title="This Month" value={`AED ${monthRevenue.toFixed(2)}`} icon={TrendingUp} />
+          <StatCard title="Total Revenue" value={fmt(totalRevenue)} icon={DollarSign} />
+          <StatCard title="This Month" value={fmt(monthRevenue)} icon={TrendingUp} />
           <StatCard title="Total Payments" value={items.length} icon={Receipt} />
-          <StatCard title="Average Payment" value={`AED ${avgPayment.toFixed(2)}`} icon={CreditCard} />
+          <StatCard title="Average Payment" value={fmt(avgPayment)} icon={CreditCard} />
         </div>
       )}
 
@@ -329,7 +331,7 @@ export default function PaymentsPage() {
                         {payment.memberId ? membersMap.get(payment.memberId) || "Unknown" : "—"}
                       </TableCell>
                       <TableCell className="text-sm font-medium" data-testid={`text-payment-amount-${payment.id}`}>
-                        AED {parseFloat(payment.amount).toFixed(2)}
+                        {fmt(payment.amount)}
                       </TableCell>
                       <TableCell>
                         <Badge variant="default" className={mCfg.className} data-testid={`badge-method-${payment.id}`}>

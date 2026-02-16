@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useMarket } from "@/hooks/use-market";
 import type { Branch } from "@shared/schema";
 
 const branchFormSchema = z.object({
@@ -47,6 +48,7 @@ const branchFormSchema = z.object({
 type BranchFormValues = z.infer<typeof branchFormSchema>;
 
 export default function BranchesPage() {
+  const { config } = useMarket();
   const { toast } = useToast();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -175,7 +177,7 @@ export default function BranchesPage() {
                     <FormItem>
                       <FormLabel>Phone</FormLabel>
                       <FormControl>
-                        <Input placeholder="+971 50 123 4567" {...field} data-testid="input-branch-phone" />
+                        <Input placeholder={config.phonePlaceholder} {...field} data-testid="input-branch-phone" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -42,6 +42,7 @@ import { Plus, FileText, Trash2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { useMarket } from "@/hooks/use-market";
 import type { Invoice } from "@shared/schema";
 
 const lineItemSchema = z.object({
@@ -67,6 +68,7 @@ const statusConfig: Record<string, { variant: "default" | "secondary" | "destruc
 };
 
 export default function InvoicingPage() {
+  const { config, fmt } = useMarket();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -80,7 +82,7 @@ export default function InvoicingPage() {
       type: "sale",
       customerId: "",
       items: [{ name: "", quantity: 1, unitPrice: 0, total: 0 }],
-      gstRate: "5",
+      gstRate: config.defaultTaxRate,
     },
   });
 
@@ -116,7 +118,7 @@ export default function InvoicingPage() {
         type: "sale",
         customerId: "",
         items: [{ name: "", quantity: 1, unitPrice: 0, total: 0 }],
-        gstRate: "5",
+        gstRate: config.defaultTaxRate,
       });
       setDialogOpen(false);
     },
@@ -144,7 +146,7 @@ export default function InvoicingPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Invoices</h1>
-          <p className="text-muted-foreground mt-1">Create and manage invoices with VAT calculations</p>
+          <p className="text-muted-foreground mt-1">Create and manage invoices with {config.taxLabel} calculations</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -238,7 +240,7 @@ export default function InvoicingPage() {
                         />
                       </div>
                       <div className="col-span-2 text-sm text-right text-muted-foreground self-center" data-testid={`text-item-total-${index}`}>
-                        AED {((watchedItems[index]?.quantity || 0) * (watchedItems[index]?.unitPrice || 0)).toFixed(2)}
+                        {fmt((watchedItems[index]?.quantity || 0) * (watchedItems[index]?.unitPrice || 0))}
                       </div>
                       <div className="col-span-1 self-center">
                         {fields.length > 1 && (
@@ -262,7 +264,7 @@ export default function InvoicingPage() {
                   name="gstRate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>VAT Rate (%)</FormLabel>
+                      <FormLabel>{config.taxLabel} Rate (%)</FormLabel>
                       <FormControl>
                         <Input type="number" step="0.01" {...field} data-testid="input-gst-rate" />
                       </FormControl>
@@ -274,15 +276,15 @@ export default function InvoicingPage() {
                 <div className="rounded-md border p-3 space-y-1.5 text-sm">
                   <div className="flex justify-between gap-2">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span data-testid="text-subtotal">AED {subtotal.toFixed(2)}</span>
+                    <span data-testid="text-subtotal">{fmt(subtotal)}</span>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <span className="text-muted-foreground">VAT ({gstRate}%)</span>
-                    <span data-testid="text-gst-amount">AED {gstAmount.toFixed(2)}</span>
+                    <span className="text-muted-foreground">{config.taxLabel} ({gstRate}%)</span>
+                    <span data-testid="text-gst-amount">{fmt(gstAmount)}</span>
                   </div>
                   <div className="flex justify-between gap-2 font-semibold border-t pt-1.5">
                     <span>Grand Total</span>
-                    <span data-testid="text-grand-total">AED {grandTotal.toFixed(2)}</span>
+                    <span data-testid="text-grand-total">{fmt(grandTotal)}</span>
                   </div>
                 </div>
 
@@ -331,7 +333,7 @@ export default function InvoicingPage() {
                   <TableHead className="hidden sm:table-cell">Customer</TableHead>
                   <TableHead className="hidden md:table-cell">Items</TableHead>
                   <TableHead className="hidden md:table-cell">Subtotal</TableHead>
-                  <TableHead className="hidden lg:table-cell">VAT</TableHead>
+                  <TableHead className="hidden lg:table-cell">{config.taxLabel}</TableHead>
                   <TableHead>Total</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="hidden sm:table-cell">Date</TableHead>
@@ -356,13 +358,13 @@ export default function InvoicingPage() {
                         {itemsArr.length}
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                        AED {parseFloat(invoice.subtotal || "0").toFixed(2)}
+                        {fmt(invoice.subtotal || "0")}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                        AED {parseFloat(invoice.gstAmount || "0").toFixed(2)}
+                        {fmt(invoice.gstAmount || "0")}
                       </TableCell>
                       <TableCell className="text-sm font-medium" data-testid={`text-invoice-total-${invoice.id}`}>
-                        AED {parseFloat(invoice.total || "0").toFixed(2)}
+                        {fmt(invoice.total || "0")}
                       </TableCell>
                       <TableCell>
                         <Select

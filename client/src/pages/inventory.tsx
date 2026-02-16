@@ -41,6 +41,7 @@ import { z } from "zod";
 import { Plus, Search, Package, AlertTriangle, Trash2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useMarket } from "@/hooks/use-market";
 import type { Equipment } from "@shared/schema";
 
 const categories = ["Cardio", "Strength", "Accessories", "Supplements", "Apparel"] as const;
@@ -80,6 +81,7 @@ const statusConfig = {
 };
 
 export default function InventoryPage() {
+  const { fmt } = useMarket();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -371,10 +373,10 @@ export default function InventoryPage() {
                       <TableCell className="text-sm" data-testid={`text-qty-${item.id}`}>{item.quantity ?? 0}</TableCell>
                       <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">{item.minStock ?? 0}</TableCell>
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                        {item.costPrice ? `AED ${parseFloat(item.costPrice).toFixed(2)}` : "—"}
+                        {item.costPrice ? fmt(item.costPrice) : "—"}
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                        {item.sellPrice ? `AED ${parseFloat(item.sellPrice).toFixed(2)}` : "—"}
+                        {item.sellPrice ? fmt(item.sellPrice) : "—"}
                       </TableCell>
                       <TableCell>
                         <Badge variant={cfg.variant} className={cfg.className} data-testid={`badge-status-${item.id}`}>

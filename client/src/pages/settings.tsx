@@ -18,6 +18,13 @@ import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, Palette, Building2, FileText, Globe, Image, Mail, MessageSquare } from "lucide-react";
 
 const settingsSchema = z.object({
@@ -36,6 +43,7 @@ const settingsSchema = z.object({
   invoiceFooter: z.string().optional().or(z.literal("")),
   emailTemplateBg: z.string().optional(),
   emailTemplateAccent: z.string().optional(),
+  market: z.string().optional(),
 });
 
 export default function SettingsPage() {
@@ -60,6 +68,7 @@ export default function SettingsPage() {
       invoiceFooter: (tenant as any)?.invoiceFooter || "",
       emailTemplateBg: (tenant as any)?.emailTemplateBg || "#ffffff",
       emailTemplateAccent: (tenant as any)?.emailTemplateAccent || "#1e40af",
+      market: (tenant as any)?.market || "uae",
     },
   });
 
@@ -121,6 +130,27 @@ export default function SettingsPage() {
                     <FormControl>
                       <Input placeholder="Custom app name" {...field} data-testid="input-display-name" />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="market"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Market / Region</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || "uae"}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-market">
+                          <SelectValue placeholder="Select market" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="uae">UAE (AED, VAT 5%)</SelectItem>
+                        <SelectItem value="india">India (INR, GST 18%)</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
