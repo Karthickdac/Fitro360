@@ -98,10 +98,16 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-6 space-y-6" data-testid="page-dashboard">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight" data-testid="text-dashboard-title">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Welcome back. Here's what's happening today.</p>
+    <div className="p-4 sm:p-6 space-y-6" data-testid="page-dashboard">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 p-6 sm:p-8 text-white">
+        <div className="absolute inset-0">
+          <div className="absolute top-0 right-0 w-72 h-72 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
+          <div className="absolute bottom-0 left-0 w-56 h-56 bg-white/5 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4" />
+        </div>
+        <div className="relative z-10">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight" data-testid="text-dashboard-title">Dashboard</h1>
+          <p className="text-blue-100 mt-1 text-sm">Welcome back. Here's what's happening today.</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -136,9 +142,15 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 border-0 shadow-lg overflow-hidden">
+          <div className="h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500" />
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold">Revenue Overview</CardTitle>
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              Revenue Overview
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-64">
@@ -169,9 +181,15 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-0 shadow-lg overflow-hidden">
+          <div className="h-1.5 bg-gradient-to-r from-emerald-500 to-teal-500" />
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold">Membership Status</CardTitle>
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              Membership Status
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-48">
@@ -214,9 +232,15 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card>
+        <Card className="border-0 shadow-lg overflow-hidden">
+          <div className="h-1.5 bg-gradient-to-r from-violet-500 to-purple-500" />
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold">Recent Members</CardTitle>
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
+                <Users className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+              </div>
+              Recent Members
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {membersLoading ? (
@@ -261,9 +285,15 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-0 shadow-lg overflow-hidden">
+          <div className="h-1.5 bg-gradient-to-r from-amber-500 to-orange-500" />
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+                <Activity className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              </div>
+              Recent Activity
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {activityLoading ? (

@@ -241,23 +241,36 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
 
   const myAttendance = attendance || [];
 
+  const initials = `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.toUpperCase();
+
   return (
-    <div className="p-6 space-y-6" data-testid="page-member-portal">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight" data-testid="text-member-welcome">
-          Welcome back, {user?.firstName}
-        </h1>
-        <p className="text-muted-foreground mt-1" data-testid="text-member-subtitle">
-          Here's your fitness overview
-        </p>
+    <div className="p-4 sm:p-6 space-y-6" data-testid="page-member-portal">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 p-6 sm:p-8 text-white">
+        <div className="absolute inset-0">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl translate-y-1/3" />
+        </div>
+        <div className="relative z-10 flex items-center gap-4">
+          <div className="h-14 w-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-xl font-bold shadow-lg">
+            {initials}
+          </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight" data-testid="text-member-welcome">
+              Welcome back, {user?.firstName}
+            </h1>
+            <p className="text-blue-100 text-sm mt-0.5" data-testid="text-member-subtitle">
+              Here's your fitness overview
+            </p>
+          </div>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} data-testid="tabs-member-portal">
-        <TabsList className="grid w-full grid-cols-4" data-testid="tablist-member-portal">
-          <TabsTrigger value="dashboard" data-testid="tab-dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="progress" data-testid="tab-progress">My Progress</TabsTrigger>
-          <TabsTrigger value="sessions" data-testid="tab-sessions">Book Sessions</TabsTrigger>
-          <TabsTrigger value="profile" data-testid="tab-profile">My Profile</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 bg-muted/60 p-1 rounded-xl" data-testid="tablist-member-portal">
+          <TabsTrigger value="dashboard" className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md" data-testid="tab-dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="progress" className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white data-[state=active]:shadow-md" data-testid="tab-progress">My Progress</TabsTrigger>
+          <TabsTrigger value="sessions" className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-md" data-testid="tab-sessions">Book Sessions</TabsTrigger>
+          <TabsTrigger value="profile" className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-rose-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md" data-testid="tab-profile">My Profile</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6 mt-6" data-testid="panel-dashboard">
@@ -290,9 +303,13 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+            <Card className="border-0 shadow-lg overflow-hidden">
+              <div className="h-1.5 bg-gradient-to-r from-blue-500 to-cyan-500" />
               <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold" data-testid="text-attendance-title">
+                <CardTitle className="text-base font-semibold flex items-center gap-2" data-testid="text-attendance-title">
+                  <div className="h-7 w-7 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                    <CalendarCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
                   Recent Attendance
                 </CardTitle>
               </CardHeader>
@@ -333,9 +350,13 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-0 shadow-lg overflow-hidden">
+              <div className="h-1.5 bg-gradient-to-r from-violet-500 to-purple-500" />
               <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold" data-testid="text-upcoming-title">
+                <CardTitle className="text-base font-semibold flex items-center gap-2" data-testid="text-upcoming-title">
+                  <div className="h-7 w-7 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
+                    <Dumbbell className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                  </div>
                   My Booked Sessions
                 </CardTitle>
               </CardHeader>
@@ -391,9 +412,15 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
           </div>
 
           {chartData.length > 1 && (
-            <Card>
+            <Card className="border-0 shadow-lg overflow-hidden">
+              <div className="h-1.5 bg-gradient-to-r from-emerald-500 to-teal-500" />
               <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold">Weight Trend</CardTitle>
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                    <TrendingDown className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  Weight Trend
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-[200px]" data-testid="chart-weight-mini">
@@ -418,7 +445,7 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
               <h2 className="text-lg font-semibold">My Progress</h2>
               <p className="text-sm text-muted-foreground">Track your fitness journey over time</p>
             </div>
-            <Button onClick={() => {
+            <Button className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/20" onClick={() => {
               metricForm.reset({
                 heightCm: member?.heightCm || "",
                 weightKg: member?.weightKg || "",
@@ -481,9 +508,15 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
 
           {chartData.length > 1 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
+              <Card className="border-0 shadow-lg overflow-hidden">
+                <div className="h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500" />
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base font-semibold">Weight & BMI Trend</CardTitle>
+                  <CardTitle className="text-base font-semibold flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                      <TrendingDown className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    Weight & BMI Trend
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-[280px]" data-testid="chart-weight-bmi">
@@ -503,9 +536,15 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-0 shadow-lg overflow-hidden">
+                <div className="h-1.5 bg-gradient-to-r from-emerald-500 to-teal-500" />
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base font-semibold">Body Fat %</CardTitle>
+                  <CardTitle className="text-base font-semibold flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                      <Percent className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    Body Fat %
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-[280px]" data-testid="chart-body-fat">
@@ -533,9 +572,15 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
             </Card>
           )}
 
-          <Card>
+          <Card className="border-0 shadow-lg overflow-hidden">
+            <div className="h-1.5 bg-gradient-to-r from-violet-500 to-purple-500" />
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold">Progress History</CardTitle>
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <div className="h-7 w-7 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
+                  <BookOpen className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                </div>
+                Progress History
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {metricsLoading ? (
@@ -600,7 +645,8 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
                 const isFull = (session.enrolled || 0) >= (session.capacity || 1);
                 const booking = myBookings?.find(b => b.sessionId === session.id && b.status === "confirmed");
                 return (
-                  <Card key={session.id} className={isBooked ? "border-primary/50 bg-primary/5" : ""} data-testid={`card-session-${session.id}`}>
+                  <Card key={session.id} className={`border-0 shadow-md overflow-hidden ${isBooked ? "ring-2 ring-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20" : ""}`} data-testid={`card-session-${session.id}`}>
+                    <div className={`h-1 ${session.type === "personal" ? "bg-gradient-to-r from-blue-500 to-cyan-500" : "bg-gradient-to-r from-violet-500 to-purple-500"}`} />
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-2 mb-3">
                         <div className="min-w-0">
@@ -650,7 +696,7 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
                       ) : (
                         <Button
                           size="sm"
-                          className="w-full"
+                          className="w-full bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-sm"
                           disabled={isFull || bookMutation.isPending}
                           onClick={() => bookMutation.mutate(session.id)}
                           data-testid={`button-book-session-${session.id}`}
@@ -679,7 +725,7 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
               <p className="text-sm text-muted-foreground">View and manage your personal information</p>
             </div>
             <Button
-              variant="outline"
+              className="bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-md shadow-rose-500/20"
               onClick={() => {
                 profileForm.reset({
                   phone: member?.phone || "",
@@ -696,33 +742,39 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+            <Card className="border-0 shadow-lg overflow-hidden">
+              <div className="h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500" />
               <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold">Personal Information</CardTitle>
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                    <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  Personal Information
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Full Name</p>
-                    <p className="text-sm font-medium" data-testid="text-profile-name">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/30">
+                    <p className="text-[11px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wider mb-1">Full Name</p>
+                    <p className="text-sm font-semibold" data-testid="text-profile-name">
                       {member?.firstName} {member?.lastName}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Email</p>
-                    <p className="text-sm font-medium" data-testid="text-profile-email">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/30">
+                    <p className="text-[11px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wider mb-1">Email</p>
+                    <p className="text-sm font-semibold truncate" data-testid="text-profile-email">
                       {member?.email || "—"}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Phone</p>
-                    <p className="text-sm font-medium" data-testid="text-profile-phone">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/30">
+                    <p className="text-[11px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wider mb-1">Phone</p>
+                    <p className="text-sm font-semibold" data-testid="text-profile-phone">
                       {member?.phone || "Not provided"}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Emergency Contact</p>
-                    <p className="text-sm font-medium" data-testid="text-profile-emergency">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/30">
+                    <p className="text-[11px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wider mb-1">Emergency Contact</p>
+                    <p className="text-sm font-semibold" data-testid="text-profile-emergency">
                       {member?.emergencyContact || "Not provided"}
                     </p>
                   </div>
@@ -730,45 +782,51 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-0 shadow-lg overflow-hidden">
+              <div className="h-1.5 bg-gradient-to-r from-emerald-500 to-teal-500" />
               <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold">Membership Details</CardTitle>
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                    <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  Membership Details
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Membership Type</p>
-                    <p className="text-sm font-medium capitalize" data-testid="text-profile-membership-type">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/30">
+                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium uppercase tracking-wider mb-1">Membership Type</p>
+                    <p className="text-sm font-semibold capitalize" data-testid="text-profile-membership-type">
                       {member?.membershipType || "—"}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Status</p>
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/30">
+                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium uppercase tracking-wider mb-1">Status</p>
                     <Badge
                       variant="outline"
-                      className={member?.status === "active" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-amber-100 text-amber-700 border-amber-200"}
+                      className={`text-xs ${member?.status === "active" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-amber-100 text-amber-700 border-amber-200"}`}
                       data-testid="badge-profile-status"
                     >
                       {member?.status || "—"}
                     </Badge>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Start Date</p>
-                    <p className="text-sm font-medium" data-testid="text-profile-start">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/30">
+                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium uppercase tracking-wider mb-1">Start Date</p>
+                    <p className="text-sm font-semibold" data-testid="text-profile-start">
                       {member?.membershipStart ? format(new Date(member.membershipStart), "MMM d, yyyy") : "—"}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">End Date</p>
-                    <p className="text-sm font-medium" data-testid="text-profile-end">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/30">
+                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium uppercase tracking-wider mb-1">End Date</p>
+                    <p className="text-sm font-semibold" data-testid="text-profile-end">
                       {member?.membershipEnd ? format(new Date(member.membershipEnd), "MMM d, yyyy") : "—"}
                     </p>
                   </div>
                 </div>
                 {daysRemaining <= 14 && daysRemaining > 0 && (
-                  <div className="flex items-center gap-2 p-2 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20 border border-amber-200 dark:border-amber-800">
                     <AlertCircle className="h-4 w-4 text-amber-600" />
-                    <p className="text-xs text-amber-700 dark:text-amber-400" data-testid="text-membership-warning">
+                    <p className="text-xs font-medium text-amber-700 dark:text-amber-400" data-testid="text-membership-warning">
                       Your membership expires in {daysRemaining} days
                     </p>
                   </div>
@@ -776,33 +834,39 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-0 shadow-lg overflow-hidden">
+              <div className="h-1.5 bg-gradient-to-r from-violet-500 to-purple-500" />
               <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold">Body Metrics</CardTitle>
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
+                    <Activity className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                  </div>
+                  Body Metrics
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Height</p>
-                    <p className="text-sm font-medium" data-testid="text-profile-height">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/40 dark:to-blue-900/20">
+                    <p className="text-[11px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wider mb-1">Height</p>
+                    <p className="text-sm font-bold text-blue-700 dark:text-blue-300" data-testid="text-profile-height">
                       {member?.heightCm ? `${member.heightCm} cm` : "Not recorded"}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Weight</p>
-                    <p className="text-sm font-medium" data-testid="text-profile-weight">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/40 dark:to-emerald-900/20">
+                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium uppercase tracking-wider mb-1">Weight</p>
+                    <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300" data-testid="text-profile-weight">
                       {member?.weightKg ? `${member.weightKg} kg` : "Not recorded"}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">BMI</p>
-                    <p className="text-sm font-medium" data-testid="text-profile-bmi">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-violet-50 to-violet-100/50 dark:from-violet-950/40 dark:to-violet-900/20">
+                    <p className="text-[11px] text-violet-600 dark:text-violet-400 font-medium uppercase tracking-wider mb-1">BMI</p>
+                    <p className="text-sm font-bold text-violet-700 dark:text-violet-300" data-testid="text-profile-bmi">
                       {member?.bmi ? Number(member.bmi).toFixed(1) : "—"}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Latest Body Fat</p>
-                    <p className="text-sm font-medium" data-testid="text-profile-bodyfat">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-rose-50 to-rose-100/50 dark:from-rose-950/40 dark:to-rose-900/20">
+                    <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium uppercase tracking-wider mb-1">Body Fat</p>
+                    <p className="text-sm font-bold text-rose-700 dark:text-rose-300" data-testid="text-profile-bodyfat">
                       {metrics && metrics.length > 0 && metrics[0].bodyFatPct ? `${metrics[0].bodyFatPct}%` : "—"}
                     </p>
                   </div>
@@ -810,33 +874,39 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-0 shadow-lg overflow-hidden">
+              <div className="h-1.5 bg-gradient-to-r from-amber-500 to-orange-500" />
               <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold">Attendance Summary</CardTitle>
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+                    <CalendarCheck className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  Attendance Summary
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Total Visits</p>
-                    <p className="text-sm font-medium" data-testid="text-profile-visits">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-900/20 text-center">
+                    <p className="text-2xl font-bold text-amber-600 dark:text-amber-400" data-testid="text-profile-visits">
                       {myAttendance.length}
                     </p>
+                    <p className="text-[10px] text-amber-700/70 dark:text-amber-300/60 font-medium uppercase tracking-wider mt-0.5">Total Visits</p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">This Month</p>
-                    <p className="text-sm font-medium" data-testid="text-profile-this-month">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-900/20 text-center">
+                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400" data-testid="text-profile-this-month">
                       {myAttendance.filter(a => {
                         const d = a.checkInTime ? new Date(a.checkInTime) : null;
                         const now = new Date();
                         return d && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
                       }).length}
                     </p>
+                    <p className="text-[10px] text-emerald-700/70 dark:text-emerald-300/60 font-medium uppercase tracking-wider mt-0.5">This Month</p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Booked Sessions</p>
-                    <p className="text-sm font-medium" data-testid="text-profile-bookings">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-900/20 text-center">
+                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400" data-testid="text-profile-bookings">
                       {myBookings?.filter(b => b.status === "confirmed").length || 0}
                     </p>
+                    <p className="text-[10px] text-blue-700/70 dark:text-blue-300/60 font-medium uppercase tracking-wider mt-0.5">Booked</p>
                   </div>
                 </div>
               </CardContent>
