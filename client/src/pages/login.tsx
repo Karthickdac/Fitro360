@@ -62,7 +62,7 @@ export default function LoginPage() {
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
               <Dumbbell className="h-7 w-7 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">ForgeFit</h1>
+            <h1 className="text-3xl font-bold text-white tracking-tight">Fitro360</h1>
           </div>
           <p className="text-lg text-white/80 max-w-md leading-relaxed">
             The complete white-label gym management platform. Power your fitness business with enterprise-grade tools.
@@ -92,7 +92,7 @@ export default function LoginPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
               <Dumbbell className="h-5 w-5 text-primary-foreground" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight">ForgeFit</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Fitro360</h1>
           </div>
 
           <div className="mb-8">

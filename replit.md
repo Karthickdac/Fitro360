@@ -1,7 +1,7 @@
-# ForgeFit - White-Label Multi-Tenant Gym Management SaaS
+# Fitro360 - White-Label Multi-Tenant Gym Management SaaS
 
 ## Overview
-ForgeFit is a white-label, multi-tenant SaaS platform for gym management. It supports multiple gym tenants with custom branding, role-based access control, member management, trainer management, and platform-level administration.
+Fitro360 is a white-label, multi-tenant SaaS platform for gym management. It supports multiple gym tenants with custom branding, role-based access control, member management, trainer management, and platform-level administration.
 
 ## Tech Stack
 - **Frontend**: React (Vite), Tailwind CSS, shadcn/ui, Recharts, wouter routing

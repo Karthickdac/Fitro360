@@ -61,7 +61,7 @@ export function AppSidebar() {
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-semibold truncate" data-testid="text-app-name">
-              {tenant?.appDisplayName || tenant?.gymName || "ForgeFit"}
+              {tenant?.appDisplayName || tenant?.gymName || "Fitro360"}
             </span>
             <span className="text-xs text-muted-foreground truncate">
               {isPlatformAdmin ? "Platform Admin" : tenant?.gymName || "Gym Management"}
