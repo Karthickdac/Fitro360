@@ -65,8 +65,10 @@ function MemberRouter() {
   return (
     <Switch>
       <Route path="/" component={() => <Redirect to="/portal" />} />
-      <Route path="/portal" component={MemberPortalPage} />
-      <Route path="/schedule" component={SchedulePage} />
+      <Route path="/portal" component={() => <MemberPortalPage initialTab="dashboard" />} />
+      <Route path="/portal/schedule" component={() => <MemberPortalPage initialTab="sessions" />} />
+      <Route path="/portal/progress" component={() => <MemberPortalPage initialTab="progress" />} />
+      <Route path="/portal/profile" component={() => <MemberPortalPage initialTab="profile" />} />
       <Route path="/notifications" component={NotificationsPage} />
       <Route path="/settings" component={SettingsPage} />
       <Route component={NotFound} />

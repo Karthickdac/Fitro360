@@ -34,6 +34,7 @@ Fitro360 is a white-label, multi-tenant SaaS platform for gym management. It sup
 - `notifications` - In-app/SMS/email notification system
 - `coupons` - Promotional coupon codes
 - `referrals` - Member referral program tracking
+- `trainer_profiles` - Extended trainer profiles (bio, specializations, certifications, experienceYears, hourlyRate, availability, socialLinks)
 - `trainer_commissions` - Trainer commission tracking (session/bonus/referral, pending/paid)
 - `trainer_leaves` - Trainer leave requests with approval workflow
 
@@ -58,6 +59,7 @@ client/src/
     maintenance.tsx   - Equipment maintenance scheduling with overdue alerts
     suppliers.tsx     - Supplier management
     invoicing.tsx     - Invoice management with GST
+    trainers.tsx      - Full trainer CRUD with profiles (add/edit/view/deactivate, specializations, certifications)
     trainer-management.tsx - Trainer commissions, leaves, performance analytics (3 tabs)
     payments.tsx      - Payment records with revenue stats + Stripe checkout
     analytics.tsx     - Analytics dashboard with 6 Recharts visualizations

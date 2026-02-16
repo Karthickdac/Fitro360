@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -54,6 +54,7 @@ import {
 import { format, differenceInDays, differenceInMinutes } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import type { Member, MemberMetric, Attendance, TrainerSession, SessionBooking } from "@shared/schema";
 
 const profileSchema = z.object({
@@ -70,10 +71,28 @@ const metricSchema = z.object({
   notes: z.string().optional(),
 });
 
-export default function MemberPortalPage() {
+const tabRouteMap: Record<string, string> = {
+  dashboard: "/portal",
+  sessions: "/portal/schedule",
+  progress: "/portal/progress",
+  profile: "/portal/profile",
+};
+
+export default function MemberPortalPage({ initialTab = "dashboard" }: { initialTab?: string }) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [, navigate] = useLocation();
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    const route = tabRouteMap[tab];
+    if (route) navigate(route);
+  };
   const [showMetricDialog, setShowMetricDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
 
@@ -233,7 +252,7 @@ export default function MemberPortalPage() {
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} data-testid="tabs-member-portal">
+      <Tabs value={activeTab} onValueChange={handleTabChange} data-testid="tabs-member-portal">
         <TabsList className="grid w-full grid-cols-4" data-testid="tablist-member-portal">
           <TabsTrigger value="dashboard" data-testid="tab-dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="progress" data-testid="tab-progress">My Progress</TabsTrigger>
@@ -327,7 +346,7 @@ export default function MemberPortalPage() {
                       variant="outline"
                       size="sm"
                       className="mt-2"
-                      onClick={() => setActiveTab("sessions")}
+                      onClick={() => handleTabChange("sessions")}
                       data-testid="button-browse-sessions"
                     >
                       Browse Sessions

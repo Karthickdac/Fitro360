@@ -22,6 +22,9 @@ import {
   BarChart3,
   Home,
   Award,
+  TrendingUp,
+  User,
+  BookOpen,
 } from "lucide-react";
 import {
   Sidebar,
@@ -47,7 +50,11 @@ const platformAdminItems = [
 ];
 
 const memberItems = [
-  { title: "My Portal", url: "/portal", icon: Home },
+  { title: "Dashboard", url: "/portal", icon: LayoutDashboard },
+  { title: "My Schedule", url: "/portal/schedule", icon: CalendarDays },
+  { title: "My Progress", url: "/portal/progress", icon: TrendingUp },
+  { title: "My Profile", url: "/portal/profile", icon: User },
+  { title: "Notifications", url: "/notifications", icon: Bell },
 ];
 
 const trainerItems = [

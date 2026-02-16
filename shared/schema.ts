@@ -267,6 +267,20 @@ export const trainerLeaves = pgTable("trainer_leaves", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const trainerProfiles = pgTable("trainer_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  bio: text("bio"),
+  specializations: jsonb("specializations").$type<string[]>().default([]),
+  certifications: jsonb("certifications").$type<string[]>().default([]),
+  experienceYears: integer("experience_years").default(0),
+  hourlyRate: decimal("hourly_rate", { precision: 10, scale: 2 }),
+  availability: text("availability"),
+  socialLinks: jsonb("social_links").$type<Record<string, string>>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const subscriptionPlans = pgTable("subscription_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
@@ -307,6 +321,7 @@ export const insertPaymentRecordSchema = createInsertSchema(paymentRecords).omit
 export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({ id: true });
 export const insertTrainerCommissionSchema = createInsertSchema(trainerCommissions).omit({ id: true, createdAt: true });
 export const insertTrainerLeaveSchema = createInsertSchema(trainerLeaves).omit({ id: true, createdAt: true });
+export const insertTrainerProfileSchema = createInsertSchema(trainerProfiles).omit({ id: true, createdAt: true });
 export const insertActivitySchema = createInsertSchema(activities).omit({ id: true, createdAt: true });
 
 export const loginSchema = z.object({
@@ -352,5 +367,7 @@ export type InsertTrainerCommission = z.infer<typeof insertTrainerCommissionSche
 export type TrainerCommission = typeof trainerCommissions.$inferSelect;
 export type InsertTrainerLeave = z.infer<typeof insertTrainerLeaveSchema>;
 export type TrainerLeave = typeof trainerLeaves.$inferSelect;
+export type InsertTrainerProfile = z.infer<typeof insertTrainerProfileSchema>;
+export type TrainerProfile = typeof trainerProfiles.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
 export type Activity = typeof activities.$inferSelect;

@@ -422,8 +422,144 @@ export async function registerRoutes(
     const user = (req as any).user;
     if (!user.tenantId) return res.json([]);
     const trainerList = await storage.getUsersByRole(user.tenantId, "trainer");
-    const safeTrainers = trainerList.map(({ password: _, ...rest }) => rest);
-    return res.json(safeTrainers);
+    const profiles = await storage.getTrainerProfilesByTenant(user.tenantId);
+    const profileMap = new Map(profiles.map(p => [p.userId, p]));
+    const result = trainerList.map(({ password: _, ...rest }) => ({
+      ...rest,
+      profile: profileMap.get(rest.id) || null,
+    }));
+    return res.json(result);
+  });
+
+  app.get("/api/trainers/:id", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const trainer = await storage.getUser(paramId(req));
+      if (!trainer || trainer.role !== "trainer" || trainer.tenantId !== user.tenantId) {
+        return res.status(404).json({ message: "Trainer not found" });
+      }
+      const { password: _, ...safeTrainer } = trainer;
+      const profile = await storage.getTrainerProfile(trainer.id);
+      return res.json({ ...safeTrainer, profile: profile || null });
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/trainers", authMiddleware, requireRole("gym_owner", "manager"), async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const input = z.object({
+        username: z.string().min(1),
+        email: z.string().email(),
+        password: z.string().min(6),
+        firstName: z.string().min(1),
+        lastName: z.string().min(1),
+        phone: z.string().optional(),
+        bio: z.string().optional(),
+        specializations: z.array(z.string()).optional().default([]),
+        certifications: z.array(z.string()).optional().default([]),
+        experienceYears: z.number().optional().default(0),
+        hourlyRate: z.string().optional(),
+        availability: z.string().optional(),
+      }).parse(req.body);
+
+      const hashed = await bcrypt.hash(input.password, 10);
+      const newUser = await storage.createUser({
+        tenantId: user.tenantId,
+        username: input.username,
+        email: input.email,
+        password: hashed,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        phone: input.phone || null,
+        role: "trainer",
+        isActive: true,
+      });
+
+      const profile = await storage.createTrainerProfile({
+        tenantId: user.tenantId,
+        userId: newUser.id,
+        bio: input.bio || null,
+        specializations: input.specializations,
+        certifications: input.certifications,
+        experienceYears: input.experienceYears,
+        hourlyRate: input.hourlyRate || null,
+        availability: input.availability || null,
+      });
+
+      await storage.createActivity({
+        tenantId: user.tenantId,
+        userId: user.id,
+        type: "trainer_added",
+        description: `Added trainer ${input.firstName} ${input.lastName}`,
+      });
+
+      const { password: _, ...safe } = newUser;
+      return res.json({ ...safe, profile });
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/trainers/:id", authMiddleware, requireRole("gym_owner", "manager"), async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const trainerId = paramId(req);
+      const trainer = await storage.getUser(trainerId);
+      if (!trainer || trainer.role !== "trainer" || trainer.tenantId !== user.tenantId) {
+        return res.status(404).json({ message: "Trainer not found" });
+      }
+
+      const input = z.object({
+        firstName: z.string().optional(),
+        lastName: z.string().optional(),
+        email: z.string().email().optional(),
+        phone: z.string().optional(),
+        isActive: z.boolean().optional(),
+        bio: z.string().optional(),
+        specializations: z.array(z.string()).optional(),
+        certifications: z.array(z.string()).optional(),
+        experienceYears: z.number().optional(),
+        hourlyRate: z.string().optional(),
+        availability: z.string().optional(),
+      }).parse(req.body);
+
+      const { bio, specializations, certifications, experienceYears, hourlyRate, availability, ...userData } = input;
+
+      if (Object.keys(userData).length > 0) {
+        await storage.updateUser(trainerId, userData as any);
+      }
+
+      const profileData: any = {};
+      if (bio !== undefined) profileData.bio = bio;
+      if (specializations !== undefined) profileData.specializations = specializations;
+      if (certifications !== undefined) profileData.certifications = certifications;
+      if (experienceYears !== undefined) profileData.experienceYears = experienceYears;
+      if (hourlyRate !== undefined) profileData.hourlyRate = hourlyRate;
+      if (availability !== undefined) profileData.availability = availability;
+
+      let profile = await storage.getTrainerProfile(trainerId);
+      if (Object.keys(profileData).length > 0) {
+        if (profile) {
+          profile = await storage.updateTrainerProfile(trainerId, profileData) || profile;
+        } else {
+          profile = await storage.createTrainerProfile({
+            tenantId: user.tenantId!,
+            userId: trainerId,
+            ...profileData,
+          });
+        }
+      }
+
+      const updated = await storage.getUser(trainerId);
+      if (!updated) return res.status(404).json({ message: "Not found" });
+      const { password: _, ...safe } = updated;
+      return res.json({ ...safe, profile });
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
   });
 
   // ─── Branches ──────────────────────────────────────────

@@ -5,7 +5,7 @@ import {
   branches, attendance, trainerSessions, sessionBookings,
   equipment, suppliers, invoices, notifications, coupons, referrals,
   memberMetrics, equipmentMaintenance, paymentRecords,
-  trainerCommissions, trainerLeaves,
+  trainerCommissions, trainerLeaves, trainerProfiles,
   type Tenant, type InsertTenant,
   type User, type InsertUser,
   type Branch, type InsertBranch,
@@ -26,6 +26,7 @@ import {
   type Activity, type InsertActivity,
   type TrainerCommission, type InsertTrainerCommission,
   type TrainerLeave, type InsertTrainerLeave,
+  type TrainerProfile, type InsertTrainerProfile,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -44,6 +45,12 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   getUsersByTenant(tenantId: string): Promise<User[]>;
   getUsersByRole(tenantId: string, role: string): Promise<User[]>;
+  updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined>;
+
+  getTrainerProfile(userId: string): Promise<TrainerProfile | undefined>;
+  getTrainerProfilesByTenant(tenantId: string): Promise<TrainerProfile[]>;
+  createTrainerProfile(profile: InsertTrainerProfile): Promise<TrainerProfile>;
+  updateTrainerProfile(userId: string, data: Partial<InsertTrainerProfile>): Promise<TrainerProfile | undefined>;
 
   getBranchesByTenant(tenantId: string): Promise<Branch[]>;
   getBranch(id: string): Promise<Branch | undefined>;
@@ -220,6 +227,30 @@ export class DatabaseStorage implements IStorage {
 
   async getUsersByRole(tenantId: string, role: string): Promise<User[]> {
     return db.select().from(users).where(and(eq(users.tenantId, tenantId), eq(users.role, role)));
+  }
+
+  async updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined> {
+    const [updated] = await db.update(users).set(data).where(eq(users.id, id)).returning();
+    return updated;
+  }
+
+  async getTrainerProfile(userId: string): Promise<TrainerProfile | undefined> {
+    const [profile] = await db.select().from(trainerProfiles).where(eq(trainerProfiles.userId, userId));
+    return profile;
+  }
+
+  async getTrainerProfilesByTenant(tenantId: string): Promise<TrainerProfile[]> {
+    return db.select().from(trainerProfiles).where(eq(trainerProfiles.tenantId, tenantId));
+  }
+
+  async createTrainerProfile(profile: InsertTrainerProfile): Promise<TrainerProfile> {
+    const [created] = await db.insert(trainerProfiles).values(profile as any).returning();
+    return created;
+  }
+
+  async updateTrainerProfile(userId: string, data: Partial<InsertTrainerProfile>): Promise<TrainerProfile | undefined> {
+    const [updated] = await db.update(trainerProfiles).set(data as any).where(eq(trainerProfiles.userId, userId)).returning();
+    return updated;
   }
 
   async getBranchesByTenant(tenantId: string): Promise<Branch[]> {
