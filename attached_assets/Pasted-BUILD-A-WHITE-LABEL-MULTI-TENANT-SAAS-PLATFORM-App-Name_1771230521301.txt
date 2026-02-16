@@ -1,0 +1,356 @@
+BUILD A WHITE-LABEL MULTI-TENANT SAAS PLATFORM
+
+App Name : ForgeFit
+
+Build a production-ready, scalable, white-label SaaS web + mobile system for:
+
+🏋️ Gym Management + Gym Equipment Sales ERP
+
+This platform must be designed to be rebranded and sold to multiple gyms or gym chains.
+
+🧱 CORE REQUIREMENTS
+Architecture:
+
+Multi-tenant SaaS
+
+White-label branding support
+
+Feature-based subscription plans
+
+Mobile + Web
+
+Production-ready
+
+🏗 TECH STACK
+
+Frontend (Web Admin Panel):
+
+React (Vite)
+
+Tailwind CSS
+
+Dark/Light mode
+
+Responsive layout
+
+Dynamic theme support
+
+Backend:
+
+Node.js + Express
+
+PostgreSQL
+
+JWT Authentication
+
+Multi-tenant data isolation
+
+Mobile App:
+
+React Native (Expo)
+
+White-label build configuration
+
+Deployment:
+
+SaaS-ready structure
+
+Environment-based branding config
+
+Stripe/Razorpay ready
+
+🏢 WHITE-LABEL ARCHITECTURE
+
+Each gym must have:
+
+Custom Logo
+
+Custom App Name
+
+Custom Domain (gymname.yourplatform.com)
+
+Custom Color Theme
+
+Custom Favicon
+
+Custom Email Templates
+
+Custom Invoice Header
+
+Custom SMS Sender ID
+
+Store branding in:
+
+tenants table:
+- id
+- gym_name
+- logo_url
+- primary_color
+- secondary_color
+- domain
+- subscription_plan
+- app_display_name
+
+
+Dynamic branding must load based on tenant domain.
+
+👥 ROLE STRUCTURE
+
+Platform Super Admin (You – SaaS Owner)
+Gym Owner (Tenant Admin)
+Manager
+Trainer
+Sales Executive
+Member
+
+Each tenant must not access other tenant data.
+
+💰 SAAS SUBSCRIPTION SYSTEM
+
+Features:
+
+Plan-based access control
+
+Monthly / Annual subscription
+
+Trial period support
+
+Auto subscription expiry
+
+Feature toggle per plan
+
+Usage tracking
+
+Plans Example:
+
+Basic – No mobile app
+Pro – Web + Mobile
+Enterprise – Multi-branch + Advanced Reports
+
+Payment Integration:
+
+Razorpay / Stripe
+
+Webhook subscription validation
+
+🏋️ GYM MANAGEMENT MODULE
+Member Management
+
+Registration
+
+Attendance
+
+Membership renewal
+
+Freeze membership
+
+QR Check-in
+
+BMI auto-calculation
+
+Progress tracking
+
+🏋️ TRAINER MANAGEMENT (Calendar-Based)
+
+Must support:
+
+Personal Sessions
+Group Sessions
+
+Features:
+
+FullCalendar integration
+
+Conflict detection
+
+Drag & Drop reschedule
+
+Recurring classes
+
+Capacity limit
+
+Commission calculation
+
+Leave management
+
+Trainer performance analytics
+
+🛒 EQUIPMENT SALES ERP
+
+Inventory management
+
+Supplier management
+
+Stock alerts
+
+Sales invoice
+
+GST calculation
+
+Profit margin tracking
+
+Customer database
+
+📊 DASHBOARD
+
+Gym Owner Dashboard:
+
+Active members
+
+Monthly revenue
+
+Expiring memberships
+
+Trainer utilization
+
+Low stock alerts
+
+Platform Admin Dashboard:
+
+Total tenants
+
+MRR (Monthly Recurring Revenue)
+
+Active subscriptions
+
+Churn rate
+
+Top performing gyms
+
+📱 WHITE-LABEL MOBILE APP
+
+The mobile app must:
+
+Load branding dynamically
+
+Support member login
+
+Allow booking sessions
+
+Show membership details
+
+Enable push notifications
+
+Display gym logo & theme
+
+White-label build system must support:
+
+Build multiple branded apps
+
+Environment-based config
+
+Easy rebranding per client
+
+🔔 NOTIFICATIONS SYSTEM
+
+Membership expiry reminder
+
+Session reminder
+
+Low stock alert
+
+Admin broadcast
+
+SMS & WhatsApp API ready structure.
+
+🔐 SECURITY
+
+Tenant-based middleware
+
+Rate limiting
+
+Input validation
+
+XSS protection
+
+SQL injection protection
+
+Role middleware
+
+Secure file uploads
+
+🏢 MULTI-BRANCH SUPPORT
+
+Each gym can:
+
+Add branches
+
+Assign trainers per branch
+
+View branch revenue
+
+Branch-based attendance
+
+Separate stock per branch
+
+📂 OUTPUT REQUIREMENTS
+
+Generate:
+
+Full folder structure
+
+Backend APIs
+
+Frontend UI
+
+Database schema
+
+Multi-tenant logic
+
+Subscription middleware
+
+White-label config system
+
+Branding loader middleware
+
+Seed data
+
+Setup guide
+
+Production deployment instructions
+
+Docker-ready setup
+
+🎯 BUSINESS GOAL
+
+The platform must be:
+
+Sellable to multiple gyms
+
+Easily rebrandable
+
+Scalable to 1000+ tenants
+
+Ready for SaaS subscription revenue
+
+🚀 BONUS REQUIREMENTS
+
+Referral system for gyms
+
+
+
+Coupon system
+
+Analytics export
+
+Email automation
+
+API documentation
+
+Usage-based billing (optional)
+
+🧠 FINAL INSTRUCTION TO AI
+
+Ensure the system is:
+
+Modular
+
+Scalable
+
+Clean code
+
+Production-ready
+
+Properly documented
+
+Enterprise-grade
