@@ -31,9 +31,13 @@ import {
 export interface IStorage {
   getTenant(id: string): Promise<Tenant | undefined>;
   getTenantByDomain(domain: string): Promise<Tenant | undefined>;
+  getTenantBySubdomain(subdomain: string): Promise<Tenant | undefined>;
   getAllTenants(): Promise<Tenant[]>;
   createTenant(tenant: InsertTenant): Promise<Tenant>;
   updateTenant(id: string, data: Partial<InsertTenant>): Promise<Tenant | undefined>;
+  deleteTenant(id: string): Promise<void>;
+  getTenantUserCount(tenantId: string): Promise<number>;
+  getTenantMemberCount(tenantId: string): Promise<number>;
 
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -155,6 +159,11 @@ export class DatabaseStorage implements IStorage {
     return tenant;
   }
 
+  async getTenantBySubdomain(subdomain: string): Promise<Tenant | undefined> {
+    const [tenant] = await db.select().from(tenants).where(eq(tenants.subdomain, subdomain));
+    return tenant;
+  }
+
   async getAllTenants(): Promise<Tenant[]> {
     return db.select().from(tenants).orderBy(desc(tenants.createdAt));
   }
@@ -167,6 +176,24 @@ export class DatabaseStorage implements IStorage {
   async updateTenant(id: string, data: Partial<InsertTenant>): Promise<Tenant | undefined> {
     const [updated] = await db.update(tenants).set(data).where(eq(tenants.id, id)).returning();
     return updated;
+  }
+
+  async deleteTenant(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.tenantId, id));
+    await db.delete(members).where(eq(members.tenantId, id));
+    await db.delete(branches).where(eq(branches.tenantId, id));
+    await db.delete(activities).where(eq(activities.tenantId, id));
+    await db.delete(tenants).where(eq(tenants.id, id));
+  }
+
+  async getTenantUserCount(tenantId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.tenantId, tenantId));
+    return Number(result[0]?.count || 0);
+  }
+
+  async getTenantMemberCount(tenantId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` }).from(members).where(eq(members.tenantId, tenantId));
+    return Number(result[0]?.count || 0);
   }
 
   async getUser(id: string): Promise<User | undefined> {

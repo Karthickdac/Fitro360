@@ -99,7 +99,16 @@ export async function registerRoutes(
     try {
       const host = req.headers.host || "";
       const domain = host.split(":")[0];
-      const tenant = await storage.getTenantByDomain(domain);
+      let tenant = await storage.getTenantByDomain(domain);
+      if (!tenant) {
+        const parts = domain.split(".");
+        if (parts.length >= 2) {
+          const subdomain = parts[0];
+          if (subdomain !== "www" && subdomain !== "admin") {
+            tenant = await storage.getTenantBySubdomain(subdomain);
+          }
+        }
+      }
       if (tenant) {
         return res.json({
           gymName: tenant.gymName,
@@ -110,9 +119,9 @@ export async function registerRoutes(
           faviconUrl: (tenant as any).faviconUrl,
         });
       }
-      return res.json({ gymName: "ForgeFit", primaryColor: "#1e40af", secondaryColor: "#3b82f6" });
+      return res.json({ gymName: "Fitro360", primaryColor: "#1e40af", secondaryColor: "#3b82f6" });
     } catch {
-      return res.json({ gymName: "ForgeFit", primaryColor: "#1e40af", secondaryColor: "#3b82f6" });
+      return res.json({ gymName: "Fitro360", primaryColor: "#1e40af", secondaryColor: "#3b82f6" });
     }
   });
 
@@ -966,6 +975,7 @@ export async function registerRoutes(
       const stripe = require("stripe")(stripeKey);
       const user = (req as any).user;
       if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const tenant = (req as any).tenant;
       const { amount, currency, description, memberId, invoiceId } = req.body;
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
@@ -1105,14 +1115,21 @@ export async function registerRoutes(
 
   app.post("/api/admin/tenants", authMiddleware, requireRole("platform_admin"), async (req: Request, res: Response) => {
     try {
-      const { gymName, email, domain, subscriptionPlan, primaryColor, secondaryColor, ownerFirstName, ownerLastName, ownerUsername, ownerPassword } = req.body;
+      const { gymName, email, domain, subdomain, subscriptionPlan, primaryColor, secondaryColor, market, ownerFirstName, ownerLastName, ownerUsername, ownerPassword } = req.body;
       const existingUser = await storage.getUserByUsername(ownerUsername);
       if (existingUser) return res.status(400).json({ message: "Username already exists" });
+      const cleanSubdomain = subdomain ? subdomain.toLowerCase().trim().replace(/[^a-z0-9-]/g, "") : null;
+      if (cleanSubdomain) {
+        const existingSub = await storage.getTenantBySubdomain(cleanSubdomain);
+        if (existingSub) return res.status(400).json({ message: "Subdomain already in use" });
+      }
       const tenant = await storage.createTenant({
         gymName, email,
         domain: domain || null,
+        subdomain: cleanSubdomain || null,
         subscriptionPlan, primaryColor, secondaryColor,
         appDisplayName: gymName,
+        market: market || "uae",
         isActive: true,
       });
       const hashedPassword = await bcrypt.hash(ownerPassword, 10);
@@ -1123,6 +1140,53 @@ export async function registerRoutes(
         isActive: true,
       });
       return res.json(tenant);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/admin/tenants/:id", authMiddleware, requireRole("platform_admin"), async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    const tenant = await storage.getTenant(id);
+    if (!tenant) return res.status(404).json({ message: "Tenant not found" });
+    const userCount = await storage.getTenantUserCount(tenant.id);
+    const memberCount = await storage.getTenantMemberCount(tenant.id);
+    const tenantUsers = await storage.getUsersByTenant(tenant.id);
+    return res.json({ ...tenant, userCount, memberCount, users: tenantUsers });
+  });
+
+  app.patch("/api/admin/tenants/:id", authMiddleware, requireRole("platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const id = req.params.id as string;
+      const { gymName, email, domain, subdomain, subscriptionPlan, primaryColor, secondaryColor, market, isActive } = req.body;
+      const cleanSubdomain = subdomain ? subdomain.toLowerCase().trim().replace(/[^a-z0-9-]/g, "") : null;
+      if (cleanSubdomain) {
+        const existingSub = await storage.getTenantBySubdomain(cleanSubdomain);
+        if (existingSub && existingSub.id !== id) {
+          return res.status(400).json({ message: "Subdomain already in use" });
+        }
+      }
+      const updated = await storage.updateTenant(id, {
+        gymName, email,
+        domain: domain || null,
+        subdomain: cleanSubdomain || null,
+        subscriptionPlan, primaryColor, secondaryColor,
+        appDisplayName: gymName,
+        market: market || "uae",
+        isActive,
+      });
+      if (!updated) return res.status(404).json({ message: "Tenant not found" });
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/admin/tenants/:id", authMiddleware, requireRole("platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const id = req.params.id as string;
+      await storage.deleteTenant(id);
+      return res.json({ message: "Tenant deleted" });
     } catch (error: any) {
       return res.status(400).json({ message: error.message });
     }

@@ -35,6 +35,7 @@ import TrainerManagementPage from "@/pages/trainer-management";
 import AdminDashboardPage from "@/pages/admin/dashboard";
 import TenantsPage from "@/pages/admin/tenants";
 import PlansPage from "@/pages/admin/plans";
+import AdminSettingsPage from "@/pages/admin/settings";
 
 function LoadingScreen() {
   return (
@@ -54,7 +55,7 @@ function AdminRouter() {
       <Route path="/admin" component={AdminDashboardPage} />
       <Route path="/admin/tenants" component={TenantsPage} />
       <Route path="/admin/plans" component={PlansPage} />
-      <Route path="/admin/settings" component={() => <div className="p-6"><h1 className="text-2xl font-bold">Platform Settings</h1><p className="text-muted-foreground mt-1">Coming soon</p></div>} />
+      <Route path="/admin/settings" component={AdminSettingsPage} />
       <Route component={NotFound} />
     </Switch>
   );

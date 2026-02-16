@@ -10,6 +10,7 @@ export const tenants = pgTable("tenants", {
   primaryColor: text("primary_color").default("#1e40af"),
   secondaryColor: text("secondary_color").default("#3b82f6"),
   domain: text("domain").unique(),
+  subdomain: text("subdomain").unique(),
   subscriptionPlan: text("subscription_plan").default("basic"),
   appDisplayName: text("app_display_name"),
   email: text("email"),

@@ -17,7 +17,7 @@ Fitro360 is a white-label, multi-tenant SaaS platform for gym management. It sup
 - Sidebar navigation adapts to user role (members see portal, trainers see workspace, owners see full admin)
 
 ## Database Tables
-- `tenants` - Gym organizations with branding config (primaryColor, secondaryColor, domain, faviconUrl, emailTemplateBg, emailTemplateAccent, smsSenderId, invoiceHeader, invoiceFooter)
+- `tenants` - Gym organizations with branding config (primaryColor, secondaryColor, domain, subdomain, faviconUrl, emailTemplateBg, emailTemplateAccent, smsSenderId, invoiceHeader, invoiceFooter, market)
 - `users` - All users across tenants with role-based access
 - `members` - Gym members with BMI tracking (height, weight, bmi)
 - `member_metrics` - Historical progress tracking (weight, BMI, body fat over time)
@@ -69,8 +69,9 @@ client/src/
     settings.tsx      - Tenant branding settings (4 cards: Gym Info, Branding, Advanced Branding, Email Template)
     admin/            - Platform admin pages
       dashboard.tsx   - Platform overview
-      tenants.tsx     - Tenant CRUD
+      tenants.tsx     - Full tenant CRUD (add/edit/delete, subdomain, detail view with users)
       plans.tsx       - Subscription plans
+      settings.tsx    - Platform settings (domain config, security, markets)
 server/
   index.ts            - Express server entry
   db.ts               - Database connection
