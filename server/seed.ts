@@ -167,6 +167,19 @@ export async function seedDatabase() {
     isActive: true,
   });
 
+  const memberPassword = await bcrypt.hash("member123", 10);
+  await storage.createUser({
+    tenantId: tenant1.id,
+    username: "member1",
+    email: "alex.r@email.com",
+    password: memberPassword,
+    role: "member",
+    firstName: "Alex",
+    lastName: "Rivera",
+    phone: "+1 555-1001",
+    isActive: true,
+  });
+
   const now = new Date();
   const seedMembers = [
     { firstName: "Alex", lastName: "Rivera", email: "alex.r@email.com", phone: "+1 555-1001", membershipType: "annual", status: "active", daysOffset: -120 },
