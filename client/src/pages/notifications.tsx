@@ -60,11 +60,11 @@ const notificationFormSchema = z.object({
 
 type NotificationFormValues = z.infer<typeof notificationFormSchema>;
 
-const typeConfig: Record<string, { label: string; icon: typeof Bell }> = {
-  membership_expiry: { label: "Membership Expiry", icon: CreditCard },
-  session_reminder: { label: "Session Reminder", icon: CalendarDays },
-  stock_alert: { label: "Stock Alert", icon: Package },
-  broadcast: { label: "Broadcast", icon: Megaphone },
+const typeConfig: Record<string, { label: string; icon: typeof Bell; badgeClass: string; iconBg: string }> = {
+  membership_expiry: { label: "Membership Expiry", icon: CreditCard, badgeClass: "bg-amber-100 text-amber-700 border-amber-200", iconBg: "bg-amber-100 text-amber-600" },
+  session_reminder: { label: "Session Reminder", icon: CalendarDays, badgeClass: "bg-blue-100 text-blue-700 border-blue-200", iconBg: "bg-blue-100 text-blue-600" },
+  stock_alert: { label: "Stock Alert", icon: Package, badgeClass: "bg-red-100 text-red-700 border-red-200", iconBg: "bg-red-100 text-red-600" },
+  broadcast: { label: "Broadcast", icon: Megaphone, badgeClass: "bg-emerald-100 text-emerald-700 border-emerald-200", iconBg: "bg-emerald-100 text-emerald-600" },
 };
 
 function getTypeIcon(type: string) {
@@ -324,9 +324,7 @@ export default function NotificationsPage() {
                   <CardContent className="p-4 flex items-start gap-3">
                     <div
                       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${
-                        !notification.isRead
-                          ? "bg-primary/10 text-primary"
-                          : "bg-muted text-muted-foreground"
+                        typeConfig[notification.type]?.iconBg || (!notification.isRead ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")
                       }`}
                     >
                       {getTypeIcon(notification.type)}
@@ -363,7 +361,7 @@ export default function NotificationsPage() {
                               })
                             : ""}
                         </span>
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="outline" className={`text-xs ${typeConfig[notification.type]?.badgeClass || "bg-gray-100 text-gray-700 border-gray-200"}`}>
                           {typeConfig[notification.type]?.label || notification.type}
                         </Badge>
                         {notification.channel && notification.channel !== "in_app" && (

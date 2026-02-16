@@ -338,10 +338,10 @@ export default function MaintenancePage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Total Records" value={items.length} icon={ClipboardList} />
-          <StatCard title="Scheduled" value={scheduled.length} icon={Clock} />
-          <StatCard title="In Progress" value={inProgress.length} icon={Play} />
-          <StatCard title="Overdue" value={overdue.length} icon={AlertTriangle} />
+          <StatCard title="Total Records" value={items.length} icon={ClipboardList} color="blue" />
+          <StatCard title="Scheduled" value={scheduled.length} icon={Clock} color="violet" />
+          <StatCard title="In Progress" value={inProgress.length} icon={Play} color="amber" />
+          <StatCard title="Overdue" value={overdue.length} icon={AlertTriangle} color="rose" />
         </div>
       )}
 
@@ -403,7 +403,12 @@ export default function MaintenancePage() {
                         {equipMap.get(record.equipmentId) || "Unknown"}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className="capitalize text-xs">
+                        <Badge variant="outline" className={`capitalize text-xs ${
+                          record.type === "routine" ? "bg-blue-100 text-blue-700 border-blue-200" :
+                          record.type === "repair" ? "bg-amber-100 text-amber-700 border-amber-200" :
+                          record.type === "inspection" ? "bg-violet-100 text-violet-700 border-violet-200" :
+                          "bg-cyan-100 text-cyan-700 border-cyan-200"
+                        }`}>
                           {typeLabels[record.type] || record.type}
                         </Badge>
                       </TableCell>

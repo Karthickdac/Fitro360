@@ -25,11 +25,13 @@ import {
 } from "recharts";
 
 const CHART_COLORS = [
-  "hsl(217, 91%, 35%)",
-  "hsl(173, 58%, 39%)",
-  "hsl(32, 95%, 44%)",
-  "hsl(280, 65%, 45%)",
-  "hsl(340, 75%, 42%)",
+  "hsl(217, 91%, 50%)",
+  "hsl(160, 84%, 39%)",
+  "hsl(32, 95%, 52%)",
+  "hsl(270, 76%, 53%)",
+  "hsl(340, 82%, 52%)",
+  "hsl(190, 90%, 45%)",
+  "hsl(230, 70%, 55%)",
 ];
 
 interface DashboardData {
@@ -125,22 +127,26 @@ export default function AnalyticsPage() {
           title="Total Members"
           value={data?.totalMembers || 0}
           icon={Users}
+          color="blue"
         />
         <StatCard
           title="Active Members"
           value={data?.activeMembers || 0}
           icon={TrendingUp}
           subtitle={`${data?.totalMembers ? Math.round((data.activeMembers / data.totalMembers) * 100) : 0}% of total`}
+          color="emerald"
         />
         <StatCard
           title="Total Revenue"
           value={fmt(data?.totalRevenue || 0)}
           icon={DollarSign}
+          color="violet"
         />
         <StatCard
           title="Inventory Value"
           value={fmt(data?.inventoryValue || 0)}
           icon={Package}
+          color="amber"
         />
       </div>
 

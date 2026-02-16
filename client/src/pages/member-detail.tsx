@@ -200,12 +200,13 @@ export default function MemberDetailPage() {
                 {member.firstName} {member.lastName}
               </h1>
               <Badge
-                variant={member.status === "active" ? "default" : member.status === "frozen" ? "secondary" : "destructive"}
+                variant="outline"
+                className={member.status === "active" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : member.status === "frozen" ? "bg-amber-100 text-amber-700 border-amber-200" : "bg-red-100 text-red-700 border-red-200"}
                 data-testid="badge-status"
               >
                 {member.status}
               </Badge>
-              <Badge variant="secondary" className="capitalize" data-testid="badge-membership">
+              <Badge variant="outline" className="capitalize bg-violet-100 text-violet-700 border-violet-200" data-testid="badge-membership">
                 {member.membershipType.replace("_", " ")}
               </Badge>
             </div>
@@ -288,11 +289,11 @@ export default function MemberDetailPage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card data-testid="card-bmi">
+        <Card className="border-0 bg-gradient-to-br from-violet-50 to-violet-100 dark:from-violet-950/40 dark:to-violet-900/30" data-testid="card-bmi">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Activity className="h-4 w-4 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">BMI</p>
+              <Activity className="h-4 w-4 text-violet-600" />
+              <p className="text-sm text-violet-600 dark:text-violet-400">BMI</p>
             </div>
             {currentBmi !== null ? (
               <>
@@ -307,49 +308,49 @@ export default function MemberDetailPage() {
           </CardContent>
         </Card>
 
-        <Card data-testid="card-height">
+        <Card className="border-0 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30" data-testid="card-height">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Ruler className="h-4 w-4 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">Height</p>
+              <Ruler className="h-4 w-4 text-blue-600" />
+              <p className="text-sm text-blue-600 dark:text-blue-400">Height</p>
             </div>
-            <p className="text-2xl font-bold" data-testid="text-height-value">
+            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300" data-testid="text-height-value">
               {currentHeight ? `${currentHeight} cm` : "—"}
             </p>
           </CardContent>
         </Card>
 
-        <Card data-testid="card-weight">
+        <Card className="border-0 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/40 dark:to-emerald-900/30" data-testid="card-weight">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Weight className="h-4 w-4 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">Weight</p>
+              <Weight className="h-4 w-4 text-emerald-600" />
+              <p className="text-sm text-emerald-600 dark:text-emerald-400">Weight</p>
             </div>
-            <p className="text-2xl font-bold" data-testid="text-weight-value">
+            <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300" data-testid="text-weight-value">
               {currentWeight ? `${currentWeight} kg` : "—"}
             </p>
           </CardContent>
         </Card>
 
-        <Card data-testid="card-bodyfat">
+        <Card className="border-0 bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-950/40 dark:to-rose-900/30" data-testid="card-bodyfat">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Percent className="h-4 w-4 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">Body Fat</p>
+              <Percent className="h-4 w-4 text-rose-600" />
+              <p className="text-sm text-rose-600 dark:text-rose-400">Body Fat</p>
             </div>
-            <p className="text-2xl font-bold" data-testid="text-bodyfat-value">
+            <p className="text-2xl font-bold text-rose-700 dark:text-rose-300" data-testid="text-bodyfat-value">
               {currentBodyFat ? `${currentBodyFat}%` : "—"}
             </p>
           </CardContent>
         </Card>
 
-        <Card data-testid="card-days-remaining">
+        <Card className="border-0 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/40 dark:to-amber-900/30" data-testid="card-days-remaining">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">Days Left</p>
+              <Calendar className="h-4 w-4 text-amber-600" />
+              <p className="text-sm text-amber-600 dark:text-amber-400">Days Left</p>
             </div>
-            <p className={`text-2xl font-bold ${daysRemaining !== null && daysRemaining <= 7 ? "text-red-500" : ""}`} data-testid="text-days-remaining">
+            <p className={`text-2xl font-bold ${daysRemaining !== null && daysRemaining <= 7 ? "text-red-500" : "text-amber-700 dark:text-amber-300"}`} data-testid="text-days-remaining">
               {daysRemaining !== null ? daysRemaining : "—"}
             </p>
           </CardContent>

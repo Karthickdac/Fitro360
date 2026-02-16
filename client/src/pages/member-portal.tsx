@@ -266,22 +266,26 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
               title="My Attendance"
               value={myAttendance.length}
               icon={CalendarCheck}
+              color="blue"
             />
             <StatCard
               title="Membership Status"
               value={member?.status ? member.status.charAt(0).toUpperCase() + member.status.slice(1) : "N/A"}
               icon={Shield}
+              color="emerald"
             />
             <StatCard
               title="Days Remaining"
               value={daysRemaining}
               icon={Clock}
               subtitle={member?.membershipEnd ? `Expires ${format(new Date(member.membershipEnd), "MMM d, yyyy")}` : "No end date"}
+              color="amber"
             />
             <StatCard
               title="BMI"
               value={member?.bmi ? Number(member.bmi).toFixed(1) : "N/A"}
               icon={Activity}
+              color="violet"
             />
           </div>
 
@@ -429,46 +433,46 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
+            <Card className="border-0 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <Ruler className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Height</span>
+                  <Ruler className="h-4 w-4 text-blue-600" />
+                  <span className="text-xs text-blue-600 dark:text-blue-400">Height</span>
                 </div>
-                <p className="text-xl font-bold" data-testid="text-current-height">
+                <p className="text-xl font-bold text-blue-700 dark:text-blue-300" data-testid="text-current-height">
                   {member?.heightCm ? `${member.heightCm} cm` : "—"}
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-0 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/40 dark:to-emerald-900/30">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <Weight className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Weight</span>
+                  <Weight className="h-4 w-4 text-emerald-600" />
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400">Weight</span>
                 </div>
-                <p className="text-xl font-bold" data-testid="text-current-weight">
+                <p className="text-xl font-bold text-emerald-700 dark:text-emerald-300" data-testid="text-current-weight">
                   {member?.weightKg ? `${member.weightKg} kg` : "—"}
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-0 bg-gradient-to-br from-violet-50 to-violet-100 dark:from-violet-950/40 dark:to-violet-900/30">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <Activity className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">BMI</span>
+                  <Activity className="h-4 w-4 text-violet-600" />
+                  <span className="text-xs text-violet-600 dark:text-violet-400">BMI</span>
                 </div>
-                <p className="text-xl font-bold" data-testid="text-current-bmi">
+                <p className="text-xl font-bold text-violet-700 dark:text-violet-300" data-testid="text-current-bmi">
                   {member?.bmi ? Number(member.bmi).toFixed(1) : "—"}
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-0 bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-950/40 dark:to-rose-900/30">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <Percent className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Body Fat</span>
+                  <Percent className="h-4 w-4 text-rose-600" />
+                  <span className="text-xs text-rose-600 dark:text-rose-400">Body Fat</span>
                 </div>
-                <p className="text-xl font-bold" data-testid="text-current-bodyfat">
+                <p className="text-xl font-bold text-rose-700 dark:text-rose-300" data-testid="text-current-bodyfat">
                   {metrics && metrics.length > 0 && metrics[0].bodyFatPct ? `${metrics[0].bodyFatPct}%` : "—"}
                 </p>
               </CardContent>
@@ -607,7 +611,7 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
                             {trainerMap.get(session.trainerId) || "Trainer"}
                           </p>
                         </div>
-                        <Badge variant={session.type === "personal" ? "default" : "secondary"} className="shrink-0">
+                        <Badge variant="outline" className={`shrink-0 ${session.type === "personal" ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-violet-100 text-violet-700 border-violet-200"}`}>
                           {session.type}
                         </Badge>
                       </div>
@@ -741,7 +745,8 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Status</p>
                     <Badge
-                      variant={member?.status === "active" ? "default" : "secondary"}
+                      variant="outline"
+                      className={member?.status === "active" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-amber-100 text-amber-700 border-amber-200"}
                       data-testid="badge-profile-status"
                     >
                       {member?.status || "—"}

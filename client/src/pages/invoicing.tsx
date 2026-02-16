@@ -61,10 +61,13 @@ const createInvoiceSchema = z.object({
 
 type InvoiceFormValues = z.infer<typeof createInvoiceSchema>;
 
-const statusConfig: Record<string, { variant: "default" | "secondary" | "destructive"; className: string }> = {
-  pending: { variant: "default", className: "bg-yellow-600 text-white no-default-hover-elevate no-default-active-elevate" },
-  paid: { variant: "default", className: "bg-green-600 text-white no-default-hover-elevate no-default-active-elevate" },
-  cancelled: { variant: "destructive", className: "" },
+const avatarColors = ["bg-blue-500","bg-emerald-500","bg-violet-500","bg-amber-500","bg-rose-500","bg-cyan-500","bg-indigo-500","bg-pink-500"];
+
+const statusConfig: Record<string, { variant: "outline"; className: string }> = {
+  pending: { variant: "outline", className: "bg-amber-100 text-amber-700 border-amber-200 no-default-hover-elevate no-default-active-elevate" },
+  paid: { variant: "outline", className: "bg-emerald-100 text-emerald-700 border-emerald-200 no-default-hover-elevate no-default-active-elevate" },
+  cancelled: { variant: "outline", className: "bg-gray-100 text-gray-700 border-gray-200 no-default-hover-elevate no-default-active-elevate" },
+  overdue: { variant: "outline", className: "bg-red-100 text-red-700 border-red-200 no-default-hover-elevate no-default-active-elevate" },
 };
 
 export default function InvoicingPage() {
@@ -349,10 +352,17 @@ export default function InvoicingPage() {
                         {invoice.invoiceNumber}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className="capitalize text-xs">{invoice.type}</Badge>
+                        <Badge variant="outline" className={`capitalize text-xs ${invoice.type === "sale" ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-violet-100 text-violet-700 border-violet-200"}`}>{invoice.type}</Badge>
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
-                        {invoice.customerId || "—"}
+                      <TableCell className="hidden sm:table-cell text-sm">
+                        {invoice.customerId ? (
+                          <div className="flex items-center gap-2">
+                            <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white text-xs font-medium ${avatarColors[invoice.customerId.charCodeAt(0) % avatarColors.length]}`}>
+                              {invoice.customerId.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="text-muted-foreground">{invoice.customerId}</span>
+                          </div>
+                        ) : "—"}
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                         {itemsArr.length}

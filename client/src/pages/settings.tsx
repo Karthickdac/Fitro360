@@ -98,8 +98,8 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10">
-                  <Building2 className="h-5 w-5 text-primary" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-blue-100 dark:bg-blue-900/30">
+                  <Building2 className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
                   <CardTitle className="text-base">Gym Information</CardTitle>
@@ -202,8 +202,8 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10">
-                  <Palette className="h-5 w-5 text-primary" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-violet-100 dark:bg-violet-900/30">
+                  <Palette className="h-5 w-5 text-violet-600" />
                 </div>
                 <div>
                   <CardTitle className="text-base">Branding</CardTitle>
@@ -277,8 +277,8 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10">
-                  <Image className="h-5 w-5 text-primary" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-amber-100 dark:bg-amber-900/30">
+                  <Image className="h-5 w-5 text-amber-600" />
                 </div>
                 <div>
                   <CardTitle className="text-base">Advanced Branding</CardTitle>
@@ -387,8 +387,8 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10">
-                  <Mail className="h-5 w-5 text-primary" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-emerald-100 dark:bg-emerald-900/30">
+                  <Mail className="h-5 w-5 text-emerald-600" />
                 </div>
                 <div>
                   <CardTitle className="text-base">Email Template</CardTitle>

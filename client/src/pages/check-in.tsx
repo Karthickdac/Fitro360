@@ -35,6 +35,7 @@ import {
   LogOut,
   QrCode,
 } from "lucide-react";
+import { StatCard } from "@/components/stat-card";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -230,45 +231,9 @@ export default function CheckInPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Check-ins Today
-            </CardTitle>
-            <UserCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="stat-total-checkins">
-              {totalCheckIns}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Currently In Gym
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="stat-currently-in">
-              {currentlyIn}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Average Duration
-            </CardTitle>
-            <Timer className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="stat-avg-duration">
-              {avgDuration}
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard title="Total Check-ins Today" value={totalCheckIns} icon={UserCheck} color="blue" />
+        <StatCard title="Currently In Gym" value={currentlyIn} icon={Users} color="emerald" />
+        <StatCard title="Average Duration" value={avgDuration} icon={Timer} color="violet" />
       </div>
 
       <Card>
@@ -318,7 +283,7 @@ export default function CheckInPage() {
                       data-testid={`row-search-member-${member.id}`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-medium">
+                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white text-xs font-medium ${["bg-blue-500","bg-emerald-500","bg-violet-500","bg-amber-500","bg-rose-500","bg-cyan-500","bg-indigo-500","bg-pink-500"][parseInt(member.id, 36) % 8]}`}>
                           {member.firstName[0]}
                           {member.lastName[0]}
                         </div>
@@ -419,6 +384,7 @@ export default function CheckInPage() {
                   <TableHead className="hidden sm:table-cell">Check-out</TableHead>
                   <TableHead className="hidden md:table-cell">Method</TableHead>
                   <TableHead className="hidden md:table-cell">Duration</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="w-[80px]">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -432,7 +398,7 @@ export default function CheckInPage() {
                     >
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-medium">
+                          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white text-xs font-medium ${["bg-blue-500","bg-emerald-500","bg-violet-500","bg-amber-500","bg-rose-500","bg-cyan-500","bg-indigo-500","bg-pink-500"][parseInt(record.memberId, 36) % 8]}`}>
                             {member
                               ? `${member.firstName[0]}${member.lastName[0]}`
                               : "?"}
@@ -455,12 +421,17 @@ export default function CheckInPage() {
                           : "-"}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        <Badge variant="secondary" className="capitalize" data-testid={`badge-method-${record.id}`}>
+                        <Badge variant="outline" className={`capitalize ${record.method === "qr" ? "bg-violet-100 text-violet-700 border-violet-200" : "bg-blue-100 text-blue-700 border-blue-200"}`} data-testid={`badge-method-${record.id}`}>
                           {record.method || "manual"}
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground" data-testid={`text-duration-${record.id}`}>
                         {getDuration(record)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={record.checkOutTime ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-emerald-100 text-emerald-700 border-emerald-200"}>
+                          {record.checkOutTime ? "Checked Out" : "Checked In"}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         {!record.checkOutTime && (

@@ -239,8 +239,8 @@ export default function BranchesPage() {
             <Card key={branch.id} data-testid={`card-branch-${branch.id}`}>
               <CardHeader className="flex flex-row items-start justify-between gap-2 pb-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <Building2 className="h-4 w-4" />
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white font-medium text-sm ${["bg-blue-500","bg-emerald-500","bg-violet-500","bg-amber-500","bg-rose-500","bg-cyan-500","bg-indigo-500","bg-pink-500"][branch.name.charCodeAt(0) % 8]}`}>
+                    {branch.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0">
                     <CardTitle className="text-base truncate" data-testid={`text-branch-name-${branch.id}`}>
@@ -248,7 +248,7 @@ export default function BranchesPage() {
                     </CardTitle>
                   </div>
                 </div>
-                <Badge variant={branch.isActive ? "default" : "secondary"} data-testid={`badge-branch-status-${branch.id}`}>
+                <Badge variant="outline" className={branch.isActive ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-red-100 text-red-700 border-red-200"} data-testid={`badge-branch-status-${branch.id}`}>
                   {branch.isActive ? "Active" : "Inactive"}
                 </Badge>
               </CardHeader>

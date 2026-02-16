@@ -12,6 +12,13 @@ const iconMap: Record<string, typeof Activity> = {
   check_in: LogIn,
 };
 
+const iconColorMap: Record<string, string> = {
+  member_added: "bg-emerald-100 text-emerald-600",
+  member_renewed: "bg-blue-100 text-blue-600",
+  payment: "bg-violet-100 text-violet-600",
+  check_in: "bg-amber-100 text-amber-600",
+};
+
 export default function ActivityPage() {
   const { data: activities, isLoading } = useQuery<ActivityType[]>({
     queryKey: ["/api/activities"],
@@ -56,8 +63,8 @@ export default function ActivityPage() {
                     className="flex items-center gap-4 p-4"
                     data-testid={`activity-item-${activity.id}`}
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted">
-                      <Icon className="h-4 w-4 text-muted-foreground" />
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${iconColorMap[activity.type] || "bg-gray-100 text-gray-600"}`}>
+                      <Icon className="h-4 w-4" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{activity.description}</p>

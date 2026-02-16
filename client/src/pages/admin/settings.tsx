@@ -18,7 +18,9 @@ export default function AdminSettingsPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Globe className="h-4 w-4" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-100 dark:bg-blue-900/40">
+                <Globe className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
               Domain Configuration
             </CardTitle>
           </CardHeader>
@@ -32,7 +34,7 @@ export default function AdminSettingsPage() {
               <label className="text-sm font-medium">Subdomain Pattern</label>
               <div className="flex items-center gap-0 mt-1.5">
                 <span className="inline-flex items-center px-3 h-9 bg-muted border rounded-l-md text-sm text-muted-foreground">*.fitro360.com</span>
-                <Badge variant="default" className="rounded-l-none h-9">Active</Badge>
+                <Badge variant="outline" className="rounded-l-none h-9 bg-emerald-100 text-emerald-700 border-emerald-200">Active</Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-1">Tenants can be accessed via their subdomain (e.g., gymname.fitro360.com)</p>
             </div>
@@ -52,7 +54,9 @@ export default function AdminSettingsPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Shield className="h-4 w-4" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-100 dark:bg-emerald-900/40">
+                <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
               Security
             </CardTitle>
           </CardHeader>
@@ -65,7 +69,7 @@ export default function AdminSettingsPage() {
             <div>
               <label className="text-sm font-medium">Password Hashing</label>
               <div className="flex items-center gap-2 mt-1.5">
-                <Badge variant="secondary">bcrypt (10 rounds)</Badge>
+                <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">bcrypt (10 rounds)</Badge>
               </div>
             </div>
             <Separator />
@@ -81,7 +85,9 @@ export default function AdminSettingsPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Server className="h-4 w-4" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-violet-100 dark:bg-violet-900/40">
+                <Server className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+              </div>
               Platform Info
             </CardTitle>
           </CardHeader>
@@ -108,7 +114,7 @@ export default function AdminSettingsPage() {
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Multi-tenant</span>
-              <Badge variant="default">Enabled</Badge>
+              <Badge variant="outline" className="bg-emerald-100 text-emerald-700 border-emerald-200">Enabled</Badge>
             </div>
           </CardContent>
         </Card>
@@ -116,7 +122,9 @@ export default function AdminSettingsPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Database className="h-4 w-4" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-100 dark:bg-amber-900/40">
+                <Database className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              </div>
               Supported Markets
             </CardTitle>
           </CardHeader>
@@ -127,7 +135,7 @@ export default function AdminSettingsPage() {
                   <p className="font-medium text-sm">UAE</p>
                   <p className="text-xs text-muted-foreground">Currency: AED, Tax: VAT 5%</p>
                 </div>
-                <Badge variant="default">Active</Badge>
+                <Badge variant="outline" className="bg-emerald-100 text-emerald-700 border-emerald-200">Active</Badge>
               </div>
             </div>
             <div className="p-3 rounded-md border">
@@ -136,7 +144,7 @@ export default function AdminSettingsPage() {
                   <p className="font-medium text-sm">India</p>
                   <p className="text-xs text-muted-foreground">Currency: INR (₹), Tax: GST 18%</p>
                 </div>
-                <Badge variant="default">Active</Badge>
+                <Badge variant="outline" className="bg-emerald-100 text-emerald-700 border-emerald-200">Active</Badge>
               </div>
             </div>
           </CardContent>

@@ -299,9 +299,14 @@ export default function ReferralsPage() {
                   return (
                     <TableRow key={referral.id} data-testid={`row-referral-${referral.id}`}>
                       <TableCell>
-                        <span className="font-medium text-sm" data-testid={`text-referrer-${referral.id}`}>
-                          {referrer ? `${referrer.firstName} ${referrer.lastName}` : "Unknown"}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white text-xs font-medium ${["bg-blue-500","bg-emerald-500","bg-violet-500","bg-amber-500","bg-rose-500","bg-cyan-500","bg-indigo-500","bg-pink-500"][referral.referrerId.charCodeAt(0) % 8]}`}>
+                            {referrer ? referrer.firstName.charAt(0).toUpperCase() : "?"}
+                          </div>
+                          <span className="font-medium text-sm" data-testid={`text-referrer-${referral.id}`}>
+                            {referrer ? `${referrer.firstName} ${referrer.lastName}` : "Unknown"}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                         {referred ? `${referred.firstName} ${referred.lastName}` : "-"}
@@ -313,19 +318,13 @@ export default function ReferralsPage() {
                       </TableCell>
                       <TableCell>
                         <Badge
-                          variant={
-                            referral.status === "completed"
-                              ? "default"
-                              : referral.status === "pending"
-                                ? "secondary"
-                                : "destructive"
-                          }
+                          variant="outline"
                           className={
                             referral.status === "completed"
-                              ? "bg-green-600 text-white"
+                              ? "bg-emerald-100 text-emerald-700 border-emerald-200"
                               : referral.status === "pending"
-                                ? "bg-yellow-600 text-white"
-                                : ""
+                                ? "bg-amber-100 text-amber-700 border-amber-200"
+                                : "bg-red-100 text-red-700 border-red-200"
                           }
                           data-testid={`badge-referral-status-${referral.id}`}
                         >

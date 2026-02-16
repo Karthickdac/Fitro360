@@ -220,10 +220,14 @@ export default function TenantsPage() {
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight">{tenantDetail.gymName}</h1>
                   <div className="flex items-center gap-2 mt-1">
-                    <Badge variant={tenantDetail.isActive ? "default" : "destructive"}>
+                    <Badge variant="outline" className={tenantDetail.isActive ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-red-100 text-red-700 border-red-200"}>
                       {tenantDetail.isActive ? "Active" : "Inactive"}
                     </Badge>
-                    <Badge variant="secondary" className="capitalize">{tenantDetail.subscriptionPlan}</Badge>
+                    <Badge variant="outline" className={`capitalize ${
+                      tenantDetail.subscriptionPlan === 'enterprise' ? 'bg-violet-100 text-violet-700 border-violet-200' :
+                      tenantDetail.subscriptionPlan === 'pro' ? 'bg-cyan-100 text-cyan-700 border-cyan-200' :
+                      'bg-blue-100 text-blue-700 border-blue-200'
+                    }`}>{tenantDetail.subscriptionPlan}</Badge>
                     {(tenantDetail as any).subdomain && (
                       <Badge variant="outline" className="gap-1">
                         <Globe className="h-3 w-3" />
@@ -305,10 +309,10 @@ export default function TenantsPage() {
                         <TableCell className="font-medium">{u.firstName} {u.lastName}</TableCell>
                         <TableCell className="text-muted-foreground">{u.username}</TableCell>
                         <TableCell>
-                          <Badge variant="secondary" className="capitalize">{u.role.replace("_", " ")}</Badge>
+                          <Badge variant="outline" className="capitalize bg-blue-100 text-blue-700 border-blue-200">{u.role.replace("_", " ")}</Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={u.isActive ? "default" : "destructive"}>{u.isActive ? "Active" : "Inactive"}</Badge>
+                          <Badge variant="outline" className={u.isActive ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-red-100 text-red-700 border-red-200"}>{u.isActive ? "Active" : "Inactive"}</Badge>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -543,12 +547,17 @@ export default function TenantsPage() {
                         onClick={() => setDetailTenantId(tenant.id)}
                         data-testid={`link-tenant-${tenant.id}`}
                       >
-                        <div
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-white font-semibold text-sm"
-                          style={{ backgroundColor: tenant.primaryColor || "#1e40af" }}
-                        >
-                          {tenant.gymName.charAt(0)}
-                        </div>
+                        {(() => {
+                          const avatarColors = ["bg-blue-500","bg-emerald-500","bg-violet-500","bg-amber-500","bg-rose-500","bg-cyan-500","bg-indigo-500","bg-pink-500"];
+                          const colorIdx = typeof tenant.id === 'string' ? tenant.id.charCodeAt(0) % avatarColors.length : 0;
+                          return (
+                            <div
+                              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-white font-semibold text-sm ${avatarColors[colorIdx]}`}
+                            >
+                              {tenant.gymName.charAt(0)}
+                            </div>
+                          );
+                        })()}
                         <div className="min-w-0">
                           <span className="font-medium text-sm block truncate">{tenant.gymName}</span>
                           <span className="text-xs text-muted-foreground truncate block">{tenant.email || ""}</span>
@@ -565,10 +574,17 @@ export default function TenantsPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className="capitalize">{tenant.subscriptionPlan}</Badge>
+                      <Badge variant="outline" className={`capitalize ${
+                        tenant.subscriptionPlan === 'enterprise' ? 'bg-violet-100 text-violet-700 border-violet-200' :
+                        tenant.subscriptionPlan === 'pro' ? 'bg-cyan-100 text-cyan-700 border-cyan-200' :
+                        'bg-blue-100 text-blue-700 border-blue-200'
+                      }`}>{tenant.subscriptionPlan}</Badge>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
-                      <Badge variant="outline" className="uppercase text-xs">{(tenant as any).market || "uae"}</Badge>
+                      <Badge variant="outline" className={`uppercase text-xs ${
+                        (tenant as any).market === 'india' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                        'bg-emerald-100 text-emerald-700 border-emerald-200'
+                      }`}>{(tenant as any).market || "uae"}</Badge>
                     </TableCell>
                     <TableCell>
                       <Switch

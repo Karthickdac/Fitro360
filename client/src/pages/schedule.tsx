@@ -496,8 +496,16 @@ export default function SchedulePage() {
           <span className="text-xs text-muted-foreground">Personal</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded-sm bg-green-500" />
+          <div className="h-3 w-3 rounded-sm bg-violet-500" />
           <span className="text-xs text-muted-foreground">Group</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="h-3 w-3 rounded-sm bg-amber-500" />
+          <span className="text-xs text-muted-foreground">Assessment</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="h-3 w-3 rounded-sm bg-rose-500" />
+          <span className="text-xs text-muted-foreground">Rehabilitation</span>
         </div>
       </div>
 
@@ -575,9 +583,15 @@ export default function SchedulePage() {
                                   onDragStart={(e) => handleDragStart(e, session)}
                                   onDragEnd={handleDragEnd}
                                   className={`w-full text-left rounded-md p-1.5 mb-1 text-xs cursor-grab active:cursor-grabbing ${
-                                    isPersonal
-                                      ? "bg-blue-500/15 text-blue-700 dark:text-blue-300"
-                                      : "bg-green-500/15 text-green-700 dark:text-green-300"
+                                    session.type === "personal"
+                                      ? "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-l-2 border-blue-500"
+                                      : session.type === "group"
+                                      ? "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-l-2 border-violet-500"
+                                      : session.type === "assessment"
+                                      ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-l-2 border-amber-500"
+                                      : session.type === "rehabilitation"
+                                      ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-l-2 border-rose-500"
+                                      : "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-l-2 border-cyan-500"
                                   }`}
                                   data-testid={`session-block-${session.id}`}
                                 >
@@ -626,14 +640,20 @@ export default function SchedulePage() {
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Badge
-                    variant="secondary"
+                    variant="outline"
                     className={
                       selectedSession.type === "personal"
-                        ? "bg-blue-500/15 text-blue-700 dark:text-blue-300"
-                        : "bg-green-500/15 text-green-700 dark:text-green-300"
+                        ? "bg-blue-100 text-blue-700 border-blue-200"
+                        : selectedSession.type === "group"
+                        ? "bg-violet-100 text-violet-700 border-violet-200"
+                        : selectedSession.type === "assessment"
+                        ? "bg-amber-100 text-amber-700 border-amber-200"
+                        : selectedSession.type === "rehabilitation"
+                        ? "bg-rose-100 text-rose-700 border-rose-200"
+                        : "bg-cyan-100 text-cyan-700 border-cyan-200"
                     }
                   >
-                    {selectedSession.type === "personal" ? "Personal" : "Group"}
+                    {selectedSession.type.charAt(0).toUpperCase() + selectedSession.type.slice(1)}
                   </Badge>
                 </div>
                 <h3 className="text-lg font-semibold" data-testid="text-session-title">

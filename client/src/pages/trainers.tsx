@@ -298,7 +298,7 @@ export default function TrainersPage() {
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <Avatar className="h-10 w-10">
-                                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                                <AvatarFallback className={`${["bg-blue-500","bg-emerald-500","bg-violet-500","bg-amber-500","bg-rose-500","bg-cyan-500","bg-indigo-500","bg-pink-500"][list.indexOf(trainer) % 8]} text-white font-semibold`}>
                                   {trainer.firstName[0]}{trainer.lastName[0]}
                                 </AvatarFallback>
                               </Avatar>
@@ -325,7 +325,7 @@ export default function TrainersPage() {
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
                               {(trainer.profile?.specializations as string[] || []).slice(0, 3).map((s, i) => (
-                                <Badge key={i} variant="outline" className="text-xs">{s}</Badge>
+                                <Badge key={i} variant="outline" className={`text-xs ${["bg-blue-100 text-blue-700 border-blue-200","bg-violet-100 text-violet-700 border-violet-200","bg-cyan-100 text-cyan-700 border-cyan-200","bg-amber-100 text-amber-700 border-amber-200","bg-rose-100 text-rose-700 border-rose-200"][i % 5]}`}>{s}</Badge>
                               ))}
                               {(trainer.profile?.specializations as string[] || []).length === 0 && (
                                 <span className="text-sm text-muted-foreground">—</span>
@@ -338,7 +338,7 @@ export default function TrainersPage() {
                               : "—"}
                           </TableCell>
                           <TableCell>
-                            <Badge variant={trainer.isActive ? "default" : "secondary"}>
+                            <Badge variant="outline" className={trainer.isActive ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-red-100 text-red-700 border-red-200"}>
                               {trainer.isActive ? "Active" : "Inactive"}
                             </Badge>
                           </TableCell>
@@ -609,7 +609,7 @@ export default function TrainersPage() {
             <div className="mt-6 space-y-6">
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
-                  <AvatarFallback className="bg-primary/10 text-primary text-xl font-semibold">
+                  <AvatarFallback className="bg-indigo-500 text-white text-xl font-semibold">
                     {selectedTrainer.firstName[0]}{selectedTrainer.lastName[0]}
                   </AvatarFallback>
                 </Avatar>
@@ -618,7 +618,7 @@ export default function TrainersPage() {
                     {selectedTrainer.firstName} {selectedTrainer.lastName}
                   </h3>
                   <p className="text-sm text-muted-foreground">@{selectedTrainer.username}</p>
-                  <Badge variant={selectedTrainer.isActive ? "default" : "secondary"} className="mt-1">
+                  <Badge variant="outline" className={`mt-1 ${selectedTrainer.isActive ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-red-100 text-red-700 border-red-200"}`}>
                     {selectedTrainer.isActive ? "Active" : "Inactive"}
                   </Badge>
                 </div>
@@ -667,7 +667,7 @@ export default function TrainersPage() {
                     <div className="flex flex-wrap gap-1.5" data-testid="text-detail-specializations">
                       {(selectedTrainer.profile?.specializations as string[] || []).length > 0 ? (
                         (selectedTrainer.profile?.specializations as string[]).map((s, i) => (
-                          <Badge key={i} variant="outline">{s}</Badge>
+                          <Badge key={i} variant="outline" className={`${["bg-blue-100 text-blue-700 border-blue-200","bg-violet-100 text-violet-700 border-violet-200","bg-cyan-100 text-cyan-700 border-cyan-200","bg-amber-100 text-amber-700 border-amber-200","bg-rose-100 text-rose-700 border-rose-200"][i % 5]}`}>{s}</Badge>
                         ))
                       ) : (
                         <span className="text-sm text-muted-foreground">None listed</span>

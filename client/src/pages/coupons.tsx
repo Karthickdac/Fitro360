@@ -323,11 +323,11 @@ export default function CouponsPage() {
                         {coupon.description || "-"}
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm" data-testid={`text-coupon-discount-${coupon.id}`}>
+                        <Badge variant="outline" className={`text-xs ${coupon.discountType === "percentage" ? "bg-violet-100 text-violet-700 border-violet-200" : "bg-cyan-100 text-cyan-700 border-cyan-200"}`} data-testid={`text-coupon-discount-${coupon.id}`}>
                           {coupon.discountType === "percentage"
                             ? `${coupon.discountValue}%`
                             : fmt(coupon.discountValue || 0)}
-                        </span>
+                        </Badge>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
                         {coupon.maxUses ?? "Unlimited"}
@@ -342,19 +342,13 @@ export default function CouponsPage() {
                       </TableCell>
                       <TableCell>
                         <Badge
-                          variant={
-                            status === "active"
-                              ? "default"
-                              : status === "used_up"
-                                ? "secondary"
-                                : "destructive"
-                          }
+                          variant="outline"
                           className={
                             status === "active"
-                              ? "bg-green-600 text-white"
+                              ? "bg-emerald-100 text-emerald-700 border-emerald-200"
                               : status === "used_up"
-                                ? "bg-yellow-600 text-white"
-                                : ""
+                                ? "bg-amber-100 text-amber-700 border-amber-200"
+                                : "bg-red-100 text-red-700 border-red-200"
                           }
                           data-testid={`badge-coupon-status-${coupon.id}`}
                         >

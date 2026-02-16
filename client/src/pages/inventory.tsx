@@ -38,7 +38,8 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Search, Package, AlertTriangle, Trash2 } from "lucide-react";
+import { Plus, Search, Package, AlertTriangle, Trash2, Boxes, TrendingDown, BarChart3 } from "lucide-react";
+import { StatCard } from "@/components/stat-card";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useMarket } from "@/hooks/use-market";
@@ -297,6 +298,13 @@ export default function InventoryPage() {
         </Dialog>
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard title="Total Items" value={items.length} icon={Boxes} color="blue" />
+        <StatCard title="Low Stock" value={lowStockItems.length} icon={TrendingDown} color="amber" />
+        <StatCard title="Categories" value={new Set(items.map(i => i.category)).size} icon={BarChart3} color="violet" />
+        <StatCard title="Total Value" value={fmt(items.reduce((s, i) => s + (parseFloat(i.sellPrice || "0") * (i.quantity ?? 0)), 0))} icon={Package} color="emerald" />
+      </div>
+
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative max-w-sm flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -367,7 +375,13 @@ export default function InventoryPage() {
                     <TableRow key={item.id} data-testid={`row-equipment-${item.id}`}>
                       <TableCell className="font-medium text-sm">{item.name}</TableCell>
                       <TableCell className="hidden sm:table-cell">
-                        <Badge variant="secondary" className="text-xs">{item.category}</Badge>
+                        <Badge variant="outline" className={`text-xs ${
+                          item.category === "Cardio" ? "bg-blue-100 text-blue-700 border-blue-200" :
+                          item.category === "Strength" ? "bg-amber-100 text-amber-700 border-amber-200" :
+                          item.category === "Accessories" ? "bg-violet-100 text-violet-700 border-violet-200" :
+                          item.category === "Supplements" ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
+                          "bg-cyan-100 text-cyan-700 border-cyan-200"
+                        }`}>{item.category}</Badge>
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{item.sku || "—"}</TableCell>
                       <TableCell className="text-sm" data-testid={`text-qty-${item.id}`}>{item.quantity ?? 0}</TableCell>

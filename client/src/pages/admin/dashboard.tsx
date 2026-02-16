@@ -81,24 +81,28 @@ export default function AdminDashboardPage() {
           title="Total Tenants"
           value={stats?.totalTenants || 0}
           icon={Building2}
+          color="blue"
           trend={{ value: 15, label: "vs last month" }}
         />
         <StatCard
           title="Monthly Revenue"
           value={fmt(stats?.mrr || 0)}
           icon={DollarSign}
+          color="violet"
           trend={{ value: stats?.mrrGrowth || 12, label: "vs last month" }}
         />
         <StatCard
           title="Active Subscriptions"
           value={stats?.activeTenants || 0}
           icon={TrendingUp}
+          color="emerald"
           subtitle={`${Math.round(((stats?.activeTenants || 0) / Math.max(stats?.totalTenants || 1, 1)) * 100)}% active rate`}
         />
         <StatCard
           title="Total Members"
           value={stats?.totalMembers || 0}
           icon={Users}
+          color="amber"
           subtitle="Across all gyms"
         />
       </div>
@@ -124,12 +128,19 @@ export default function AdminDashboardPage() {
                     }}
                     formatter={(value: number) => [fmt(value), "MRR"]}
                   />
+                  <defs>
+                    <linearGradient id="mrrGradient" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#8b5cf6" />
+                      <stop offset="100%" stopColor="#6366f1" />
+                    </linearGradient>
+                  </defs>
                   <Line
                     type="monotone"
                     dataKey="mrr"
-                    stroke="hsl(217, 91%, 35%)"
-                    strokeWidth={2}
-                    dot={{ fill: "hsl(217, 91%, 35%)", r: 4 }}
+                    stroke="url(#mrrGradient)"
+                    strokeWidth={3}
+                    dot={{ fill: "#8b5cf6", r: 5, strokeWidth: 2, stroke: "#fff" }}
+                    activeDot={{ fill: "#6366f1", r: 7, strokeWidth: 2, stroke: "#fff" }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -156,7 +167,13 @@ export default function AdminDashboardPage() {
                       color: "hsl(var(--foreground))",
                     }}
                   />
-                  <Bar dataKey="tenants" fill="hsl(173, 58%, 39%)" radius={[4, 4, 0, 0]} />
+                  <defs>
+                    <linearGradient id="tenantGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" />
+                      <stop offset="100%" stopColor="#059669" />
+                    </linearGradient>
+                  </defs>
+                  <Bar dataKey="tenants" fill="url(#tenantGradient)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -177,22 +194,31 @@ export default function AdminDashboardPage() {
                 data-testid={`tenant-row-${tenant.id}`}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-white font-semibold text-sm"
-                    style={{ backgroundColor: tenant.primaryColor || "#1e40af" }}
-                  >
-                    {tenant.gymName.charAt(0)}
-                  </div>
+                  {(() => {
+                    const avatarColors = ["bg-blue-500","bg-emerald-500","bg-violet-500","bg-amber-500","bg-rose-500","bg-cyan-500","bg-indigo-500","bg-pink-500"];
+                    const colorIdx = typeof tenant.id === 'string' ? tenant.id.charCodeAt(0) % avatarColors.length : 0;
+                    return (
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-white font-semibold text-sm ${avatarColors[colorIdx]}`}
+                      >
+                        {tenant.gymName.charAt(0)}
+                      </div>
+                    );
+                  })()}
                   <div className="min-w-0">
                     <p className="font-medium text-sm truncate">{tenant.gymName}</p>
                     <p className="text-xs text-muted-foreground truncate">{tenant.domain || "No domain"}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Badge variant="secondary" className="capitalize">
+                  <Badge variant="outline" className={`capitalize ${
+                    tenant.subscriptionPlan === 'enterprise' ? 'bg-violet-100 text-violet-700 border-violet-200' :
+                    tenant.subscriptionPlan === 'pro' ? 'bg-cyan-100 text-cyan-700 border-cyan-200' :
+                    'bg-blue-100 text-blue-700 border-blue-200'
+                  }`}>
                     {tenant.subscriptionPlan}
                   </Badge>
-                  <Badge variant={tenant.isActive ? "default" : "destructive"}>
+                  <Badge variant="outline" className={tenant.isActive ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-red-100 text-red-700 border-red-200"}>
                     {tenant.isActive ? "Active" : "Inactive"}
                   </Badge>
                 </div>

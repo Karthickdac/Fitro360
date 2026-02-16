@@ -275,10 +275,10 @@ export default function PaymentsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Total Revenue" value={fmt(totalRevenue)} icon={DollarSign} />
-          <StatCard title="This Month" value={fmt(monthRevenue)} icon={TrendingUp} />
-          <StatCard title="Total Payments" value={items.length} icon={Receipt} />
-          <StatCard title="Average Payment" value={fmt(avgPayment)} icon={CreditCard} />
+          <StatCard title="Total Revenue" value={fmt(totalRevenue)} icon={DollarSign} color="blue" />
+          <StatCard title="This Month" value={fmt(monthRevenue)} icon={TrendingUp} color="emerald" />
+          <StatCard title="Total Payments" value={items.length} icon={Receipt} color="violet" />
+          <StatCard title="Average Payment" value={fmt(avgPayment)} icon={CreditCard} color="amber" />
         </div>
       )}
 

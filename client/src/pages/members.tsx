@@ -314,19 +314,27 @@ export default function MembersPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3 flex-wrap">
-        {(["all", "active", "expired", "frozen"] as const).map((status) => (
-          <Button
-            key={status}
-            variant={statusFilter === status ? "default" : "secondary"}
-            size="sm"
-            onClick={() => setStatusFilter(status)}
-            data-testid={`button-filter-${status}`}
-          >
-            {status === "all" ? "All" : status.charAt(0).toUpperCase() + status.slice(1)}
-            <span className="ml-1.5 text-xs opacity-70">{statusCounts[status]}</span>
-          </Button>
-        ))}
+      <div className="flex items-center gap-2 flex-wrap">
+        {(["all", "active", "expired", "frozen"] as const).map((status) => {
+          const isSelected = statusFilter === status;
+          const colorClass = status === "active" ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
+            status === "expired" ? "bg-red-100 text-red-700 border-red-200" :
+            status === "frozen" ? "bg-sky-100 text-sky-700 border-sky-200" :
+            "bg-blue-100 text-blue-700 border-blue-200";
+          return (
+            <Button
+              key={status}
+              variant="outline"
+              size="sm"
+              onClick={() => setStatusFilter(status)}
+              data-testid={`button-filter-${status}`}
+              className={isSelected ? `border ${colorClass} font-semibold` : ""}
+            >
+              {status === "all" ? "All" : status.charAt(0).toUpperCase() + status.slice(1)}
+              <span className="ml-1.5 text-xs opacity-70">{statusCounts[status]}</span>
+            </Button>
+          );
+        })}
       </div>
 
       <div className="relative max-w-sm">
@@ -381,11 +389,11 @@ export default function MembersPage() {
                   <TableRow key={member.id} data-testid={`row-member-${member.id}`}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-medium">
+                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white text-sm font-bold ${["bg-blue-500","bg-emerald-500","bg-violet-500","bg-amber-500","bg-rose-500","bg-cyan-500","bg-indigo-500","bg-pink-500"][parseInt(member.id, 36) % 8]}`}>
                           {member.firstName[0]}{member.lastName[0]}
                         </div>
                         <div>
-                          <p className="font-medium text-sm">{member.firstName} {member.lastName}</p>
+                          <p className="font-semibold text-sm">{member.firstName} {member.lastName}</p>
                           <p className="text-xs text-muted-foreground md:hidden">{member.email}</p>
                         </div>
                       </div>
@@ -394,18 +402,23 @@ export default function MembersPage() {
                       {member.email}
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
-                      <Badge variant="secondary" className="capitalize">
+                      <Badge variant="outline" className={`capitalize border ${
+                        member.membershipType === "annual" ? "bg-violet-100 text-violet-700 border-violet-200" :
+                        member.membershipType === "quarterly" ? "bg-blue-100 text-blue-700 border-blue-200" :
+                        member.membershipType === "monthly" ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
+                        "bg-amber-100 text-amber-700 border-amber-200"
+                      }`}>
                         {member.membershipType.replace("_", " ")}
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-sm">
                       {member.trainerId ? (
-                        <Badge variant="outline" className="gap-1">
+                        <Badge variant="outline" className="gap-1 bg-blue-50 text-blue-700 border-blue-200">
                           <UserCheck className="h-3 w-3" />
                           {trainers?.find(t => t.id === member.trainerId)?.firstName || "Assigned"}
                         </Badge>
                       ) : (
-                        <span className="text-muted-foreground">Unassigned</span>
+                        <span className="text-muted-foreground text-xs">Unassigned</span>
                       )}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
@@ -420,11 +433,13 @@ export default function MembersPage() {
                     </TableCell>
                     <TableCell>
                       <Badge
-                        variant={
-                          member.status === "active" ? "default"
-                            : member.status === "frozen" ? "secondary"
-                              : "destructive"
-                        }
+                        variant="outline"
+                        className={`capitalize border ${
+                          member.status === "active" ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
+                          member.status === "frozen" ? "bg-sky-100 text-sky-700 border-sky-200" :
+                          member.status === "expiring" ? "bg-amber-100 text-amber-700 border-amber-200" :
+                          "bg-red-100 text-red-700 border-red-200"
+                        }`}
                       >
                         {member.status}
                       </Badge>

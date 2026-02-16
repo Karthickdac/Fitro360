@@ -275,17 +275,23 @@ export default function SuppliersPage() {
           {(suppliers || []).map((supplier) => (
             <Card key={supplier.id} data-testid={`card-supplier-${supplier.id}`}>
               <CardHeader className="flex flex-row items-start justify-between gap-2 pb-3">
-                <div className="min-w-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white text-sm font-bold ${["bg-blue-500","bg-emerald-500","bg-violet-500","bg-amber-500","bg-rose-500","bg-cyan-500","bg-indigo-500","bg-pink-500"][parseInt(supplier.id, 36) % 8]}`}>
+                    {supplier.name.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
                   <CardTitle className="text-base truncate" data-testid={`text-supplier-name-${supplier.id}`}>
                     {supplier.name}
                   </CardTitle>
                   {supplier.contactPerson && (
                     <p className="text-sm text-muted-foreground mt-0.5">{supplier.contactPerson}</p>
                   )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <Badge
-                    variant={supplier.isActive ? "default" : "secondary"}
+                    variant="outline"
+                    className={supplier.isActive ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-red-100 text-red-700 border-red-200"}
                     data-testid={`badge-supplier-status-${supplier.id}`}
                   >
                     {supplier.isActive ? "Active" : "Inactive"}

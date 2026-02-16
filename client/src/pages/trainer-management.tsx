@@ -141,10 +141,10 @@ function CommissionsTab() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Commissions" value={fmt(totalAmount)} icon={DollarSign} data-testid="stat-total-commissions" />
-        <StatCard title="Pending Amount" value={fmt(pendingAmount)} icon={DollarSign} data-testid="stat-pending-amount" />
-        <StatCard title="Paid Amount" value={fmt(paidAmount)} icon={Check} data-testid="stat-paid-amount" />
-        <StatCard title="This Month" value={fmt(thisMonthAmount)} icon={Calendar} data-testid="stat-this-month" />
+        <StatCard title="Total Commissions" value={fmt(totalAmount)} icon={DollarSign} color="blue" data-testid="stat-total-commissions" />
+        <StatCard title="Pending Amount" value={fmt(pendingAmount)} icon={DollarSign} color="amber" data-testid="stat-pending-amount" />
+        <StatCard title="Paid Amount" value={fmt(paidAmount)} icon={Check} color="emerald" data-testid="stat-paid-amount" />
+        <StatCard title="This Month" value={fmt(thisMonthAmount)} icon={Calendar} color="violet" data-testid="stat-this-month" />
       </div>
 
       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -248,9 +248,9 @@ function CommissionsTab() {
                   <TableCell className="font-medium">{trainerName(c.trainerId)}</TableCell>
                   <TableCell>{sessionTitle(c.sessionId)}</TableCell>
                   <TableCell>{fmt(c.amount)}</TableCell>
-                  <TableCell><Badge variant="secondary">{c.type}</Badge></TableCell>
+                  <TableCell><Badge variant="outline" className={c.type === "session" ? "bg-blue-100 text-blue-700 border-blue-200" : c.type === "bonus" ? "bg-violet-100 text-violet-700 border-violet-200" : "bg-cyan-100 text-cyan-700 border-cyan-200"}>{c.type}</Badge></TableCell>
                   <TableCell>
-                    <Badge variant={c.status === "paid" ? "default" : "secondary"}>
+                    <Badge variant="outline" className={c.status === "paid" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-amber-100 text-amber-700 border-amber-200"}>
                       {c.status}
                     </Badge>
                   </TableCell>
@@ -341,10 +341,10 @@ function LeavesTab() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Leave Requests" value={totalLeaves} icon={Calendar} data-testid="stat-total-leaves" />
-        <StatCard title="Pending" value={pendingLeaves} icon={Calendar} data-testid="stat-pending-leaves" />
-        <StatCard title="Approved" value={approvedLeaves} icon={Check} data-testid="stat-approved-leaves" />
-        <StatCard title="Rejected" value={rejectedLeaves} icon={X} data-testid="stat-rejected-leaves" />
+        <StatCard title="Total Leave Requests" value={totalLeaves} icon={Calendar} color="indigo" data-testid="stat-total-leaves" />
+        <StatCard title="Pending" value={pendingLeaves} icon={Calendar} color="amber" data-testid="stat-pending-leaves" />
+        <StatCard title="Approved" value={approvedLeaves} icon={Check} color="emerald" data-testid="stat-approved-leaves" />
+        <StatCard title="Rejected" value={rejectedLeaves} icon={X} color="rose" data-testid="stat-rejected-leaves" />
       </div>
 
       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -430,7 +430,7 @@ function LeavesTab() {
                   <TableCell>{getDuration(l.startDate, l.endDate)} days</TableCell>
                   <TableCell className="max-w-[200px] truncate">{l.reason || "-"}</TableCell>
                   <TableCell>
-                    <Badge variant={l.status === "approved" ? "default" : l.status === "rejected" ? "destructive" : "secondary"}>
+                    <Badge variant="outline" className={l.status === "approved" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : l.status === "rejected" ? "bg-red-100 text-red-700 border-red-200" : "bg-amber-100 text-amber-700 border-amber-200"}>
                       {l.status}
                     </Badge>
                   </TableCell>
@@ -500,9 +500,9 @@ function PerformanceTab() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard title="Total Sessions" value={totalSessions} icon={Users} data-testid="stat-total-sessions" />
-        <StatCard title="Total Commission" value={fmt(totalCommission)} icon={DollarSign} data-testid="stat-total-commission" />
-        <StatCard title="Avg Rating" value="4.5" icon={Award} data-testid="stat-avg-rating" />
+        <StatCard title="Total Sessions" value={totalSessions} icon={Users} color="blue" data-testid="stat-total-sessions" />
+        <StatCard title="Total Commission" value={fmt(totalCommission)} icon={DollarSign} color="emerald" data-testid="stat-total-commission" />
+        <StatCard title="Avg Rating" value="4.5" icon={Award} color="amber" data-testid="stat-avg-rating" />
       </div>
 
       {chartData.length > 0 && (
