@@ -24,7 +24,7 @@ import {
   Award,
   TrendingUp,
   User,
-  BookOpen,
+  ChevronRight,
 } from "lucide-react";
 import {
   Sidebar,
@@ -40,6 +40,7 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
 
@@ -119,34 +120,59 @@ function NavGroup({ label, items, location, navigate }: {
 }) {
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      <SidebarGroupLabel className="text-[11px] uppercase tracking-widest font-semibold text-sidebar-foreground/40 px-3 mb-1">
+        {label}
+      </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton
-                asChild
-                data-active={location === item.url}
-              >
-                <a
-                  href={item.url}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigate(item.url);
-                  }}
-                  data-testid={`link-nav-${item.title.toLowerCase().replace(/\s/g, "-")}`}
+          {items.map((item) => {
+            const isActive = location === item.url || (item.url !== "/" && location.startsWith(item.url + "/"));
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  asChild
+                  data-active={isActive}
+                  className={isActive ? "bg-sidebar-primary/15 text-sidebar-primary font-semibold" : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"}
                 >
-                  <item.icon className="h-4 w-4" />
-                  <span>{item.title}</span>
-                </a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+                  <a
+                    href={item.url}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigate(item.url);
+                    }}
+                    data-testid={`link-nav-${item.title.toLowerCase().replace(/\s/g, "-")}`}
+                  >
+                    <item.icon className={`h-4 w-4 ${isActive ? "text-sidebar-primary" : ""}`} />
+                    <span>{item.title}</span>
+                    {isActive && <ChevronRight className="ml-auto h-3.5 w-3.5 text-sidebar-primary/60" />}
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
   );
 }
+
+const roleColorMap: Record<string, string> = {
+  platform_admin: "bg-rose-500",
+  gym_owner: "bg-blue-500",
+  manager: "bg-violet-500",
+  trainer: "bg-emerald-500",
+  member: "bg-amber-500",
+  sales_executive: "bg-cyan-500",
+};
+
+const roleBadgeMap: Record<string, string> = {
+  platform_admin: "bg-rose-500/20 text-rose-300",
+  gym_owner: "bg-blue-500/20 text-blue-300",
+  manager: "bg-violet-500/20 text-violet-300",
+  trainer: "bg-emerald-500/20 text-emerald-300",
+  member: "bg-amber-500/20 text-amber-300",
+  sales_executive: "bg-cyan-500/20 text-cyan-300",
+};
 
 export function AppSidebar() {
   const { user, tenant, logout } = useAuth();
@@ -157,46 +183,56 @@ export function AppSidebar() {
   const role = user.role;
   const initials = `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase();
 
-  const roleLabel = role === "platform_admin" ? "Platform Admin"
+  const roleLabel = role === "platform_admin" ? "Admin"
     : role === "member" ? "Member"
     : role === "trainer" ? "Trainer"
     : role === "manager" ? "Manager"
-    : role === "sales_executive" ? "Sales Executive"
-    : "Gym Owner";
+    : role === "sales_executive" ? "Sales"
+    : "Owner";
 
   return (
     <Sidebar>
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary">
-            <Dumbbell className="h-5 w-5 text-primary-foreground" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/25">
+            <Dumbbell className="h-5 w-5 text-white" />
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-sm font-semibold truncate" data-testid="text-app-name">
+            <span className="text-sm font-bold truncate text-white" data-testid="text-app-name">
               {tenant?.appDisplayName || tenant?.gymName || "Fitro360"}
             </span>
-            <span className="text-xs text-muted-foreground truncate">
+            <span className="text-[11px] text-sidebar-foreground/50 truncate">
               {role === "platform_admin" ? "Platform Admin" : tenant?.gymName || "Gym Management"}
             </span>
           </div>
         </div>
       </SidebarHeader>
-      <SidebarSeparator />
-      <SidebarContent>
+      <SidebarSeparator className="opacity-20" />
+      <SidebarContent className="px-1">
         {role === "platform_admin" && (
           <>
             <NavGroup label="Platform" items={platformAdminItems} location={location} navigate={navigate} />
             <SidebarGroup>
-              <SidebarGroupLabel>System</SidebarGroupLabel>
+              <SidebarGroupLabel className="text-[11px] uppercase tracking-widest font-semibold text-sidebar-foreground/40 px-3 mb-1">System</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton asChild data-active={location === "/admin/settings"}>
-                      <a href="/admin/settings" onClick={(e) => { e.preventDefault(); navigate("/admin/settings"); }} data-testid="link-nav-admin-settings">
-                        <Shield className="h-4 w-4" />
-                        <span>Settings</span>
-                      </a>
-                    </SidebarMenuButton>
+                    {(() => {
+                      const isActive = location === "/admin/settings";
+                      return (
+                        <SidebarMenuButton
+                          asChild
+                          data-active={isActive}
+                          className={isActive ? "bg-sidebar-primary/15 text-sidebar-primary font-semibold" : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"}
+                        >
+                          <a href="/admin/settings" onClick={(e) => { e.preventDefault(); navigate("/admin/settings"); }} data-testid="link-nav-admin-settings">
+                            <Shield className={`h-4 w-4 ${isActive ? "text-sidebar-primary" : ""}`} />
+                            <span>Settings</span>
+                            {isActive && <ChevronRight className="ml-auto h-3.5 w-3.5 text-sidebar-primary/60" />}
+                          </a>
+                        </SidebarMenuButton>
+                      );
+                    })()}
                   </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
@@ -224,24 +260,25 @@ export function AppSidebar() {
           </>
         )}
       </SidebarContent>
+      <SidebarSeparator className="opacity-20" />
       <SidebarFooter className="p-3">
         <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-primary/10 text-primary text-xs">
+          <Avatar className="h-9 w-9">
+            <AvatarFallback className={`${roleColorMap[role] || "bg-blue-500"} text-white text-xs font-bold`}>
               {initials}
             </AvatarFallback>
           </Avatar>
-          <div className="flex flex-col min-w-0 flex-1">
-            <span className="text-sm font-medium truncate" data-testid="text-user-name">
+          <div className="flex flex-col min-w-0 flex-1 gap-0.5">
+            <span className="text-sm font-semibold truncate text-sidebar-foreground" data-testid="text-user-name">
               {user.firstName} {user.lastName}
             </span>
-            <span className="text-xs text-muted-foreground truncate">
+            <Badge variant="secondary" className={`w-fit text-[10px] px-1.5 py-0 font-medium border-0 ${roleBadgeMap[role] || "bg-blue-500/20 text-blue-300"}`}>
               {roleLabel}
-            </span>
+            </Badge>
           </div>
           <button
             onClick={logout}
-            className="p-1.5 rounded-md text-muted-foreground hover:bg-muted"
+            className="p-2 rounded-lg text-sidebar-foreground/50 hover:text-red-400 hover:bg-red-500/10 transition-colors"
             data-testid="button-logout"
           >
             <LogOut className="h-4 w-4" />
