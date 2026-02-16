@@ -1,0 +1,28 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+Database already seeded, skipping...
+1:39:44 PM [express] serving on port 5000
+^C
+root@srv1286649:/home/fitro360/htdocs/www.fitro360.com/fitro360# sudo tail -20 /var/log/nginx/error.log
+2026/02/16 11:20:00 [warn] 709129#709129: "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/letsencrypt/live/fitro360.com/fullchain.pem"
+2026/02/16 11:20:00 [warn] 709129#709129: "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/letsencrypt/live/fitro360.com/fullchain.pem"
+2026/02/16 11:20:00 [warn] 709129#709129: "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/www.kyro360.com.crt"
+2026/02/16 11:20:00 [warn] 709129#709129: "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/www.kyro360.com.crt"
+2026/02/16 11:22:52 [info] 709162#709162: [ngx_pagespeed 1.15.0.0-8917] No threading detected. Own threads: 1 Rewrite, 1 Expensive Rewrite.
+2026/02/16 11:22:52 [info] 709162#709162: pagespeed: rollback gzip, explicit configuration in /etc/nginx/nginx.conf:97
+2026/02/16 11:22:52 [warn] 709162#709162: "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/letsencrypt/live/fitro360.com/fullchain.pem"
+2026/02/16 11:22:52 [warn] 709162#709162: "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/letsencrypt/live/fitro360.com/fullchain.pem"
+2026/02/16 11:22:52 [warn] 709162#709162: "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/www.kyro360.com.crt"
+2026/02/16 11:22:52 [warn] 709162#709162: "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/www.kyro360.com.crt"
+2026/02/16 11:22:52 [info] 709169#709169: [ngx_pagespeed 1.15.0.0-8917] No threading detected. Own threads: 1 Rewrite, 1 Expensive Rewrite.
+2026/02/16 11:22:52 [info] 709169#709169: pagespeed: rollback gzip, explicit configuration in /etc/nginx/nginx.conf:97
+2026/02/16 11:22:52 [warn] 709169#709169: "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/letsencrypt/live/fitro360.com/fullchain.pem"
+2026/02/16 11:22:52 [warn] 709169#709169: "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/letsencrypt/live/fitro360.com/fullchain.pem"
+2026/02/16 11:22:52 [warn] 709169#709169: "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/www.kyro360.com.crt"
+2026/02/16 11:22:52 [warn] 709169#709169: "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/www.kyro360.com.crt"
+2026/02/16 11:22:53 [warn] 709171#709171: "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/letsencrypt/live/fitro360.com/fullchain.pem"
+2026/02/16 11:22:53 [warn] 709171#709171: "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/letsencrypt/live/fitro360.com/fullchain.pem"
+2026/02/16 11:22:53 [warn] 709171#709171: "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/www.kyro360.com.crt"
+2026/02/16 11:22:53 [warn] 709171#709171: "ssl_stapling" ignored, no OCSP responder URL in the certi
