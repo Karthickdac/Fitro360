@@ -17,23 +17,25 @@ Fitro360 is a white-label, multi-tenant SaaS platform for gym management. It sup
 - Sidebar navigation adapts to user role (members see portal, trainers see workspace, owners see full admin)
 
 ## Database Tables
-- `tenants` - Gym organizations with branding config (primaryColor, secondaryColor, domain)
+- `tenants` - Gym organizations with branding config (primaryColor, secondaryColor, domain, faviconUrl, emailTemplateBg, emailTemplateAccent, smsSenderId, invoiceHeader, invoiceFooter)
 - `users` - All users across tenants with role-based access
 - `members` - Gym members with BMI tracking (height, weight, bmi)
 - `member_metrics` - Historical progress tracking (weight, BMI, body fat over time)
 - `subscription_plans` - SaaS pricing tiers (basic/pro/enterprise)
 - `activities` - Activity log per tenant
 - `branches` - Multi-branch support per tenant
-- `trainer_sessions` - Trainer scheduling with conflict detection
-- `attendance` - Member check-in/check-out tracking
+- `trainer_sessions` - Trainer scheduling with conflict detection + drag-drop rescheduling
+- `attendance` - Member check-in/check-out tracking (supports QR code method)
 - `equipment` - Equipment inventory with stock management
 - `equipment_maintenance` - Maintenance scheduling with status/cost tracking
 - `suppliers` - Supplier management with GST numbers
 - `invoices` - Invoice management with GST calculations
-- `payment_records` - Payment tracking with method/status
+- `payment_records` - Payment tracking with method/status + Stripe integration (stripePaymentId)
 - `notifications` - In-app/SMS/email notification system
 - `coupons` - Promotional coupon codes
 - `referrals` - Member referral program tracking
+- `trainer_commissions` - Trainer commission tracking (session/bonus/referral, pending/paid)
+- `trainer_leaves` - Trainer leave requests with approval workflow
 
 ## Project Structure
 ```
@@ -50,20 +52,21 @@ client/src/
     member-portal.tsx - Member self-service portal (attendance, profile, sessions)
     trainer-portal.tsx - Trainer workspace (my schedule, my members)
     trainers.tsx      - Trainer listing
-    schedule.tsx      - Trainer calendar/scheduling (weekly view)
-    check-in.tsx      - Attendance check-in/check-out
+    schedule.tsx      - Trainer calendar/scheduling (weekly view) with drag-drop rescheduling
+    check-in.tsx      - Attendance check-in/check-out with QR code support
     inventory.tsx     - Equipment inventory management
     maintenance.tsx   - Equipment maintenance scheduling with overdue alerts
     suppliers.tsx     - Supplier management
     invoicing.tsx     - Invoice management with GST
-    payments.tsx      - Payment records with revenue stats
+    trainer-management.tsx - Trainer commissions, leaves, performance analytics (3 tabs)
+    payments.tsx      - Payment records with revenue stats + Stripe checkout
     analytics.tsx     - Analytics dashboard with 6 Recharts visualizations
     branches.tsx      - Multi-branch management
     notifications.tsx - Notification center with tabs
     coupons.tsx       - Coupon/promotion management
     referrals.tsx     - Referral program management
     activity.tsx      - Activity log
-    settings.tsx      - Tenant branding settings
+    settings.tsx      - Tenant branding settings (4 cards: Gym Info, Branding, Advanced Branding, Email Template)
     admin/            - Platform admin pages
       dashboard.tsx   - Platform overview
       tenants.tsx     - Tenant CRUD
