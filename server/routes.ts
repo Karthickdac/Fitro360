@@ -223,7 +223,12 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Member not found" });
       }
 
-      const data = req.body;
+      const data = { ...req.body };
+      if (data.heightCm === "") data.heightCm = null;
+      if (data.weightKg === "") data.weightKg = null;
+      if (data.phone === "") data.phone = null;
+      if (data.emergencyContact === "") data.emergencyContact = null;
+      if (data.bmi === "") data.bmi = null;
       if (data.trainerId !== undefined && !["gym_owner", "manager", "platform_admin"].includes(user.role)) {
         return res.status(403).json({ message: "Only gym owners and managers can assign trainers" });
       }
@@ -1136,13 +1141,18 @@ export async function registerRoutes(
         heightCm: z.string().optional(),
         weightKg: z.string().optional(),
       }).parse(req.body);
+      const cleanInput: Record<string, any> = {};
+      if (input.phone !== undefined) cleanInput.phone = input.phone || null;
+      if (input.emergencyContact !== undefined) cleanInput.emergencyContact = input.emergencyContact || null;
+      if (input.heightCm !== undefined) cleanInput.heightCm = input.heightCm || null;
+      if (input.weightKg !== undefined) cleanInput.weightKg = input.weightKg || null;
       let bmi: string | undefined;
       if (input.heightCm && input.weightKg) {
         const h = parseFloat(input.heightCm) / 100;
         const w = parseFloat(input.weightKg);
         if (h > 0) bmi = (w / (h * h)).toFixed(1);
       }
-      const updated = await storage.updateMember(member.id, { ...input, ...(bmi ? { bmi } : {}) });
+      const updated = await storage.updateMember(member.id, { ...cleanInput, ...(bmi ? { bmi } : {}) });
       return res.json(updated);
     } catch (error: any) {
       return res.status(400).json({ message: error.message });
