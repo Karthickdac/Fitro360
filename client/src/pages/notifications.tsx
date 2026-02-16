@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth";
 import { formatDistanceToNow } from "date-fns";
 import type { Notification } from "@shared/schema";
 
@@ -86,7 +87,9 @@ const tabFilters = [
 
 export default function NotificationsPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const isMember = user?.role === "member";
   const [activeTab, setActiveTab] = useState("all");
 
   const { data: notifications, isLoading } = useQuery<Notification[]>({
@@ -161,6 +164,7 @@ export default function NotificationsPage() {
             </Badge>
           )}
         </div>
+        {!isMember && (
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button data-testid="button-send-notification">
@@ -269,6 +273,7 @@ export default function NotificationsPage() {
             </Form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
