@@ -32,10 +32,12 @@ import PaymentsPage from "@/pages/payments";
 import MemberPortalPage from "@/pages/member-portal";
 import TrainerPortalPage from "@/pages/trainer-portal";
 import TrainerManagementPage from "@/pages/trainer-management";
+import ReportsPage from "@/pages/reports";
 import AdminDashboardPage from "@/pages/admin/dashboard";
 import TenantsPage from "@/pages/admin/tenants";
 import PlansPage from "@/pages/admin/plans";
 import AdminSettingsPage from "@/pages/admin/settings";
+import AdminReportsPage from "@/pages/admin/reports";
 
 function LoadingScreen() {
   return (
@@ -55,6 +57,9 @@ function AdminRouter() {
       <Route path="/admin" component={AdminDashboardPage} />
       <Route path="/admin/tenants" component={TenantsPage} />
       <Route path="/admin/plans" component={PlansPage} />
+      <Route path="/admin/reports" component={AdminReportsPage} />
+      <Route path="/admin/activity" component={ActivityPage} />
+      <Route path="/admin/notifications" component={NotificationsPage} />
       <Route path="/admin/settings" component={AdminSettingsPage} />
       <Route component={NotFound} />
     </Switch>
@@ -104,6 +109,7 @@ function ManagerRouter() {
       <Route path="/activity" component={ActivityPage} />
       <Route path="/notifications" component={NotificationsPage} />
       <Route path="/analytics" component={AnalyticsPage} />
+      <Route path="/reports" component={ReportsPage} />
       <Route path="/settings" component={SettingsPage} />
       <Route component={NotFound} />
     </Switch>
@@ -132,6 +138,7 @@ function GymOwnerRouter() {
       <Route path="/coupons" component={CouponsPage} />
       <Route path="/referrals" component={ReferralsPage} />
       <Route path="/analytics" component={AnalyticsPage} />
+      <Route path="/reports" component={ReportsPage} />
       <Route path="/settings" component={SettingsPage} />
       <Route component={NotFound} />
     </Switch>

@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+[data-sidebar="content"] {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+[data-sidebar="content"]::-webkit-scrollbar {
+  display: none;
+}
+
 /* LIGHT MODE */
 :root {
   --button-outline: rgba(0,0,0, .10);

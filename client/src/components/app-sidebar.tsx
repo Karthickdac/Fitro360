@@ -25,6 +25,7 @@ import {
   TrendingUp,
   User,
   ChevronRight,
+  FileBarChart,
 } from "lucide-react";
 import {
   Sidebar,
@@ -44,10 +45,20 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
 
-const platformAdminItems = [
+const platformAdminMainItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "Tenants", url: "/admin/tenants", icon: Building2 },
   { title: "Plans", url: "/admin/plans", icon: CreditCard },
+];
+
+const platformAdminMonitorItems = [
+  { title: "Reports", url: "/admin/reports", icon: FileBarChart },
+  { title: "Activity", url: "/admin/activity", icon: Activity },
+  { title: "Notifications", url: "/admin/notifications", icon: Bell },
+];
+
+const platformAdminSystemItems = [
+  { title: "Settings", url: "/admin/settings", icon: Shield },
 ];
 
 const memberItems = [
@@ -77,6 +88,7 @@ const managerMainItems = [
 const managerSystemItems = [
   { title: "Branches", url: "/branches", icon: GitBranch },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
+  { title: "Reports", url: "/reports", icon: FileBarChart },
   { title: "Activity", url: "/activity", icon: Activity },
   { title: "Notifications", url: "/notifications", icon: Bell },
   { title: "Settings", url: "/settings", icon: Settings },
@@ -107,6 +119,7 @@ const gymMarketingItems = [
 const gymSystemItems = [
   { title: "Branches", url: "/branches", icon: GitBranch },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
+  { title: "Reports", url: "/reports", icon: FileBarChart },
   { title: "Activity", url: "/activity", icon: Activity },
   { title: "Notifications", url: "/notifications", icon: Bell },
   { title: "Settings", url: "/settings", icon: Settings },
@@ -211,32 +224,9 @@ export function AppSidebar() {
       <SidebarContent className="px-1">
         {role === "platform_admin" && (
           <>
-            <NavGroup label="Platform" items={platformAdminItems} location={location} navigate={navigate} />
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-[11px] uppercase tracking-widest font-semibold text-sidebar-foreground/40 px-3 mb-1">System</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    {(() => {
-                      const isActive = location === "/admin/settings";
-                      return (
-                        <SidebarMenuButton
-                          asChild
-                          data-active={isActive}
-                          className={isActive ? "bg-sidebar-primary/15 text-sidebar-primary font-semibold" : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"}
-                        >
-                          <a href="/admin/settings" onClick={(e) => { e.preventDefault(); navigate("/admin/settings"); }} data-testid="link-nav-admin-settings">
-                            <Shield className={`h-4 w-4 ${isActive ? "text-sidebar-primary" : ""}`} />
-                            <span>Settings</span>
-                            {isActive && <ChevronRight className="ml-auto h-3.5 w-3.5 text-sidebar-primary/60" />}
-                          </a>
-                        </SidebarMenuButton>
-                      );
-                    })()}
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            <NavGroup label="Platform" items={platformAdminMainItems} location={location} navigate={navigate} />
+            <NavGroup label="Monitoring" items={platformAdminMonitorItems} location={location} navigate={navigate} />
+            <NavGroup label="System" items={platformAdminSystemItems} location={location} navigate={navigate} />
           </>
         )}
         {role === "member" && (
