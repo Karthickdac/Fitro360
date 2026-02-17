@@ -96,3 +96,15 @@ shared/
 ## Running
 - `npm run dev` - Start dev server (port 5000)
 - `npm run db:push` - Push schema to database
+
+## VPS Deployment (www.fitro360.com)
+- **Host**: srv1286649 (shared VPS with kyro360)
+- **Path**: `/home/fitro360/htdocs/www.fitro360.com/fitro360`
+- **Port**: 4000 (Nginx proxies fitro360.com → localhost:4000)
+- **Database**: `postgresql://fitro360user:Fitro%40957823@127.0.0.1:5432/fitro360`
+- **Process Manager**: PM2 (name: "fitro360")
+- **IMPORTANT**: Kyro360 runs on port 5000 on the same VPS. Never use port 5000 for fitro360.
+- **Schema updates**: After schema changes, must run `DATABASE_URL="..." npm run db:push` on VPS, then `pm2 restart fitro360`
+- **Starting**: `PORT=4000 DATABASE_URL="..." SESSION_SECRET="..." NODE_ENV=production pm2 start npm --name "fitro360" -- start`
+- **Nginx config**: `/etc/nginx/sites-available/fitro360`
+- **Kyro360 Nginx config**: `/etc/nginx/sites-available/kyro360.conf`
