@@ -1,0 +1,37 @@
+                                       Table "public.users"
+         Column          |            Type             | Collation | Nullable |      Default      
+-------------------------+-----------------------------+-----------+----------+-------------------
+ id                      | character varying           |           | not null | gen_random_uuid()
+ email                   | character varying           |           |          | 
+ first_name              | character varying           |           |          | 
+ last_name               | character varying           |           |          | 
+ username                | character varying           |           |          | 
+ role                    | text                        |           | not null | 'customer'::text
+ profile_image_url       | character varying           |           |          | 
+ created_at              | timestamp without time zone |           |          | now()
+ updated_at              | timestamp without time zone |           |          | now()
+ phone_number            | character varying           |           |          | 
+ otp                     | character varying           |           |          | 
+ otp_expires_at          | timestamp without time zone |           |          | 
+ full_name               | character varying           |           |          | 
+ dob                     | character varying           |           |          | 
+ address                 | text                        |           |          | 
+ district                | character varying           |           |          | 
+ city                    | character varying           |           |          | 
+ pin_code                | character varying           |           |          | 
+ is_registered           | text                        |           |          | 'false'::text
+ referred_by_provider_id | text                        |           |          | 
+Indexes:
+    "users_pkey" PRIMARY KEY, btree (id)
+    "users_email_unique" UNIQUE CONSTRAINT, btree (email)
+Referenced by:
+    TABLE "admin_user_roles" CONSTRAINT "admin_user_roles_assigned_by_users_id_fk" FOREIGN KEY (assigned_by) REFERENCES users(id)
+    TABLE "admin_user_roles" CONSTRAINT "admin_user_roles_user_id_users_id_fk" FOREIGN KEY (user_id) REFERENCES users(id)
+    TABLE "audit_logs" CONSTRAINT "audit_logs_performed_by_fkey" FOREIGN KEY (performed_by) REFERENCES users(id)
+    TABLE "billing_settings" CONSTRAINT "billing_settings_updated_by_users_id_fk" FOREIGN KEY (updated_by) REFERENCES users(id)
+    TABLE "bills" CONSTRAINT "bills_approved_by_users_id_fk" FOREIGN KEY (approved_by) REFERENCES users(id)
+    TABLE "bills" CONSTRAINT "bills_customer_id_users_id_fk" FOREIGN KEY (customer_id) REFERENCES users(id)
+    TABLE "cart_items" CONSTRAINT "cart_items_user_id_users_id_fk" FOREIGN KEY (user_id) REFERENCES users(id)
+    TABLE "conversations" CONSTRAINT "conversations_customer_id_users_id_fk" FOREIGN KEY (customer_id) REFERENCES users(id)
+    TABLE "labourers" CONSTRAINT "labourers_reviewed_by_users_id_fk" FOREIGN KEY (reviewed_by) REFERENCES users(id)
+:
