@@ -1,0 +1,434 @@
+/root/.pm2/logs/fitro360-out.log last 10 lines:
+6|fitro360 | > NODE_ENV=production node dist/index.cjs
+6|fitro360 | 
+6|fitro360 | Database already seeded, skipping...
+6|fitro360 | 4:15:32 AM [express] serving on port 5001
+6|fitro360 | 
+6|fitro360 | > rest-express@1.0.0 start
+6|fitro360 | > NODE_ENV=production node dist/index.cjs
+6|fitro360 | 
+6|fitro360 | Database already seeded, skipping...
+6|fitro360 | 4:18:21 AM [express] serving on port 4000
+
+6|fitro360  | 4:18:51 AM [express] GET /api/branding 304 in 12ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+6|fitro360  | 4:18:51 AM [express] GET /api/auth/me 401 in 1ms :: {"message":"Not authenticated"}
+6|fitro360  | 4:18:51 AM [express] GET /api/branding 304 in 2ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+6|fitro360  | 4:18:53 AM [express] POST /api/auth/login 200 in 89ms :: {"user":{"id":"71d1dadd-6980-4f12-b217-8c9b77fb6b58","tenantId":"00943b85-ee54-45c3-a88f-c504c4e0a69b","branchId":null,"username":"gymowner","email":"owner@irontemple.com","role":"gym_owner","firstName":"Marcus","lastName":"Johnson","phone":"+1 555-0111","avatarUrl":null,"isActive":true,"createdAt":"2026-02-16T13:25:22.476Z"},"tenant":{"id":"00943b85-ee54-45c3-a88f-c504c4e0a69b","gymName":"Iron Temple Fitness","logoUrl":null,"primaryColor":"#1e40af","secondaryColor":"#3b82f6","domain":"irontemple.forgefit.com","subdomain":null,"subscriptionPlan":"pro","appDisplayName":"Iron Temple","email":"info@irontemple.com","phone":"+1 555-0101","address":"123 Fitness Ave, Los Angeles, CA 90012","faviconUrl":null,"emailTemplateBg":"#ffffff","emailTemplateAccent":null,"smsSenderId":null,"invoiceHeader":null,"invoiceFooter":null,"market":"uae","isActive":true,"trialEndsAt":null,"createdAt":"2026-02-16T13:25:22.375Z"}}
+6|fitro360  | Internal Server Error: error: column "membership_plan_id" does not exist
+6|fitro360  |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:74:13326
+6|fitro360  |     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:37959
+6|fitro360  |     at async Qh.getDashboardStats (/home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:129963)
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:141068 {
+6|fitro360  |   length: 118,
+6|fitro360  |   severity: 'ERROR',
+6|fitro360  |   code: '42703',
+6|fitro360  |   detail: undefined,
+6|fitro360  |   hint: undefined,
+6|fitro360  |   position: '96',
+6|fitro360  |   internalPosition: undefined,
+6|fitro360  |   internalQuery: undefined,
+6|fitro360  |   where: undefined,
+6|fitro360  |   schema: undefined,
+6|fitro360  |   table: undefined,
+6|fitro360  |   column: undefined,
+6|fitro360  |   dataType: undefined,
+6|fitro360  |   constraint: undefined,
+6|fitro360  |   file: 'parse_relation.c',
+6|fitro360  |   line: '3722',
+6|fitro360  |   routine: 'errorMissingColumn'
+6|fitro360  | }
+6|fitro360  | 4:18:53 AM [express] GET /api/dashboard/stats 500 in 12ms :: {"message":"column \"membership_plan_id\" does not exist"}
+6|fitro360  | Internal Server Error: error: column "membership_plan_id" does not exist
+6|fitro360  |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:74:13326
+6|fitro360  |     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:37959
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:141213 {
+6|fitro360  |   length: 118,
+6|fitro360  |   severity: 'ERROR',
+6|fitro360  |   code: '42703',
+6|fitro360  |   detail: undefined,
+6|fitro360  |   hint: undefined,
+6|fitro360  |   position: '96',
+6|fitro360  |   internalPosition: undefined,
+6|fitro360  |   internalQuery: undefined,
+6|fitro360  |   where: undefined,
+6|fitro360  |   schema: undefined,
+6|fitro360  |   table: undefined,
+6|fitro360  |   column: undefined,
+6|fitro360  |   dataType: undefined,
+6|fitro360  |   constraint: undefined,
+6|fitro360  |   file: 'parse_relation.c',
+6|fitro360  |   line: '3722',
+6|fitro360  |   routine: 'errorMissingColumn'
+6|fitro360  | }
+6|fitro360  | 4:18:53 AM [express] GET /api/members 500 in 21ms :: {"message":"column \"membership_plan_id\" does not exist"}
+6|fitro360  | 4:18:53 AM [express] GET /api/activities 304 in 21ms :: [{"id":"1e983f9b-0b81-4bbf-8fe0-42563fe3cad0","tenantId":"00943b85-ee54-45c3-a88f-c504c4e0a69b","userId":null,"type":"check_in","description":"David Thompson checked in at 6:15 AM","metadata":null,"createdAt":"2026-02-16T13:25:22.687Z"},{"id":"b15a1410-d0b4-45e6-b7cc-34ba872db909","tenantId":"00943b85-ee54-45c3-a88f-c504c4e0a69b","userId":null,"type":"member_added","description":"Daniel White enrolled in quarterly membership","metadata":null,"createdAt":"2026-02-16T13:25:22.686Z"},{"id":"8f8e8ba9-1349-4727-8706-abb4a9948eeb","tenantId":"00943b85-ee54-45c3-a88f-c504c4e0a69b","userId":null,"type":"payment","description":"Monthly payment received from Jessica Park - $49.00","metadata":null,"createdAt":"2026-02-16T13:25:22.685Z"},{"id":"8a10c6e8-57a3-4422-aa4b-e5aecc7cbe24","tenantId":"00943b85-ee54-45c3-a88f-c504c4e0a69b","userId":null,"type":"check_in","description":"Alex Rivera checked in at 7:30 AM","metadata":null,"createdAt":"2026-02-16T13:25:22.684Z"},{"id":"a6e2e1f6-48f9-406a-a866-35fe8eb5c0b2","tenantId":"00943b85-ee54-45c3-a88f-c504c4e0a69b","userId":null,"type":"member_renewed","description":"James Wilson renewed their annual membership","metadata":null,"createdAt":"2026-02-16T13:25:22.683Z"},{"id":"4e9f3c24-2f39-40f1-b839-e2b2abafde30","tenantId":"00943b85-ee54-45c3-a88f-c504c4e0a69b","userId":null,"type":"member_added","description":"Lily Thomas signed up for a monthly membership","metadata":null,"createdAt":"2026-02-16T13:25:22.680Z"},{"id":"5393f668-335a-44c9-af79-56ad0296f77f","tenantId":"00943b85-ee54-45c3-a88f-c504c4e0a69b","userId":null,"type":"member_added","description":"Chloe Anderson joined as a new monthly member","metadata":null,"createdAt":"2026-02-16T13:25:22.679Z"}]
+6|fitro360  | Internal Server Error: error: column "membership_plan_id" does not exist
+6|fitro360  |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:74:13326
+6|fitro360  |     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:37959
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:141213 {
+6|fitro360  |   length: 118,
+6|fitro360  |   severity: 'ERROR',
+6|fitro360  |   code: '42703',
+6|fitro360  |   detail: undefined,
+6|fitro360  |   hint: undefined,
+6|fitro360  |   position: '96',
+6|fitro360  |   internalPosition: undefined,
+6|fitro360  |   internalQuery: undefined,
+6|fitro360  |   where: undefined,
+6|fitro360  |   schema: undefined,
+6|fitro360  |   table: undefined,
+6|fitro360  |   column: undefined,
+6|fitro360  |   dataType: undefined,
+6|fitro360  |   constraint: undefined,
+6|fitro360  |   file: 'parse_relation.c',
+6|fitro360  |   line: '3722',
+6|fitro360  |   routine: 'errorMissingColumn'
+6|fitro360  | }
+6|fitro360  | 4:18:56 AM [express] GET /api/members 500 in 4ms :: {"message":"column \"membership_plan_id\" does not exist"}
+6|fitro360  | Internal Server Error: error: relation "trainer_profiles" does not exist
+6|fitro360  |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:74:13326
+6|fitro360  |     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:37959
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:147780 {
+6|fitro360  |   length: 116,
+6|fitro360  |   severity: 'ERROR',
+6|fitro360  |   code: '42P01',
+6|fitro360  |   detail: undefined,
+6|fitro360  |   hint: undefined,
+6|fitro360  |   position: '167',
+6|fitro360  |   internalPosition: undefined,
+6|fitro360  |   internalQuery: undefined,
+6|fitro360  |   where: undefined,
+6|fitro360  |   schema: undefined,
+6|fitro360  |   table: undefined,
+6|fitro360  |   column: undefined,
+6|fitro360  |   dataType: undefined,
+6|fitro360  |   constraint: undefined,
+6|fitro360  |   file: 'parse_relation.c',
+6|fitro360  |   line: '1449',
+6|fitro360  |   routine: 'parserOpenTable'
+6|fitro360  | }
+6|fitro360  | 4:18:56 AM [express] GET /api/trainers 500 in 16ms :: {"message":"relation \"trainer_profiles\" does not exist"}
+6|fitro360  | Internal Server Error: error: relation "membership_plans" does not exist
+6|fitro360  |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:74:13326
+6|fitro360  |     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:37959
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:156800 {
+6|fitro360  |   length: 116,
+6|fitro360  |   severity: 'ERROR',
+6|fitro360  |   code: '42P01',
+6|fitro360  |   detail: undefined,
+6|fitro360  |   hint: undefined,
+6|fitro360  |   position: '334',
+6|fitro360  |   internalPosition: undefined,
+6|fitro360  |   internalQuery: undefined,
+6|fitro360  |   where: undefined,
+6|fitro360  |   schema: undefined,
+6|fitro360  |   table: undefined,
+6|fitro360  |   column: undefined,
+6|fitro360  |   dataType: undefined,
+6|fitro360  |   constraint: undefined,
+6|fitro360  |   file: 'parse_relation.c',
+6|fitro360  |   line: '1449',
+6|fitro360  |   routine: 'parserOpenTable'
+6|fitro360  | }
+6|fitro360  | 4:18:56 AM [express] GET /api/membership-plans 500 in 17ms :: {"message":"relation \"membership_plans\" does not exist"}
+6|fitro360  | Internal Server Error: error: column "membership_plan_id" does not exist
+6|fitro360  |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:74:13326
+6|fitro360  |     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:37959
+6|fitro360  |     at async Qh.getDashboardStats (/home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:129963)
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:141068 {
+6|fitro360  |   length: 118,
+6|fitro360  |   severity: 'ERROR',
+6|fitro360  |   code: '42703',
+6|fitro360  |   detail: undefined,
+6|fitro360  |   hint: undefined,
+6|fitro360  |   position: '96',
+6|fitro360  |   internalPosition: undefined,
+6|fitro360  |   internalQuery: undefined,
+6|fitro360  |   where: undefined,
+6|fitro360  |   schema: undefined,
+6|fitro360  |   table: undefined,
+6|fitro360  |   column: undefined,
+6|fitro360  |   dataType: undefined,
+6|fitro360  |   constraint: undefined,
+6|fitro360  |   file: 'parse_relation.c',
+6|fitro360  |   line: '3722',
+6|fitro360  |   routine: 'errorMissingColumn'
+6|fitro360  | }
+6|fitro360  | 4:18:57 AM [express] GET /api/dashboard/stats 500 in 12ms :: {"message":"column \"membership_plan_id\" does not exist"}
+6|fitro360  | Internal Server Error: error: column "membership_plan_id" does not exist
+6|fitro360  |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:74:13326
+6|fitro360  |     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:37959
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:141213 {
+6|fitro360  |   length: 118,
+6|fitro360  |   severity: 'ERROR',
+6|fitro360  |   code: '42703',
+6|fitro360  |   detail: undefined,
+6|fitro360  |   hint: undefined,
+6|fitro360  |   position: '96',
+6|fitro360  |   internalPosition: undefined,
+6|fitro360  |   internalQuery: undefined,
+6|fitro360  |   where: undefined,
+6|fitro360  |   schema: undefined,
+6|fitro360  |   table: undefined,
+6|fitro360  |   column: undefined,
+6|fitro360  |   dataType: undefined,
+6|fitro360  |   constraint: undefined,
+6|fitro360  |   file: 'parse_relation.c',
+6|fitro360  |   line: '3722',
+6|fitro360  |   routine: 'errorMissingColumn'
+6|fitro360  | }
+6|fitro360  | 4:18:57 AM [express] GET /api/members 500 in 15ms :: {"message":"column \"membership_plan_id\" does not exist"}
+6|fitro360  | Internal Server Error: error: relation "membership_plans" does not exist
+6|fitro360  |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:74:13326
+6|fitro360  |     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:37959
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:156800 {
+6|fitro360  |   length: 116,
+6|fitro360  |   severity: 'ERROR',
+6|fitro360  |   code: '42P01',
+6|fitro360  |   detail: undefined,
+6|fitro360  |   hint: undefined,
+6|fitro360  |   position: '334',
+6|fitro360  |   internalPosition: undefined,
+6|fitro360  |   internalQuery: undefined,
+6|fitro360  |   where: undefined,
+6|fitro360  |   schema: undefined,
+6|fitro360  |   table: undefined,
+6|fitro360  |   column: undefined,
+6|fitro360  |   dataType: undefined,
+6|fitro360  |   constraint: undefined,
+6|fitro360  |   file: 'parse_relation.c',
+6|fitro360  |   line: '1449',
+6|fitro360  |   routine: 'parserOpenTable'
+6|fitro360  | }
+6|fitro360  | 4:18:58 AM [express] GET /api/membership-plans 500 in 11ms :: {"message":"relation \"membership_plans\" does not exist"}
+6|fitro360  | Internal Server Error: error: column "membership_plan_id" does not exist
+6|fitro360  |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:74:13326
+6|fitro360  |     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:37959
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:141213 {
+6|fitro360  |   length: 118,
+6|fitro360  |   severity: 'ERROR',
+6|fitro360  |   code: '42703',
+6|fitro360  |   detail: undefined,
+6|fitro360  |   hint: undefined,
+6|fitro360  |   position: '96',
+6|fitro360  |   internalPosition: undefined,
+6|fitro360  |   internalQuery: undefined,
+6|fitro360  |   where: undefined,
+6|fitro360  |   schema: undefined,
+6|fitro360  |   table: undefined,
+6|fitro360  |   column: undefined,
+6|fitro360  |   dataType: undefined,
+6|fitro360  |   constraint: undefined,
+6|fitro360  |   file: 'parse_relation.c',
+6|fitro360  |   line: '3722',
+6|fitro360  |   routine: 'errorMissingColumn'
+6|fitro360  | }
+6|fitro360  | 4:18:58 AM [express] GET /api/members 500 in 14ms :: {"message":"column \"membership_plan_id\" does not exist"}
+6|fitro360  | Internal Server Error: error: column "membership_plan_id" does not exist
+6|fitro360  |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:74:13326
+6|fitro360  |     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:37959
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:141213 {
+6|fitro360  |   length: 118,
+6|fitro360  |   severity: 'ERROR',
+6|fitro360  |   code: '42703',
+6|fitro360  |   detail: undefined,
+6|fitro360  |   hint: undefined,
+6|fitro360  |   position: '96',
+6|fitro360  |   internalPosition: undefined,
+6|fitro360  |   internalQuery: undefined,
+6|fitro360  |   where: undefined,
+6|fitro360  |   schema: undefined,
+6|fitro360  |   table: undefined,
+6|fitro360  |   column: undefined,
+6|fitro360  |   dataType: undefined,
+6|fitro360  |   constraint: undefined,
+6|fitro360  |   file: 'parse_relation.c',
+6|fitro360  |   line: '3722',
+6|fitro360  |   routine: 'errorMissingColumn'
+6|fitro360  | }
+6|fitro360  | 4:18:58 AM [express] GET /api/members 500 in 11ms :: {"message":"column \"membership_plan_id\" does not exist"}
+6|fitro360  | 4:18:58 AM [express] GET /api/attendance/ 304 in 16ms :: []
+6|fitro360  | Internal Server Error: error: relation "trainer_profiles" does not exist
+6|fitro360  |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:74:13326
+6|fitro360  |     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:37959
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:147780 {
+6|fitro360  |   length: 116,
+6|fitro360  |   severity: 'ERROR',
+6|fitro360  |   code: '42P01',
+6|fitro360  |   detail: undefined,
+6|fitro360  |   hint: undefined,
+6|fitro360  |   position: '167',
+6|fitro360  |   internalPosition: undefined,
+6|fitro360  |   internalQuery: undefined,
+6|fitro360  |   where: undefined,
+6|fitro360  |   schema: undefined,
+6|fitro360  |   table: undefined,
+6|fitro360  |   column: undefined,
+6|fitro360  |   dataType: undefined,
+6|fitro360  |   constraint: undefined,
+6|fitro360  |   file: 'parse_relation.c',
+6|fitro360  |   line: '1449',
+6|fitro360  |   routine: 'parserOpenTable'
+6|fitro360  | }
+6|fitro360  | 4:18:59 AM [express] GET /api/trainers 500 in 5ms :: {"message":"relation \"trainer_profiles\" does not exist"}
+6|fitro360  | Internal Server Error: error: column "membership_plan_id" does not exist
+6|fitro360  |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:74:13326
+6|fitro360  |     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:37959
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:141213 {
+6|fitro360  |   length: 118,
+6|fitro360  |   severity: 'ERROR',
+6|fitro360  |   code: '42703',
+6|fitro360  |   detail: undefined,
+6|fitro360  |   hint: undefined,
+6|fitro360  |   position: '96',
+6|fitro360  |   internalPosition: undefined,
+6|fitro360  |   internalQuery: undefined,
+6|fitro360  |   where: undefined,
+6|fitro360  |   schema: undefined,
+6|fitro360  |   table: undefined,
+6|fitro360  |   column: undefined,
+6|fitro360  |   dataType: undefined,
+6|fitro360  |   constraint: undefined,
+6|fitro360  |   file: 'parse_relation.c',
+6|fitro360  |   line: '3722',
+6|fitro360  |   routine: 'errorMissingColumn'
+6|fitro360  | }
+6|fitro360  | 4:19:01 AM [express] GET /api/members 500 in 19ms :: {"message":"column \"membership_plan_id\" does not exist"}
+6|fitro360  | Internal Server Error: error: relation "trainer_profiles" does not exist
+6|fitro360  |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:74:13326
+6|fitro360  |     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:37959
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:147780 {
+6|fitro360  |   length: 116,
+6|fitro360  |   severity: 'ERROR',
+6|fitro360  |   code: '42P01',
+6|fitro360  |   detail: undefined,
+6|fitro360  |   hint: undefined,
+6|fitro360  |   position: '167',
+6|fitro360  |   internalPosition: undefined,
+6|fitro360  |   internalQuery: undefined,
+6|fitro360  |   where: undefined,
+6|fitro360  |   schema: undefined,
+6|fitro360  |   table: undefined,
+6|fitro360  |   column: undefined,
+6|fitro360  |   dataType: undefined,
+6|fitro360  |   constraint: undefined,
+6|fitro360  |   file: 'parse_relation.c',
+6|fitro360  |   line: '1449',
+6|fitro360  |   routine: 'parserOpenTable'
+6|fitro360  | }
+6|fitro360  | Internal Server Error: error: relation "membership_plans" does not exist
+6|fitro360  |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:74:13326
+6|fitro360  |     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:37959
+6|fitro360  |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:156800 {
+6|fitro360  |   length: 116,
+6|fitro360  |   severity: 'ERROR',
+6|fitro360  |   code: '42P01',
+6|fitro360  |   detail: undefined,
+6|fitro360  |   hint: undefined,
+6|fitro360  |   position: '334',
+6|fitro360  |   internalPosition: undefined,
+6|fitro360  |   internalQuery: undefined,
+6|fitro360  |   where: undefined,
+6|fitro360  |   schema: undefined,
+6|fitro360  |   table: undefined,
+6|fitro360  |   column: undefined,
+6|fitro360  |   dataType: undefined,
+6|fitro360  |   constraint: undefined,
+6|fitro360  |   file: 'parse_relation.c',
+6|fitro360  |   line: '1449',
+6|fitro360  |   routine: 'parserOpenTable'
+6|fitro360  | }
+6|fitro360  | 4:19:01 AM [express] GET /api/trainers 500 in 27ms :: {"message":"relation \"trainer_profiles\" does not exist"}
+6|fitro360  | 4:19:01 AM [express] GET /api/membership-plans 500 in 28ms :: {"message":"relation \"membership_plans\" does not exist"}
+^C
+root@srv1286649:/home/fitro360/htdocs/www.fitro360.com/fitro360# psql "postgresql://fitro360user:Fitro%40957823@127.0.0.1:5432/fitro360" -c "SELECT id, username, role FROM users LIMIT 10;"
+                  id                  | username |      role      
+--------------------------------------+----------+----------------
+ e793ae93-8945-4d19-8d5b-eac7209bcab7 | admin    | platform_admin
+ 71d1dadd-6980-4f12-b217-8c9b77fb6b58 | gymowner | gym_owner
+ ba7cd460-6a5d-44b4-8140-f30603b888bc | trainer1 | trainer
+ 5480ecbe-5c09-4140-877f-18bba220b3de | trainer2 | trainer
+ 5aa52e19-e216-4a17-afcb-2525892cfd5a | trainer3 | trainer
+ e5f68675-3567-46d7-808a-a341904fd124 | member1  | member
+ a2c9dc10-1c26-4668-8a41-06705d552671 | manager1 | manager
+(7 rows)
+
+root@srv1286649:/home/fitro360/htdocs/www.fitro360.com/fitro360# pm2 logs fitro360 --lines 30
+[TAILING] Tailing last 30 lines for [fitro360] process (change the value with --lines option)
+/root/.pm2/logs/fitro360-error.log last 30 lines:
+6|fitro360 |   column: undefined,
+6|fitro360 |   dataType: undefined,
+6|fitro360 |   constraint: undefined,
+6|fitro360 |   file: 'parse_relation.c',
+6|fitro360 |   line: '1449',
+6|fitro360 |   routine: 'parserOpenTable'
+6|fitro360 | }
+6|fitro360 | Internal Server Error: error: relation "membership_plans" does not exist
+6|fitro360 |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:74:13326
+6|fitro360 |     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+6|fitro360 |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:37959
+6|fitro360 |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:156800 {
+6|fitro360 |   length: 116,
+6|fitro360 |   severity: 'ERROR',
+6|fitro360 |   code: '42P01',
+6|fitro360 |   detail: undefined,
+6|fitro360 |   hint: undefined,
+6|fitro360 |   position: '334',
+6|fitro360 |   internalPosition: undefined,
+6|fitro360 |   internalQuery: undefined,
+6|fitro360 |   where: undefined,
+6|fitro360 |   schema: undefined,
+6|fitro360 |   table: undefined,
+6|fitro360 |   column: undefined,
+6|fitro360 |   dataType: undefined,
+6|fitro360 |   constraint: undefined,
+6|fitro360 |   file: 'parse_relation.c',
+6|fitro360 |   line: '1449',
+6|fitro360 |   routine: 'parserOpenTable'
+6|fitro360 | }
+
+/root/.pm2/logs/fitro360-out.log last 30 lines:
+6|fitro360 | > NODE_ENV=production node dist/index.cjs
+6|fitro360 | 
+6|fitro360 | Database already seeded, skipping...
+6|fitro360 | 4:15:32 AM [express] serving on port 5001
+6|fitro360 | 
+6|fitro360 | > rest-express@1.0.0 start
+6|fitro360 | > NODE_ENV=production node dist/index.cjs
+6|fitro360 | 
+6|fitro360 | Database already seeded, skipping...
+6|fitro360 | 4:18:21 AM [express] serving on port 4000
+6|fitro360 | 4:18:51 AM [express] GET /api/branding 304 in 12ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+6|fitro360 | 4:18:51 AM [express] GET /api/auth/me 401 in 1ms :: {"message":"Not authenticated"}
+6|fitro360 | 4:18:51 AM [express] GET /api/branding 304 in 2ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+6|fitro360 | 4:18:53 AM [express] POST /api/auth/login 200 in 89ms :: {"user":{"id":"71d1dadd-6980-4f12-b217-8c9b77fb6b58","tenantId":"00943b85-ee54-45c3-a88f-c504c4e0a69b","branchId":null,"username":"gymowner","email":"owner@irontemple.com","role":"gym_owner","firstName":"Marcus","lastName":"Johnson","phone":"+1 555-0111","avatarUrl":null,"isActive":true,"createdAt":"2026-02-16T13:25:22.476Z"},"tenant":{"id":"00943b85-ee54-45c3-a88f-c504c4e0a69b","gymName":"Iron Temple Fitness","logoUrl":null,"primaryColor":"#1e40af","secondaryColor":"#3b82f6","domain":"irontemple.forgefit.com","subdomain":null,"subscriptionPlan":"pro","appDisplayName":"Iron Temple","email":"info@irontemple.com","phone":"+1 555-0101","address":"123 Fitness Ave, Los Angeles, CA 90012","faviconUrl":null,"emailTemplateBg":"#ffffff","emailTemplateAccent":null,"smsSenderId":null,"invoiceHeader":null,"invoiceFooter":null,"market":"uae","isActive":true,"trialEndsAt":null,"createdAt":"2026-02-16T13:25:22.375Z"}}
+6|fitro360 | 4:18:53 AM [express] GET /api/dashboard/stats 500 in 12ms :: {"message":"column \"membership_plan_id\" does not exist"}
+6|fitro360 | 4:18:53 AM [express] GET /api/members 500 in 21ms :: {"message":"column \"membership_plan_id\" does not exist"}
+6|fitro360 | 4:18:53 AM [express] GET /api/activities 304 in 21ms :: [{"id":"1e983f9b-0b81-4bbf-8fe0-42563fe3cad0","tenantId":"00943b85-ee54-45c3-a88f-c504c4e0a69b","userId":null,"type":"check_in","description":"David Thompson checked in at 6:15 AM","metadata":null,"createdAt":"2026-02-16T13:25:22.687Z"},{"id":"b15a1410-d0b4-45e6-b7cc-34ba872db909","tenantId":"00943b85-ee54-45c3-a88f-c504c4e0a69b","userId":null,"type":"member_added","description":"Daniel White enrolled in quarterly membership","metadata":null,"createdAt":"2026-02-16T13:25:22.686Z"},{"id":"8f8e8ba9-1349-4727-8706-abb4a9948eeb","tenantId":"00943b85-ee54-45c3-a88f-c504c4e0a69b","userId":null,"type":"payment","description":"Monthly payment received from Jessica Park - $49.00","metadata":null,"createdAt":"2026-02-16T13:25:22.685Z"},{"id":"8a10c6e8-57a3-4422-aa4b-e5aecc7cbe24","tenantId":"00943b85-ee54-45c3-a88f-c504c4e0a69b","userId":null,"type":"check_in","description":"Alex Rivera checked in at 7:30 AM","metadata":null,"createdAt":"2026-02-16T13:25:22.684Z"},{"id":"a6e2e1f6-48f9-406a-a866-35fe8eb5c0b2","tenantId":"00943b85-ee54-45c3-a88f-c504c4e0a69b","userId":null,"type":"member_renewed","description":"James Wilson renewed their annual membership","metadata":null,"createdAt":"2026-02-16T13:25:22.683Z"},{"id":"4e9f3c24-2f39-40f1-b839-e2b2abafde30","tenantId":"00943b85-ee54-45c3-a88f-c504c4e0a69b","userId":null,"type":"member_added","description":"Lily Thomas signed up for a monthly membership","metadata":null,"createdAt":"2026-02-16T13:25:22.680Z"},{"id":"5393f668-335a-44c9-af79-56ad0296f77f","tenantId":"00943b85-ee54-45c3-a88f-c504c4e0a69b","userId":null,"type":"member_added","description":"Chloe Anderson joined as a new monthly member","metadata":null,"createdAt":"2026-02-16T13:25:22.679Z"}]
+6|fitro360 | 4:18:56 AM [express] GET /api/members 500 in 4ms :: {"message":"column \"membership_plan_id\" does not exist"}
+6|fitro360 | 4:18:56 AM [express] GET /api/trainers 500 in 16ms :: {"message":"relation \"trainer_profiles\" does not exist"}
+6|fitro360 | 4:18:56 AM [express] GET /api/membership-plans 500 in 17ms :: {"message":"relation \"membership_plans\" does not exist"}
+6|fitro360 | 4:18:57 AM [express] GET /api/dashboard/stats 500 in 12ms :: {"message":"column \"membership_plan_id\" does not exist"}
+6|fitro360 | 4:18:57 AM [express] GET /api/members 500 in 15ms :: {"message":"column \"membership_plan_id\" does not exist"}
+6|fitro360 | 4:18:58 AM [express] GET /api/membership-plans 500 in 11ms :: {"message":"relation \"membership_plans\" does not exist"}
+6|fitro360 | 4:18:58 AM [express] GET /api/members 500 in 14ms :: {"message":"column \"membership_plan_id\" does not exist"}
+6|fitro360 | 4:18:58 AM [express] GET /api/members 500 in 11ms :: {"message":"column \"membership_plan_id\" does not exist"}
+6|fitro360 | 4:18:58 AM [express] GET /api/attendance/ 304 in 16ms :: []
+6|fitro360 | 4:18:59 AM [express] GET /api/trainers 500 in 5ms :: {"message":"relation \"trainer_profiles\" does not exist"}
+6|fitro360 | 4:19:01 AM [express] GET /api/members 500 in 19ms :: {"message":"column \"membership_plan_id\" does not exist"}
+6|fitro360 | 4:19:01 AM [express] GET /api/trainers 500 in 27ms :: {"message":"relation \"trainer_profiles\" does not exist"}
+6|fitro360 | 4:19:01 AM [express] GET /api/membership-plans 500 in 28ms :: {"message":"relation \"membership_plans\" does not exist"}
