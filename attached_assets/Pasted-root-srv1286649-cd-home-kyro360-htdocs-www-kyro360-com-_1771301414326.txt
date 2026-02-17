@@ -1,0 +1,25 @@
+root@srv1286649:~# cd /home/kyro360/htdocs/www.kyro360.com/kyro360 
+root@srv1286649:/home/kyro360/htdocs/www.kyro360.com/kyro360# psql "postgresql://kyro360:Kathir%40957823@localhost:5432/kyro360" -c "SELECT id, phone_number, first_name, last_name, role FROM users LIMIT 20;"
+                  id                  | phone_number | first_name | last_name |   role   
+--------------------------------------+--------------+------------+-----------+----------
+ 126217f7-a7c6-4919-b72b-ab572ad60bdd |              |            |           | customer
+ 1bf53e15-c5db-4ba9-b148-20fee0afdb09 | 9585591198   |            |           | provider
+ 39266a6e-f373-4766-adfc-48f4cd3295ec | 7358337470   |            |           | customer
+ ceca1869-ac21-4082-92b4-d3f7adcd82dd | 9791733196   |            |           | customer
+ 8bf6c123-2192-422d-93f4-779d208a8d04 | 8870114522   |            |           | provider
+ 0d48cc32-bb29-45e3-b507-741b769fcc37 | 9944573893   |            |           | customer
+ 4b7b0757-94cd-40de-938c-9d913ba86e5a | 7708629405   |            |           | provider
+ e0935715-09d4-4c77-beb4-92e719b10235 | 9488029021   |            |           | admin
+ b0da41a3-5fbf-4911-ad33-761b4680ebb0 | 9843184772   |            |           | customer
+ fbd978ec-a7b8-4eb1-949b-5ef99ac83b5b | 9842711199   |            |           | customer
+ 882d930a-aae6-48a8-b271-d1d34964ca6e | 9843184472   |            |           | customer
+ 04069d83-fb14-4bd0-9f50-812b8cc36b09 | 9843753672   |            |           | provider
+ 59c81003-5064-49b8-83d8-d7ceecd87afb | 7305724745   |            |           | customer
+ 53e9eb69-16ac-43fe-ba75-60f29bdca182 | 7871277704   |            |           | provider
+ ca79a7b8-ad3b-49f5-82bc-2143cae34b08 | 8754065957   |            |           | provider
+ bdffcd96-b969-4301-b449-03ce16a2bbca | 8681091840   |            |           | provider
+ 42483bf3-8f3a-4245-b191-f96f01721d77 | 8925897583   |            |           | provider
+ c12d6b20-6f42-40e7-8398-f1b2d16081cc | 9047808300   |            |           | customer
+ 336436b1-aa22-4c97-afe5-0a0f146b3b8c | 9942355939   |            |           | provider
+ c7299323-cb1e-465d-b4df-4dcdcd55135f | 7904920518   |            |           | customer
+(20 rows)
