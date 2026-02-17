@@ -194,7 +194,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateTenant(id: string, data: Partial<InsertTenant>): Promise<Tenant | undefined> {
-    const [updated] = await db.update(tenants).set(data).where(eq(tenants.id, id)).returning();
+    if (!data || Object.keys(data).length === 0) return this.getTenant(id);
+    const [updated] = await db.update(tenants).set(data as any).where(eq(tenants.id, id)).returning();
     return updated;
   }
 
@@ -240,7 +241,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined> {
-    const [updated] = await db.update(users).set(data).where(eq(users.id, id)).returning();
+    if (!data || Object.keys(data).length === 0) return this.getUser(id);
+    const [updated] = await db.update(users).set(data as any).where(eq(users.id, id)).returning();
     return updated;
   }
 
@@ -259,6 +261,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateTrainerProfile(userId: string, data: Partial<InsertTrainerProfile>): Promise<TrainerProfile | undefined> {
+    if (!data || Object.keys(data).length === 0) return this.getTrainerProfile(userId) ?? undefined;
     const [updated] = await db.update(trainerProfiles).set(data as any).where(eq(trainerProfiles.userId, userId)).returning();
     return updated;
   }
@@ -278,7 +281,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateBranch(id: string, data: Partial<InsertBranch>): Promise<Branch | undefined> {
-    const [updated] = await db.update(branches).set(data).where(eq(branches.id, id)).returning();
+    if (!data || Object.keys(data).length === 0) return this.getBranch(id);
+    const [updated] = await db.update(branches).set(data as any).where(eq(branches.id, id)).returning();
     return updated;
   }
 
@@ -301,7 +305,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateMember(id: string, data: Partial<InsertMember>): Promise<Member | undefined> {
-    const [updated] = await db.update(members).set(data).where(eq(members.id, id)).returning();
+    if (!data || Object.keys(data).length === 0) return this.getMember(id);
+    const [updated] = await db.update(members).set(data as any).where(eq(members.id, id)).returning();
     return updated;
   }
 
@@ -334,7 +339,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateAttendance(id: string, data: Partial<InsertAttendance>): Promise<Attendance | undefined> {
-    const [updated] = await db.update(attendance).set(data).where(eq(attendance.id, id)).returning();
+    if (!data || Object.keys(data).length === 0) return undefined;
+    const [updated] = await db.update(attendance).set(data as any).where(eq(attendance.id, id)).returning();
     return updated;
   }
 
@@ -370,7 +376,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateSession(id: string, data: Partial<InsertTrainerSession>): Promise<TrainerSession | undefined> {
-    const [updated] = await db.update(trainerSessions).set(data).where(eq(trainerSessions.id, id)).returning();
+    if (!data || Object.keys(data).length === 0) return this.getSession(id);
+    const [updated] = await db.update(trainerSessions).set(data as any).where(eq(trainerSessions.id, id)).returning();
     return updated;
   }
 
@@ -425,7 +432,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateEquipment(id: string, data: Partial<InsertEquipment>): Promise<Equipment | undefined> {
-    const [updated] = await db.update(equipment).set(data).where(eq(equipment.id, id)).returning();
+    if (!data || Object.keys(data).length === 0) return undefined;
+    const [updated] = await db.update(equipment).set(data as any).where(eq(equipment.id, id)).returning();
     return updated;
   }
 
@@ -448,7 +456,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateSupplier(id: string, data: Partial<InsertSupplier>): Promise<Supplier | undefined> {
-    const [updated] = await db.update(suppliers).set(data).where(eq(suppliers.id, id)).returning();
+    if (!data || Object.keys(data).length === 0) return undefined;
+    const [updated] = await db.update(suppliers).set(data as any).where(eq(suppliers.id, id)).returning();
     return updated;
   }
 
@@ -510,7 +519,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateCoupon(id: string, data: Partial<InsertCoupon>): Promise<Coupon | undefined> {
-    const [updated] = await db.update(coupons).set(data).where(eq(coupons.id, id)).returning();
+    if (!data || Object.keys(data).length === 0) return undefined;
+    const [updated] = await db.update(coupons).set(data as any).where(eq(coupons.id, id)).returning();
     return updated;
   }
 
@@ -524,7 +534,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateReferral(id: string, data: Partial<InsertReferral>): Promise<Referral | undefined> {
-    const [updated] = await db.update(referrals).set(data).where(eq(referrals.id, id)).returning();
+    if (!data || Object.keys(data).length === 0) return undefined;
+    const [updated] = await db.update(referrals).set(data as any).where(eq(referrals.id, id)).returning();
     return updated;
   }
 
@@ -612,7 +623,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateMaintenance(id: string, data: Partial<InsertEquipmentMaintenance>): Promise<EquipmentMaintenance | undefined> {
-    const [updated] = await db.update(equipmentMaintenance).set(data).where(eq(equipmentMaintenance.id, id)).returning();
+    if (!data || Object.keys(data).length === 0) return undefined;
+    const [updated] = await db.update(equipmentMaintenance).set(data as any).where(eq(equipmentMaintenance.id, id)).returning();
     return updated;
   }
 
@@ -634,7 +646,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updatePayment(id: string, data: Partial<InsertPaymentRecord>): Promise<PaymentRecord | undefined> {
-    const [updated] = await db.update(paymentRecords).set(data).where(eq(paymentRecords.id, id)).returning();
+    if (!data || Object.keys(data).length === 0) return undefined;
+    const [updated] = await db.update(paymentRecords).set(data as any).where(eq(paymentRecords.id, id)).returning();
     return updated;
   }
 
@@ -652,7 +665,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateCommission(id: string, data: Partial<InsertTrainerCommission>): Promise<TrainerCommission | undefined> {
-    const [updated] = await db.update(trainerCommissions).set(data).where(eq(trainerCommissions.id, id)).returning();
+    if (!data || Object.keys(data).length === 0) return undefined;
+    const [updated] = await db.update(trainerCommissions).set(data as any).where(eq(trainerCommissions.id, id)).returning();
     return updated;
   }
 
@@ -670,7 +684,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateLeave(id: string, data: Partial<InsertTrainerLeave>): Promise<TrainerLeave | undefined> {
-    const [updated] = await db.update(trainerLeaves).set(data).where(eq(trainerLeaves.id, id)).returning();
+    if (!data || Object.keys(data).length === 0) return undefined;
+    const [updated] = await db.update(trainerLeaves).set(data as any).where(eq(trainerLeaves.id, id)).returning();
     return updated;
   }
 
