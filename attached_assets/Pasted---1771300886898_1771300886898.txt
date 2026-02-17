@@ -1,0 +1,67 @@
+└────┴─────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[PM2] Saving current process list...
+[PM2] Successfully saved in /root/.pm2/dump.pm2
+root@srv1286649:/home/kyro360/htdocs/www.kyro360.com/kyro360# pm2 logs kyro360 --lines 30[TAILING] Tailing last 30 lines for [kyro360] process (change the value with --lines option)
+/root/.pm2/logs/kyro360-error.log last 30 lines:
+2|kyro360  |   message: 'This instance ID has not been activated yet'
+2|kyro360  | }
+2|kyro360  | [WhatsApp] API returned non-success status for 917010923391: {
+2|kyro360  |   status: 'error',
+2|kyro360  |   message: 'This instance ID has not been activated yet'
+2|kyro360  | }
+2|kyro360  | [WhatsApp] API returned non-success status for 917010923391: {
+2|kyro360  |   status: 'error',
+2|kyro360  |   message: 'This instance ID has not been activated yet'
+2|kyro360  | }
+2|kyro360  | [WhatsApp] API returned non-success status for 917358337470: {
+2|kyro360  |   status: 'error',
+2|kyro360  |   message: 'This instance ID has not been activated yet'
+2|kyro360  | }
+2|kyro360  | [WhatsApp] API returned non-success status for 917358337470: {
+2|kyro360  |   status: 'error',
+2|kyro360  |   message: 'This instance ID has not been activated yet'
+2|kyro360  | }
+2|kyro360  | [WhatsApp] API returned non-success status for 917010923391: {
+2|kyro360  |   status: 'error',
+2|kyro360  |   message: 'This instance ID has not been activated yet'
+2|kyro360  | }
+2|kyro360  | [WhatsApp] API returned non-success status for 917010923391: {
+2|kyro360  |   status: 'error',
+2|kyro360  |   message: 'This instance ID has not been activated yet'
+2|kyro360  | }
+2|kyro360  | [WhatsApp] API returned non-success status for 917010923391: {
+2|kyro360  |   status: 'error',
+2|kyro360  |   message: 'This instance ID has not been activated yet'
+2|kyro360  | }
+
+/root/.pm2/logs/kyro360-out.log last 30 lines:
+2|kyro360  | [OTP Send] Phone: 9999999999, Role: admin, GeneratedOTP: 251921
+2|kyro360  | [SMS] Sending message to 919999999999 via Ping4SMS
+2|kyro360  | [SMS] Template ID: 1607100000000372224
+2|kyro360  | [SMS] Sender ID: EYETIR
+2|kyro360  | [SMS] Message content (75 chars): "Your Kyro 360 verification code is: 251921. Valid for 10 minutes. EYE THIRD"
+2|kyro360  | [SMS] HTTP Status: 200, API Response for 919999999999: 134738625
+2|kyro360  | [SMS] Message sent successfully to 919999999999, Message ID: 134738625
+2|kyro360  | [OTP] OTP for 9999999999: 251921, Channel: sms, WhatsApp: false, SMS: true
+2|kyro360  | 3:57:09 AM [express] POST /api/auth/otp/send 200 in 249ms :: {"success":true,"isNewUser":false,"message":"OTP sent via SMS","channel":"sms","fallbackUsed":false}
+2|kyro360  | [ObjectStorage] Running outside Replit - object storage disabled
+2|kyro360  | [ObjectStorage] Object storage not available - routes skipped
+2|kyro360  | 3:58:36 AM [express] serving on port 5000
+2|kyro360  | [Email Cleanup] Scheduler started - will clean up emails older than 24 hours daily at midnight
+2|kyro360  | [Email Ingestion] Scheduler started - will sync every 15 minutes
+2|kyro360  | [Email Ingestion] Found 48 emails in inbox
+2|kyro360  | [Email Ingestion] Completed: 0 processed, 48 skipped (already in DB), 0 errors
+2|kyro360  | 3:58:45 AM [express] GET /api/auth/user 401 in 2ms
+2|kyro360  | [OTP Debug] Request body: {"phoneNumber":"9999999999"}
+2|kyro360  | [OTP Send] Phone: 9999999999, Role: admin, GeneratedOTP: 803368
+2|kyro360  | [SMS] Sending message to 919999999999 via Ping4SMS
+2|kyro360  | [SMS] Template ID: 1607100000000372224
+2|kyro360  | [SMS] Sender ID: EYETIR
+2|kyro360  | [SMS] Message content (75 chars): "Your Kyro 360 verification code is: 803368. Valid for 10 minutes. EYE THIRD"
+2|kyro360  | [SMS] HTTP Status: 200, API Response for 919999999999: 134738915
+2|kyro360  | [SMS] Message sent successfully to 919999999999, Message ID: 134738915
+2|kyro360  | [OTP] OTP for 9999999999: 803368, Channel: sms, WhatsApp: false, SMS: true
+2|kyro360  | 3:58:48 AM [express] POST /api/auth/otp/send 200 in 344ms :: {"success":true,"isNewUser":false,"message":"OTP sent via SMS","channel":"sms","fallbackUsed":false}
+2|kyro360  | [Email Ingestion] Auto-sync triggered at 2026-02-17T04:00:00.007Z
+2|kyro360  | [Email Ingestion] Found 48 emails in inbox
+2|kyro360  | [Email Ingestion] Completed: 0 processed, 48 skipped (already in DB), 0 errors
