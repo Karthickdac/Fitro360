@@ -1,0 +1,25 @@
+root@srv1609330:/home/fitro360/htdocs/www.fitro360.com/fitro360# pm2 list
+pm2 logs fitro360 --lines 20 --nostream
+curl -I http://127.0.0.1:5000
+┌────┬─────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name        │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼─────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 0  │ fitro360    │ default     │ 1.0.0   │ fork    │ 125144   │ 15s    │ 0    │ online    │ 0%       │ 83.8mb   │ root     │ disabled │
+└────┴─────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[TAILING] Tailing last 20 lines for [fitro360] process (change the value with --lines option)
+/root/.pm2/logs/fitro360-out.log last 20 lines:
+/root/.pm2/logs/fitro360-error.log last 20 lines:
+0|fitro360 | Error: DATABASE_URL must be set
+0|fitro360 |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:119305
+0|fitro360 |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:1:225
+0|fitro360 |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:119463
+0|fitro360 |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:1:225
+0|fitro360 |     at Object.<anonymous> (/home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:138837)
+0|fitro360 |     at Module._compile (node:internal/modules/cjs/loader:1705:14)
+0|fitro360 |     at Object..js (node:internal/modules/cjs/loader:1838:10)
+0|fitro360 |     at Module.load (node:internal/modules/cjs/loader:1441:32)
+0|fitro360 |     at Function._load (node:internal/modules/cjs/loader:1263:12)
+0|fitro360 |     at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+
+curl: (7) Failed to connect to 127.0.0.1 port 5000 after 0 ms: Couldn't connect to server
+root@srv1609330:/home/fitro360/htdocs/www.fitro360.com/fitro360# 
