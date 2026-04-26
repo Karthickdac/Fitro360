@@ -17,7 +17,10 @@ Fitro360 is a multi-tenant SaaS platform for gym management. It supports multipl
 - Sidebar navigation adapts to user role (members see portal, trainers see workspace, owners see full admin)
 
 ## Database Tables
-- `tenants` - Gym organizations with branding config (primaryColor, secondaryColor, domain, subdomain, faviconUrl, emailTemplateBg, emailTemplateAccent, smsSenderId, invoiceHeader, invoiceFooter, market)
+- `tenants` - Gym organizations with branding config (primaryColor, secondaryColor, domain, subdomain, faviconUrl, emailTemplateBg, emailTemplateAccent, smsSenderId, invoiceHeader, invoiceFooter, market) + tax fields (legalName, tradeLicenseNumber, trn, vatRegisteredOn, vatFilingFrequency, ctTrn, ctRegisteredOn, fyStartMonth)
+- `supplier_bills` - Purchase invoices used for input VAT recovery and CT expense deduction (supplierId, billNumber, billDate, category, subtotal, vatRate, vatAmount, total, vatTreatment, isDeductible, status)
+- `vat_returns` - VAT 201 returns with FTA boxes (1a standard sales/VAT, 2 zero-rated, 3 exempt, 4 reverse charge, 6 imports, 9 standard purchases/input VAT, totals, netVatPayable, status: draft/filed/paid)
+- `corporate_tax_returns` - UAE Corporate Tax filings (fyStart/End, totalRevenue, totalExpenses, accountingProfit, addBacks, exemptIncome, reliefClaimed, smallBusinessRelief, taxableIncome, threshold 375000, taxRate 9%, taxDue)
 - `users` - All users across tenants with role-based access
 - `members` - Gym members with BMI tracking (height, weight, bmi) + trainer assignment (trainerId) + membershipPlanId
 - `membership_plans` - Gym-specific membership plans per tenant (name, durationType, durationDays, price, currency, setupFee, features, perks, color, isPopular, isActive, sortOrder)
@@ -71,6 +74,10 @@ client/src/
     referrals.tsx     - Referral program management
     activity.tsx      - Activity log
     settings.tsx      - Tenant branding settings (4 cards: Gym Info, Branding, Advanced Branding, Email Template)
+    tax-settings.tsx  - UAE tax registration (TRN, VAT cadence, CT TRN, FY start month)
+    supplier-bills.tsx - Purchase invoices for input VAT recovery & CT expense deduction
+    vat-returns.tsx   - VAT 201 preparation: auto-compute boxes 1a/2/3/9, file with FTA reference, mark paid
+    corporate-tax.tsx - Corporate Tax filing: revenue/expense compute, adjustments, 9% above 375k, small business relief
     admin/            - Platform admin pages
       dashboard.tsx   - Platform overview
       tenants.tsx     - Full tenant CRUD (add/edit/delete, subdomain, detail view with users)

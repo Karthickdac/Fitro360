@@ -26,6 +26,10 @@ import {
   User,
   ChevronRight,
   FileBarChart,
+  Receipt,
+  Calculator,
+  ScrollText,
+  Landmark,
 } from "lucide-react";
 import {
   Sidebar,
@@ -95,7 +99,7 @@ const managerSystemItems = [
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
-const gymMainItems = [
+const gymOperationsItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Members", url: "/members", icon: Users },
   { title: "Membership Plans", url: "/membership-plans", icon: CreditCard },
@@ -103,26 +107,39 @@ const gymMainItems = [
   { title: "Trainers", url: "/trainers", icon: Dumbbell },
   { title: "Trainer Mgmt", url: "/trainer-management", icon: Award },
   { title: "Schedule", url: "/schedule", icon: CalendarDays },
+  { title: "Branches", url: "/branches", icon: GitBranch },
 ];
 
-const gymErpItems = [
+const gymAssetsItems = [
   { title: "Inventory", url: "/inventory", icon: Package },
   { title: "Maintenance", url: "/maintenance", icon: Wrench },
   { title: "Suppliers", url: "/suppliers", icon: Truck },
+];
+
+const gymFinanceItems = [
   { title: "Invoices", url: "/invoicing", icon: FileText },
+  { title: "Supplier Bills", url: "/supplier-bills", icon: ScrollText },
   { title: "Payments", url: "/payments", icon: DollarSign },
 ];
 
-const gymMarketingItems = [
+const gymComplianceItems = [
+  { title: "Tax Settings", url: "/tax-settings", icon: Landmark },
+  { title: "VAT Returns", url: "/vat-returns", icon: Receipt },
+  { title: "Corporate Tax", url: "/corporate-tax", icon: Calculator },
+];
+
+const gymGrowthItems = [
   { title: "Coupons", url: "/coupons", icon: Tag },
   { title: "Referrals", url: "/referrals", icon: Gift },
 ];
 
-const gymSystemItems = [
-  { title: "Branches", url: "/branches", icon: GitBranch },
+const gymInsightsItems = [
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Reports", url: "/reports", icon: FileBarChart },
   { title: "Activity", url: "/activity", icon: Activity },
+];
+
+const gymAdminItems = [
   { title: "Notifications", url: "/notifications", icon: Bell },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
@@ -245,10 +262,13 @@ export function AppSidebar() {
         )}
         {(role === "gym_owner" || role === "sales_executive") && (
           <>
-            <NavGroup label="Gym Management" items={gymMainItems} location={location} navigate={navigate} />
-            <NavGroup label="Equipment & Sales" items={gymErpItems} location={location} navigate={navigate} />
-            <NavGroup label="Marketing" items={gymMarketingItems} location={location} navigate={navigate} />
-            <NavGroup label="System" items={gymSystemItems} location={location} navigate={navigate} />
+            <NavGroup label="Operations" items={gymOperationsItems} location={location} navigate={navigate} />
+            <NavGroup label="Assets" items={gymAssetsItems} location={location} navigate={navigate} />
+            <NavGroup label="Finance" items={gymFinanceItems} location={location} navigate={navigate} />
+            <NavGroup label="Tax & Compliance" items={gymComplianceItems} location={location} navigate={navigate} />
+            <NavGroup label="Growth" items={gymGrowthItems} location={location} navigate={navigate} />
+            <NavGroup label="Insights" items={gymInsightsItems} location={location} navigate={navigate} />
+            <NavGroup label="System" items={gymAdminItems} location={location} navigate={navigate} />
           </>
         )}
       </SidebarContent>

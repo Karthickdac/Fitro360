@@ -39,6 +39,10 @@ import PlansPage from "@/pages/admin/plans";
 import AdminSettingsPage from "@/pages/admin/settings";
 import AdminReportsPage from "@/pages/admin/reports";
 import MembershipPlansPage from "@/pages/membership-plans";
+import TaxSettingsPage from "@/pages/tax-settings";
+import SupplierBillsPage from "@/pages/supplier-bills";
+import VatReturnsPage from "@/pages/vat-returns";
+import CorporateTaxPage from "@/pages/corporate-tax";
 
 function LoadingScreen() {
   return (
@@ -143,6 +147,10 @@ function GymOwnerRouter() {
       <Route path="/analytics" component={AnalyticsPage} />
       <Route path="/reports" component={ReportsPage} />
       <Route path="/settings" component={SettingsPage} />
+      <Route path="/tax-settings" component={TaxSettingsPage} />
+      <Route path="/supplier-bills" component={SupplierBillsPage} />
+      <Route path="/vat-returns" component={VatReturnsPage} />
+      <Route path="/corporate-tax" component={CorporateTaxPage} />
       <Route component={NotFound} />
     </Switch>
   );

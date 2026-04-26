@@ -23,8 +23,90 @@ export const tenants = pgTable("tenants", {
   invoiceHeader: text("invoice_header"),
   invoiceFooter: text("invoice_footer"),
   market: text("market").default("uae"),
+  trn: text("trn"),
+  vatRegisteredOn: date("vat_registered_on"),
+  vatFilingFrequency: text("vat_filing_frequency").default("quarterly"),
+  ctTrn: text("ct_trn"),
+  ctRegisteredOn: date("ct_registered_on"),
+  fyStartMonth: integer("fy_start_month").default(1),
+  legalName: text("legal_name"),
+  tradeLicenseNumber: text("trade_license_number"),
   isActive: boolean("is_active").default(true),
   trialEndsAt: timestamp("trial_ends_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const supplierBills = pgTable("supplier_bills", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  supplierId: varchar("supplier_id").references(() => suppliers.id),
+  billNumber: text("bill_number").notNull(),
+  billDate: date("bill_date").notNull(),
+  description: text("description"),
+  category: text("category").default("operating"),
+  subtotal: decimal("subtotal", { precision: 12, scale: 2 }).notNull().default("0"),
+  vatRate: decimal("vat_rate", { precision: 4, scale: 2 }).default("5"),
+  vatAmount: decimal("vat_amount", { precision: 12, scale: 2 }).default("0"),
+  total: decimal("total", { precision: 12, scale: 2 }).notNull().default("0"),
+  vatTreatment: text("vat_treatment").default("standard"),
+  isDeductible: boolean("is_deductible").default(true),
+  status: text("status").default("unpaid"),
+  paidAt: timestamp("paid_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const vatReturns = pgTable("vat_returns", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  periodStart: date("period_start").notNull(),
+  periodEnd: date("period_end").notNull(),
+  dueDate: date("due_date"),
+  status: text("status").notNull().default("draft"),
+  box1aSalesStandardAmount: decimal("box1a_sales_std_amount", { precision: 14, scale: 2 }).default("0"),
+  box1aSalesStandardVat: decimal("box1a_sales_std_vat", { precision: 14, scale: 2 }).default("0"),
+  box2SalesZero: decimal("box2_sales_zero", { precision: 14, scale: 2 }).default("0"),
+  box3SalesExempt: decimal("box3_sales_exempt", { precision: 14, scale: 2 }).default("0"),
+  box4ReverseChargeAmount: decimal("box4_reverse_charge_amount", { precision: 14, scale: 2 }).default("0"),
+  box4ReverseChargeVat: decimal("box4_reverse_charge_vat", { precision: 14, scale: 2 }).default("0"),
+  box6GoodsImportAmount: decimal("box6_imports_amount", { precision: 14, scale: 2 }).default("0"),
+  box6GoodsImportVat: decimal("box6_imports_vat", { precision: 14, scale: 2 }).default("0"),
+  box9PurchasesStandardAmount: decimal("box9_purchases_std_amount", { precision: 14, scale: 2 }).default("0"),
+  box9PurchasesStandardVat: decimal("box9_purchases_std_vat", { precision: 14, scale: 2 }).default("0"),
+  totalOutputVat: decimal("total_output_vat", { precision: 14, scale: 2 }).default("0"),
+  totalInputVat: decimal("total_input_vat", { precision: 14, scale: 2 }).default("0"),
+  netVatPayable: decimal("net_vat_payable", { precision: 14, scale: 2 }).default("0"),
+  filedAt: timestamp("filed_at"),
+  filedBy: varchar("filed_by"),
+  ftaReference: text("fta_reference"),
+  paymentRecordId: varchar("payment_record_id"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const corporateTaxReturns = pgTable("corporate_tax_returns", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  fyStart: date("fy_start").notNull(),
+  fyEnd: date("fy_end").notNull(),
+  dueDate: date("due_date"),
+  status: text("status").notNull().default("draft"),
+  totalRevenue: decimal("total_revenue", { precision: 14, scale: 2 }).default("0"),
+  totalExpenses: decimal("total_expenses", { precision: 14, scale: 2 }).default("0"),
+  accountingProfit: decimal("accounting_profit", { precision: 14, scale: 2 }).default("0"),
+  addBacks: decimal("add_backs", { precision: 14, scale: 2 }).default("0"),
+  exemptIncome: decimal("exempt_income", { precision: 14, scale: 2 }).default("0"),
+  reliefClaimed: decimal("relief_claimed", { precision: 14, scale: 2 }).default("0"),
+  smallBusinessRelief: boolean("small_business_relief").default(false),
+  taxableIncome: decimal("taxable_income", { precision: 14, scale: 2 }).default("0"),
+  threshold: decimal("threshold", { precision: 14, scale: 2 }).default("375000"),
+  taxRate: decimal("tax_rate", { precision: 4, scale: 2 }).default("9"),
+  taxDue: decimal("tax_due", { precision: 14, scale: 2 }).default("0"),
+  filedAt: timestamp("filed_at"),
+  filedBy: varchar("filed_by"),
+  ftaReference: text("fta_reference"),
+  paymentRecordId: varchar("payment_record_id"),
+  adjustments: jsonb("adjustments").$type<{ label: string; amount: number; type: "add" | "deduct" }[]>().default([]),
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -350,6 +432,9 @@ export const insertTrainerCommissionSchema = createInsertSchema(trainerCommissio
 export const insertTrainerLeaveSchema = createInsertSchema(trainerLeaves).omit({ id: true, createdAt: true });
 export const insertTrainerProfileSchema = createInsertSchema(trainerProfiles).omit({ id: true, createdAt: true });
 export const insertActivitySchema = createInsertSchema(activities).omit({ id: true, createdAt: true });
+export const insertSupplierBillSchema = createInsertSchema(supplierBills).omit({ id: true, createdAt: true });
+export const insertVatReturnSchema = createInsertSchema(vatReturns).omit({ id: true, createdAt: true });
+export const insertCorporateTaxReturnSchema = createInsertSchema(corporateTaxReturns).omit({ id: true, createdAt: true });
 
 export const loginSchema = z.object({
   username: z.string().min(1),
@@ -400,3 +485,9 @@ export type InsertTrainerProfile = z.infer<typeof insertTrainerProfileSchema>;
 export type TrainerProfile = typeof trainerProfiles.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
 export type Activity = typeof activities.$inferSelect;
+export type InsertSupplierBill = z.infer<typeof insertSupplierBillSchema>;
+export type SupplierBill = typeof supplierBills.$inferSelect;
+export type InsertVatReturn = z.infer<typeof insertVatReturnSchema>;
+export type VatReturn = typeof vatReturns.$inferSelect;
+export type InsertCorporateTaxReturn = z.infer<typeof insertCorporateTaxReturnSchema>;
+export type CorporateTaxReturn = typeof corporateTaxReturns.$inferSelect;

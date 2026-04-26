@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import session from "express-session";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
-import { loginSchema } from "@shared/schema";
+import { loginSchema, insertSupplierBillSchema, insertVatReturnSchema, insertCorporateTaxReturnSchema } from "@shared/schema";
 import { z } from "zod";
 
 const SESSION_SECRET = process.env.SESSION_SECRET || "fitro360-dev-secret";
@@ -1611,6 +1611,279 @@ export async function registerRoutes(
       const existing = await storage.getPlan(req.params.id);
       if (!existing) return res.status(404).json({ message: "Plan not found" });
       await storage.deletePlan(req.params.id);
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  // ============ TAX PROFILE ============
+  app.get("/api/tax/profile", authMiddleware, requireRole("gym_owner", "manager", "platform_admin"), async (req: Request, res: Response) => {
+    const tenant = (req as any).tenant;
+    if (!tenant) return res.status(404).json({ message: "Tenant not found" });
+    return res.json({
+      market: tenant.market,
+      legalName: tenant.legalName,
+      tradeLicenseNumber: tenant.tradeLicenseNumber,
+      trn: tenant.trn,
+      vatRegisteredOn: tenant.vatRegisteredOn,
+      vatFilingFrequency: tenant.vatFilingFrequency,
+      ctTrn: tenant.ctTrn,
+      ctRegisteredOn: tenant.ctRegisteredOn,
+      fyStartMonth: tenant.fyStartMonth,
+    });
+  });
+
+  app.patch("/api/tax/profile", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
+    const tenant = (req as any).tenant;
+    if (!tenant) return res.status(404).json({ message: "Tenant not found" });
+    try {
+      const allowed: any = {};
+      const fields = ["legalName", "tradeLicenseNumber", "trn", "vatRegisteredOn", "vatFilingFrequency", "ctTrn", "ctRegisteredOn", "fyStartMonth", "market"];
+      for (const f of fields) if (f in req.body) allowed[f] = req.body[f];
+      const updated = await storage.updateTenant(tenant.id, allowed);
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  // ============ SUPPLIER BILLS ============
+  app.get("/api/supplier-bills", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.json([]);
+    const bills = await storage.getSupplierBillsByTenant(user.tenantId);
+    return res.json(bills);
+  });
+
+  app.post("/api/supplier-bills", authMiddleware, requireRole("gym_owner", "manager", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const data = insertSupplierBillSchema.parse({ ...req.body, tenantId: user.tenantId });
+      const bill = await storage.createSupplierBill(data);
+      return res.json(bill);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/supplier-bills/:id", authMiddleware, requireRole("gym_owner", "manager", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const existing = await storage.getSupplierBill(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Bill not found" });
+      const updated = await storage.updateSupplierBill(req.params.id, req.body);
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/supplier-bills/:id", authMiddleware, requireRole("gym_owner", "manager", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      await storage.deleteSupplierBill(req.params.id);
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  // ============ VAT RETURNS ============
+  app.get("/api/vat/returns", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.json([]);
+    const rows = await storage.getVatReturnsByTenant(user.tenantId);
+    return res.json(rows);
+  });
+
+  app.get("/api/vat/returns/:id", authMiddleware, async (req: Request, res: Response) => {
+    const ret = await storage.getVatReturn(req.params.id);
+    if (!ret) return res.status(404).json({ message: "Not found" });
+    return res.json(ret);
+  });
+
+  app.post("/api/vat/compute", authMiddleware, requireRole("gym_owner", "manager", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const { periodStart, periodEnd } = req.body;
+      if (!periodStart || !periodEnd) return res.status(400).json({ message: "periodStart and periodEnd required" });
+      const computed = await storage.computeVatReturn(user.tenantId, periodStart, periodEnd);
+      return res.json(computed);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/vat/returns", authMiddleware, requireRole("gym_owner", "manager", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const { periodStart, periodEnd, dueDate, notes } = req.body;
+      if (!periodStart || !periodEnd) return res.status(400).json({ message: "periodStart and periodEnd required" });
+      const computed = await storage.computeVatReturn(user.tenantId, periodStart, periodEnd);
+      const data = insertVatReturnSchema.parse({
+        tenantId: user.tenantId,
+        periodStart,
+        periodEnd,
+        dueDate: dueDate || null,
+        status: "draft",
+        box1aSalesStandardAmount: String(computed.box1aSalesStandardAmount),
+        box1aSalesStandardVat: String(computed.box1aSalesStandardVat),
+        box2SalesZero: String(computed.box2SalesZero),
+        box3SalesExempt: String(computed.box3SalesExempt),
+        box9PurchasesStandardAmount: String(computed.box9PurchasesStandardAmount),
+        box9PurchasesStandardVat: String(computed.box9PurchasesStandardVat),
+        totalOutputVat: String(computed.totalOutputVat),
+        totalInputVat: String(computed.totalInputVat),
+        netVatPayable: String(computed.netVatPayable),
+        notes: notes || null,
+      });
+      const ret = await storage.createVatReturn(data);
+      return res.json(ret);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/vat/returns/:id", authMiddleware, requireRole("gym_owner", "manager", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const updated = await storage.updateVatReturn(req.params.id, req.body);
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/vat/returns/:id/file", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const updated = await storage.updateVatReturn(req.params.id, {
+        status: "filed",
+        filedAt: new Date(),
+        filedBy: user.id,
+        ftaReference: req.body.ftaReference || null,
+      } as any);
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/vat/returns/:id/mark-paid", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const updated = await storage.updateVatReturn(req.params.id, { status: "paid" } as any);
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/vat/returns/:id", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      await storage.deleteVatReturn(req.params.id);
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  // ============ CORPORATE TAX RETURNS ============
+  app.get("/api/ct/returns", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.json([]);
+    const rows = await storage.getCorporateTaxReturnsByTenant(user.tenantId);
+    return res.json(rows);
+  });
+
+  app.get("/api/ct/returns/:id", authMiddleware, async (req: Request, res: Response) => {
+    const ret = await storage.getCorporateTaxReturn(req.params.id);
+    if (!ret) return res.status(404).json({ message: "Not found" });
+    return res.json(ret);
+  });
+
+  app.post("/api/ct/compute", authMiddleware, requireRole("gym_owner", "manager", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const { fyStart, fyEnd } = req.body;
+      if (!fyStart || !fyEnd) return res.status(400).json({ message: "fyStart and fyEnd required" });
+      const computed = await storage.computeCorporateTaxReturn(user.tenantId, fyStart, fyEnd);
+      return res.json(computed);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/ct/returns", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const { fyStart, fyEnd, dueDate, addBacks = 0, exemptIncome = 0, reliefClaimed = 0, smallBusinessRelief = false, notes } = req.body;
+      if (!fyStart || !fyEnd) return res.status(400).json({ message: "fyStart and fyEnd required" });
+      const computed = await storage.computeCorporateTaxReturn(user.tenantId, fyStart, fyEnd);
+      const accountingProfit = computed.accountingProfit + Number(addBacks) - Number(exemptIncome);
+      const taxableIncome = Math.max(0, accountingProfit - Number(reliefClaimed));
+      const threshold = 375000;
+      let taxDue = taxableIncome > threshold ? (taxableIncome - threshold) * 0.09 : 0;
+      if (smallBusinessRelief && computed.totalRevenue <= 3000000) taxDue = 0;
+      const data = insertCorporateTaxReturnSchema.parse({
+        tenantId: user.tenantId,
+        fyStart,
+        fyEnd,
+        dueDate: dueDate || null,
+        status: "draft",
+        totalRevenue: String(computed.totalRevenue),
+        totalExpenses: String(computed.totalExpenses),
+        accountingProfit: String(accountingProfit),
+        addBacks: String(addBacks),
+        exemptIncome: String(exemptIncome),
+        reliefClaimed: String(reliefClaimed),
+        smallBusinessRelief: !!smallBusinessRelief,
+        taxableIncome: String(taxableIncome),
+        threshold: String(threshold),
+        taxRate: "9",
+        taxDue: String(Math.round(taxDue * 100) / 100),
+        notes: notes || null,
+      });
+      const ret = await storage.createCorporateTaxReturn(data);
+      return res.json(ret);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/ct/returns/:id", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const updated = await storage.updateCorporateTaxReturn(req.params.id, req.body);
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/ct/returns/:id/file", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const updated = await storage.updateCorporateTaxReturn(req.params.id, {
+        status: "filed",
+        filedAt: new Date(),
+        filedBy: user.id,
+        ftaReference: req.body.ftaReference || null,
+      } as any);
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/ct/returns/:id/mark-paid", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const updated = await storage.updateCorporateTaxReturn(req.params.id, { status: "paid" } as any);
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/ct/returns/:id", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      await storage.deleteCorporateTaxReturn(req.params.id);
       return res.json({ success: true });
     } catch (error: any) {
       return res.status(400).json({ message: error.message });

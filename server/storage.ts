@@ -6,6 +6,7 @@ import {
   equipment, suppliers, invoices, notifications, coupons, referrals,
   memberMetrics, equipmentMaintenance, paymentRecords,
   trainerCommissions, trainerLeaves, trainerProfiles, membershipPlans,
+  supplierBills, vatReturns, corporateTaxReturns,
   type Tenant, type InsertTenant,
   type User, type InsertUser,
   type Branch, type InsertBranch,
@@ -28,6 +29,9 @@ import {
   type TrainerCommission, type InsertTrainerCommission,
   type TrainerLeave, type InsertTrainerLeave,
   type TrainerProfile, type InsertTrainerProfile,
+  type SupplierBill, type InsertSupplierBill,
+  type VatReturn, type InsertVatReturn,
+  type CorporateTaxReturn, type InsertCorporateTaxReturn,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -148,6 +152,42 @@ export interface IStorage {
 
   getActivities(tenantId: string): Promise<Activity[]>;
   createActivity(activity: InsertActivity): Promise<Activity>;
+
+  getSupplierBillsByTenant(tenantId: string): Promise<SupplierBill[]>;
+  getSupplierBill(id: string): Promise<SupplierBill | undefined>;
+  createSupplierBill(bill: InsertSupplierBill): Promise<SupplierBill>;
+  updateSupplierBill(id: string, data: Partial<InsertSupplierBill>): Promise<SupplierBill | undefined>;
+  deleteSupplierBill(id: string): Promise<void>;
+
+  getVatReturnsByTenant(tenantId: string): Promise<VatReturn[]>;
+  getVatReturn(id: string): Promise<VatReturn | undefined>;
+  createVatReturn(ret: InsertVatReturn): Promise<VatReturn>;
+  updateVatReturn(id: string, data: Partial<InsertVatReturn>): Promise<VatReturn | undefined>;
+  deleteVatReturn(id: string): Promise<void>;
+  computeVatReturn(tenantId: string, periodStart: string, periodEnd: string): Promise<{
+    box1aSalesStandardAmount: number;
+    box1aSalesStandardVat: number;
+    box2SalesZero: number;
+    box3SalesExempt: number;
+    box9PurchasesStandardAmount: number;
+    box9PurchasesStandardVat: number;
+    totalOutputVat: number;
+    totalInputVat: number;
+    netVatPayable: number;
+  }>;
+
+  getCorporateTaxReturnsByTenant(tenantId: string): Promise<CorporateTaxReturn[]>;
+  getCorporateTaxReturn(id: string): Promise<CorporateTaxReturn | undefined>;
+  createCorporateTaxReturn(ret: InsertCorporateTaxReturn): Promise<CorporateTaxReturn>;
+  updateCorporateTaxReturn(id: string, data: Partial<InsertCorporateTaxReturn>): Promise<CorporateTaxReturn | undefined>;
+  deleteCorporateTaxReturn(id: string): Promise<void>;
+  computeCorporateTaxReturn(tenantId: string, fyStart: string, fyEnd: string): Promise<{
+    totalRevenue: number;
+    totalExpenses: number;
+    accountingProfit: number;
+    taxableIncome: number;
+    taxDue: number;
+  }>;
 
   getDashboardStats(tenantId: string): Promise<{
     totalMembers: number;
@@ -738,6 +778,164 @@ export class DatabaseStorage implements IStorage {
       mrrGrowth: 15,
       totalMembers: allMembers.length,
       churnRate: 2.5,
+    };
+  }
+
+  async getSupplierBillsByTenant(tenantId: string): Promise<SupplierBill[]> {
+    return db.select().from(supplierBills).where(eq(supplierBills.tenantId, tenantId)).orderBy(desc(supplierBills.billDate));
+  }
+
+  async getSupplierBill(id: string): Promise<SupplierBill | undefined> {
+    const [bill] = await db.select().from(supplierBills).where(eq(supplierBills.id, id));
+    return bill;
+  }
+
+  async createSupplierBill(bill: InsertSupplierBill): Promise<SupplierBill> {
+    const [created] = await db.insert(supplierBills).values(bill as any).returning();
+    return created;
+  }
+
+  async updateSupplierBill(id: string, data: Partial<InsertSupplierBill>): Promise<SupplierBill | undefined> {
+    if (!data || Object.keys(data).length === 0) return this.getSupplierBill(id);
+    const [updated] = await db.update(supplierBills).set(data as any).where(eq(supplierBills.id, id)).returning();
+    return updated;
+  }
+
+  async deleteSupplierBill(id: string): Promise<void> {
+    await db.delete(supplierBills).where(eq(supplierBills.id, id));
+  }
+
+  async getVatReturnsByTenant(tenantId: string): Promise<VatReturn[]> {
+    return db.select().from(vatReturns).where(eq(vatReturns.tenantId, tenantId)).orderBy(desc(vatReturns.periodStart));
+  }
+
+  async getVatReturn(id: string): Promise<VatReturn | undefined> {
+    const [ret] = await db.select().from(vatReturns).where(eq(vatReturns.id, id));
+    return ret;
+  }
+
+  async createVatReturn(ret: InsertVatReturn): Promise<VatReturn> {
+    const [created] = await db.insert(vatReturns).values(ret as any).returning();
+    return created;
+  }
+
+  async updateVatReturn(id: string, data: Partial<InsertVatReturn>): Promise<VatReturn | undefined> {
+    if (!data || Object.keys(data).length === 0) return this.getVatReturn(id);
+    const [updated] = await db.update(vatReturns).set(data as any).where(eq(vatReturns.id, id)).returning();
+    return updated;
+  }
+
+  async deleteVatReturn(id: string): Promise<void> {
+    await db.delete(vatReturns).where(eq(vatReturns.id, id));
+  }
+
+  async computeVatReturn(tenantId: string, periodStart: string, periodEnd: string) {
+    const start = new Date(periodStart);
+    const end = new Date(periodEnd);
+    end.setHours(23, 59, 59, 999);
+
+    const allInvoices = await db.select().from(invoices)
+      .where(and(eq(invoices.tenantId, tenantId), between(invoices.createdAt, start, end)));
+
+    let box1aSalesStandardAmount = 0;
+    let box1aSalesStandardVat = 0;
+    let box2SalesZero = 0;
+    let box3SalesExempt = 0;
+
+    for (const inv of allInvoices) {
+      const subtotal = Number(inv.subtotal || 0);
+      const vatAmount = Number(inv.gstAmount || 0);
+      const rate = Number(inv.gstRate || 0);
+      if (rate >= 5) {
+        box1aSalesStandardAmount += subtotal;
+        box1aSalesStandardVat += vatAmount;
+      } else if (rate === 0) {
+        box2SalesZero += subtotal;
+      } else {
+        box3SalesExempt += subtotal;
+      }
+    }
+
+    const allBills = await db.select().from(supplierBills)
+      .where(and(eq(supplierBills.tenantId, tenantId), gte(supplierBills.billDate, periodStart), lte(supplierBills.billDate, periodEnd)));
+
+    let box9PurchasesStandardAmount = 0;
+    let box9PurchasesStandardVat = 0;
+
+    for (const bill of allBills) {
+      if (!bill.isDeductible) continue;
+      const subtotal = Number(bill.subtotal || 0);
+      const vatAmount = Number(bill.vatAmount || 0);
+      box9PurchasesStandardAmount += subtotal;
+      box9PurchasesStandardVat += vatAmount;
+    }
+
+    const totalOutputVat = box1aSalesStandardVat;
+    const totalInputVat = box9PurchasesStandardVat;
+    const netVatPayable = totalOutputVat - totalInputVat;
+
+    return {
+      box1aSalesStandardAmount: Math.round(box1aSalesStandardAmount * 100) / 100,
+      box1aSalesStandardVat: Math.round(box1aSalesStandardVat * 100) / 100,
+      box2SalesZero: Math.round(box2SalesZero * 100) / 100,
+      box3SalesExempt: Math.round(box3SalesExempt * 100) / 100,
+      box9PurchasesStandardAmount: Math.round(box9PurchasesStandardAmount * 100) / 100,
+      box9PurchasesStandardVat: Math.round(box9PurchasesStandardVat * 100) / 100,
+      totalOutputVat: Math.round(totalOutputVat * 100) / 100,
+      totalInputVat: Math.round(totalInputVat * 100) / 100,
+      netVatPayable: Math.round(netVatPayable * 100) / 100,
+    };
+  }
+
+  async getCorporateTaxReturnsByTenant(tenantId: string): Promise<CorporateTaxReturn[]> {
+    return db.select().from(corporateTaxReturns).where(eq(corporateTaxReturns.tenantId, tenantId)).orderBy(desc(corporateTaxReturns.fyStart));
+  }
+
+  async getCorporateTaxReturn(id: string): Promise<CorporateTaxReturn | undefined> {
+    const [ret] = await db.select().from(corporateTaxReturns).where(eq(corporateTaxReturns.id, id));
+    return ret;
+  }
+
+  async createCorporateTaxReturn(ret: InsertCorporateTaxReturn): Promise<CorporateTaxReturn> {
+    const [created] = await db.insert(corporateTaxReturns).values(ret as any).returning();
+    return created;
+  }
+
+  async updateCorporateTaxReturn(id: string, data: Partial<InsertCorporateTaxReturn>): Promise<CorporateTaxReturn | undefined> {
+    if (!data || Object.keys(data).length === 0) return this.getCorporateTaxReturn(id);
+    const [updated] = await db.update(corporateTaxReturns).set(data as any).where(eq(corporateTaxReturns.id, id)).returning();
+    return updated;
+  }
+
+  async deleteCorporateTaxReturn(id: string): Promise<void> {
+    await db.delete(corporateTaxReturns).where(eq(corporateTaxReturns.id, id));
+  }
+
+  async computeCorporateTaxReturn(tenantId: string, fyStart: string, fyEnd: string) {
+    const start = new Date(fyStart);
+    const end = new Date(fyEnd);
+    end.setHours(23, 59, 59, 999);
+
+    const allInvoices = await db.select().from(invoices)
+      .where(and(eq(invoices.tenantId, tenantId), between(invoices.createdAt, start, end)));
+    const totalRevenue = allInvoices.reduce((sum, inv) => sum + Number(inv.subtotal || 0), 0);
+
+    const allBills = await db.select().from(supplierBills)
+      .where(and(eq(supplierBills.tenantId, tenantId), gte(supplierBills.billDate, fyStart), lte(supplierBills.billDate, fyEnd)));
+    const totalExpenses = allBills.reduce((sum, b) => sum + Number(b.subtotal || 0), 0);
+
+    const accountingProfit = totalRevenue - totalExpenses;
+    const taxableIncome = Math.max(0, accountingProfit);
+    const threshold = 375000;
+    const taxRate = 0.09;
+    const taxDue = taxableIncome > threshold ? (taxableIncome - threshold) * taxRate : 0;
+
+    return {
+      totalRevenue: Math.round(totalRevenue * 100) / 100,
+      totalExpenses: Math.round(totalExpenses * 100) / 100,
+      accountingProfit: Math.round(accountingProfit * 100) / 100,
+      taxableIncome: Math.round(taxableIncome * 100) / 100,
+      taxDue: Math.round(taxDue * 100) / 100,
     };
   }
 }
