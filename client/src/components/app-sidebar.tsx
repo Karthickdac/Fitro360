@@ -24,12 +24,14 @@ import {
   Award,
   TrendingUp,
   User,
-  ChevronRight,
   FileBarChart,
   Receipt,
   Calculator,
   ScrollText,
   Landmark,
+  Briefcase,
+  ShoppingCart,
+  Sparkles,
 } from "lucide-react";
 import {
   Sidebar,
@@ -49,23 +51,25 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
 
-const platformAdminMainItems = [
+type NavItem = { title: string; url: string; icon: any; badge?: string };
+
+const platformAdminMainItems: NavItem[] = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "Tenants", url: "/admin/tenants", icon: Building2 },
   { title: "Plans", url: "/admin/plans", icon: CreditCard },
 ];
 
-const platformAdminMonitorItems = [
+const platformAdminMonitorItems: NavItem[] = [
   { title: "Reports", url: "/admin/reports", icon: FileBarChart },
   { title: "Activity", url: "/admin/activity", icon: Activity },
   { title: "Notifications", url: "/admin/notifications", icon: Bell },
 ];
 
-const platformAdminSystemItems = [
+const platformAdminSystemItems: NavItem[] = [
   { title: "Settings", url: "/admin/settings", icon: Shield },
 ];
 
-const memberItems = [
+const memberItems: NavItem[] = [
   { title: "Dashboard", url: "/portal", icon: LayoutDashboard },
   { title: "My Schedule", url: "/portal/schedule", icon: CalendarDays },
   { title: "My Progress", url: "/portal/progress", icon: TrendingUp },
@@ -73,7 +77,7 @@ const memberItems = [
   { title: "Notifications", url: "/notifications", icon: Bell },
 ];
 
-const trainerItems = [
+const trainerItems: NavItem[] = [
   { title: "My Portal", url: "/portal", icon: Home },
   { title: "Schedule", url: "/schedule", icon: CalendarDays },
   { title: "Members", url: "/members", icon: Users },
@@ -81,7 +85,7 @@ const trainerItems = [
   { title: "Notifications", url: "/notifications", icon: Bell },
 ];
 
-const managerMainItems = [
+const managerMainItems: NavItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Members", url: "/members", icon: Users },
   { title: "Membership Plans", url: "/membership-plans", icon: CreditCard },
@@ -90,7 +94,7 @@ const managerMainItems = [
   { title: "Schedule", url: "/schedule", icon: CalendarDays },
 ];
 
-const managerSystemItems = [
+const managerSystemItems: NavItem[] = [
   { title: "Branches", url: "/branches", icon: GitBranch },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Reports", url: "/reports", icon: FileBarChart },
@@ -99,64 +103,74 @@ const managerSystemItems = [
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
-const gymOperationsItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+// Comprehensive enterprise-level grouping for gym owners
+const gymOverviewItems: NavItem[] = [
+  { title: "Executive Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Analytics", url: "/analytics", icon: BarChart3 },
+];
+
+const gymMembershipItems: NavItem[] = [
   { title: "Members", url: "/members", icon: Users },
   { title: "Membership Plans", url: "/membership-plans", icon: CreditCard },
   { title: "Check-in", url: "/check-in", icon: UserCheck },
-  { title: "Trainers", url: "/trainers", icon: Dumbbell },
-  { title: "Trainer Mgmt", url: "/trainer-management", icon: Award },
-  { title: "Schedule", url: "/schedule", icon: CalendarDays },
-  { title: "Branches", url: "/branches", icon: GitBranch },
 ];
 
-const gymAssetsItems = [
+const gymStaffItems: NavItem[] = [
+  { title: "Trainers", url: "/trainers", icon: Dumbbell },
+  { title: "Trainer Management", url: "/trainer-management", icon: Award },
+  { title: "Schedule", url: "/schedule", icon: CalendarDays },
+];
+
+const gymOperationsItems: NavItem[] = [
+  { title: "Branches", url: "/branches", icon: GitBranch },
   { title: "Inventory", url: "/inventory", icon: Package },
   { title: "Maintenance", url: "/maintenance", icon: Wrench },
-  { title: "Suppliers", url: "/suppliers", icon: Truck },
 ];
 
-const gymFinanceItems = [
-  { title: "Invoices", url: "/invoicing", icon: FileText },
+const gymProcurementItems: NavItem[] = [
+  { title: "Suppliers", url: "/suppliers", icon: Truck },
   { title: "Supplier Bills", url: "/supplier-bills", icon: ScrollText },
+];
+
+const gymFinanceItems: NavItem[] = [
+  { title: "Invoices", url: "/invoicing", icon: FileText },
   { title: "Payments", url: "/payments", icon: DollarSign },
 ];
 
-const gymComplianceItems = [
+const gymComplianceItems: NavItem[] = [
   { title: "Tax Settings", url: "/tax-settings", icon: Landmark },
   { title: "VAT Returns", url: "/vat-returns", icon: Receipt },
   { title: "Corporate Tax", url: "/corporate-tax", icon: Calculator },
 ];
 
-const gymGrowthItems = [
+const gymGrowthItems: NavItem[] = [
   { title: "Coupons", url: "/coupons", icon: Tag },
   { title: "Referrals", url: "/referrals", icon: Gift },
 ];
 
-const gymInsightsItems = [
-  { title: "Analytics", url: "/analytics", icon: BarChart3 },
+const gymReportsItems: NavItem[] = [
   { title: "Reports", url: "/reports", icon: FileBarChart },
-  { title: "Activity", url: "/activity", icon: Activity },
+  { title: "Activity Log", url: "/activity", icon: Activity },
 ];
 
-const gymAdminItems = [
+const gymAdminItems: NavItem[] = [
   { title: "Notifications", url: "/notifications", icon: Bell },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
 function NavGroup({ label, items, location, navigate }: {
   label: string;
-  items: { title: string; url: string; icon: any }[];
+  items: NavItem[];
   location: string;
   navigate: (to: string) => void;
 }) {
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel className="text-[11px] uppercase tracking-widest font-semibold text-sidebar-foreground/40 px-3 mb-1">
+    <SidebarGroup className="px-2 py-1.5">
+      <SidebarGroupLabel className="text-[10px] uppercase tracking-[0.18em] font-semibold text-sidebar-foreground/35 px-2.5 mb-1.5">
         {label}
       </SidebarGroupLabel>
       <SidebarGroupContent>
-        <SidebarMenu>
+        <SidebarMenu className="gap-0.5">
           {items.map((item) => {
             const isActive = location === item.url || (item.url !== "/" && location.startsWith(item.url + "/"));
             return (
@@ -164,7 +178,11 @@ function NavGroup({ label, items, location, navigate }: {
                 <SidebarMenuButton
                   asChild
                   data-active={isActive}
-                  className={isActive ? "bg-sidebar-primary/15 text-sidebar-primary font-semibold" : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"}
+                  className={
+                    isActive
+                      ? "relative bg-sidebar-accent text-sidebar-primary font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-r-full before:bg-sidebar-primary before:shadow-[0_0_8px_rgba(212,175,55,0.5)]"
+                      : "text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                  }
                 >
                   <a
                     href={item.url}
@@ -174,9 +192,13 @@ function NavGroup({ label, items, location, navigate }: {
                     }}
                     data-testid={`link-nav-${item.title.toLowerCase().replace(/\s/g, "-")}`}
                   >
-                    <item.icon className={`h-4 w-4 ${isActive ? "text-sidebar-primary" : ""}`} />
-                    <span>{item.title}</span>
-                    {isActive && <ChevronRight className="ml-auto h-3.5 w-3.5 text-sidebar-primary/60" />}
+                    <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"}`} />
+                    <span className="text-[13px]">{item.title}</span>
+                    {item.badge && (
+                      <Badge variant="secondary" className="ml-auto h-4 px-1.5 text-[9px] font-semibold bg-sidebar-primary/15 text-sidebar-primary border-0">
+                        {item.badge}
+                      </Badge>
+                    )}
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -189,21 +211,21 @@ function NavGroup({ label, items, location, navigate }: {
 }
 
 const roleColorMap: Record<string, string> = {
-  platform_admin: "bg-rose-500",
-  gym_owner: "bg-blue-500",
-  manager: "bg-violet-500",
-  trainer: "bg-emerald-500",
-  member: "bg-amber-500",
-  sales_executive: "bg-cyan-500",
+  platform_admin: "bg-gradient-to-br from-rose-500 to-rose-600",
+  gym_owner: "bg-gradient-to-br from-amber-500 to-amber-600",
+  manager: "bg-gradient-to-br from-violet-500 to-violet-600",
+  trainer: "bg-gradient-to-br from-emerald-500 to-emerald-600",
+  member: "bg-gradient-to-br from-sky-500 to-sky-600",
+  sales_executive: "bg-gradient-to-br from-cyan-500 to-cyan-600",
 };
 
 const roleBadgeMap: Record<string, string> = {
-  platform_admin: "bg-rose-500/20 text-rose-300",
-  gym_owner: "bg-blue-500/20 text-blue-300",
-  manager: "bg-violet-500/20 text-violet-300",
-  trainer: "bg-emerald-500/20 text-emerald-300",
-  member: "bg-amber-500/20 text-amber-300",
-  sales_executive: "bg-cyan-500/20 text-cyan-300",
+  platform_admin: "bg-rose-500/15 text-rose-300 border border-rose-500/20",
+  gym_owner: "bg-amber-500/15 text-amber-300 border border-amber-500/20",
+  manager: "bg-violet-500/15 text-violet-300 border border-violet-500/20",
+  trainer: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20",
+  member: "bg-sky-500/15 text-sky-300 border border-sky-500/20",
+  sales_executive: "bg-cyan-500/15 text-cyan-300 border border-cyan-500/20",
 };
 
 export function AppSidebar() {
@@ -215,32 +237,33 @@ export function AppSidebar() {
   const role = user.role;
   const initials = `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase();
 
-  const roleLabel = role === "platform_admin" ? "Admin"
+  const roleLabel = role === "platform_admin" ? "Platform Admin"
     : role === "member" ? "Member"
     : role === "trainer" ? "Trainer"
     : role === "manager" ? "Manager"
-    : role === "sales_executive" ? "Sales"
-    : "Owner";
+    : role === "sales_executive" ? "Sales Executive"
+    : "Gym Owner";
 
   return (
-    <Sidebar>
-      <SidebarHeader className="p-4">
+    <Sidebar className="border-r border-sidebar-border/60">
+      <SidebarHeader className="p-4 pb-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/25">
-            <Dumbbell className="h-5 w-5 text-white" />
+          <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 shadow-lg shadow-amber-500/20 ring-1 ring-amber-300/30">
+            <Dumbbell className="h-5 w-5 text-slate-900" strokeWidth={2.5} />
+            <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-amber-200" />
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-sm font-bold truncate text-white" data-testid="text-app-name">
+            <span className="text-[15px] font-bold tracking-tight truncate text-white" data-testid="text-app-name">
               {tenant?.appDisplayName || tenant?.gymName || "Fitro360"}
             </span>
-            <span className="text-[11px] text-sidebar-foreground/50 truncate">
-              {role === "platform_admin" ? "Platform Admin" : tenant?.gymName || "Gym Management"}
+            <span className="text-[10px] uppercase tracking-[0.15em] font-medium text-amber-400/80 truncate">
+              {role === "platform_admin" ? "Platform Console" : "Enterprise Suite"}
             </span>
           </div>
         </div>
       </SidebarHeader>
-      <SidebarSeparator className="opacity-20" />
-      <SidebarContent className="px-1">
+      <SidebarSeparator className="opacity-40" />
+      <SidebarContent className="px-0 py-1">
         {role === "platform_admin" && (
           <>
             <NavGroup label="Platform" items={platformAdminMainItems} location={location} navigate={navigate} />
@@ -262,36 +285,43 @@ export function AppSidebar() {
         )}
         {(role === "gym_owner" || role === "sales_executive") && (
           <>
+            <NavGroup label="Overview" items={gymOverviewItems} location={location} navigate={navigate} />
+            <NavGroup label="Membership" items={gymMembershipItems} location={location} navigate={navigate} />
+            <NavGroup label="Staff" items={gymStaffItems} location={location} navigate={navigate} />
             <NavGroup label="Operations" items={gymOperationsItems} location={location} navigate={navigate} />
-            <NavGroup label="Assets" items={gymAssetsItems} location={location} navigate={navigate} />
+            <NavGroup label="Procurement" items={gymProcurementItems} location={location} navigate={navigate} />
             <NavGroup label="Finance" items={gymFinanceItems} location={location} navigate={navigate} />
             <NavGroup label="Tax & Compliance" items={gymComplianceItems} location={location} navigate={navigate} />
             <NavGroup label="Growth" items={gymGrowthItems} location={location} navigate={navigate} />
-            <NavGroup label="Insights" items={gymInsightsItems} location={location} navigate={navigate} />
+            <NavGroup label="Reports" items={gymReportsItems} location={location} navigate={navigate} />
             <NavGroup label="System" items={gymAdminItems} location={location} navigate={navigate} />
           </>
         )}
       </SidebarContent>
-      <SidebarSeparator className="opacity-20" />
+      <SidebarSeparator className="opacity-40" />
       <SidebarFooter className="p-3">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-9 w-9">
-            <AvatarFallback className={`${roleColorMap[role] || "bg-blue-500"} text-white text-xs font-bold`}>
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+        <div className="flex items-center gap-3 rounded-lg p-2 hover:bg-sidebar-accent/40 transition-colors">
+          <div className="relative">
+            <Avatar className="h-9 w-9 ring-2 ring-sidebar-border/60">
+              <AvatarFallback className={`${roleColorMap[role] || "bg-amber-500"} text-white text-xs font-bold`}>
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-sidebar shadow-sm shadow-emerald-500/50" />
+          </div>
           <div className="flex flex-col min-w-0 flex-1 gap-0.5">
-            <span className="text-sm font-semibold truncate text-sidebar-foreground" data-testid="text-user-name">
+            <span className="text-[13px] font-semibold truncate text-sidebar-foreground" data-testid="text-user-name">
               {user.firstName} {user.lastName}
             </span>
-            <Badge variant="secondary" className={`w-fit text-[10px] px-1.5 py-0 font-medium border-0 ${roleBadgeMap[role] || "bg-blue-500/20 text-blue-300"}`}>
+            <Badge variant="secondary" className={`w-fit text-[9px] px-1.5 py-0 font-semibold uppercase tracking-wider ${roleBadgeMap[role] || "bg-amber-500/15 text-amber-300"}`}>
               {roleLabel}
             </Badge>
           </div>
           <button
             onClick={logout}
-            className="p-2 rounded-lg text-sidebar-foreground/50 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            className="p-2 rounded-lg text-sidebar-foreground/50 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
             data-testid="button-logout"
+            title="Sign out"
           >
             <LogOut className="h-4 w-4" />
           </button>
