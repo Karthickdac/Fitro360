@@ -178,9 +178,10 @@ function NavGroup({ label, items, location, navigate }: {
                 <SidebarMenuButton
                   asChild
                   data-active={isActive}
+                  tooltip={item.title}
                   className={
                     isActive
-                      ? "relative bg-sidebar-accent text-sidebar-primary font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-r-full before:bg-sidebar-primary before:shadow-[0_0_8px_rgba(212,175,55,0.5)]"
+                      ? "relative bg-sidebar-accent text-sidebar-primary font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-r-full before:bg-sidebar-primary before:shadow-[0_0_10px_rgba(167,139,250,0.6)] group-data-[collapsible=icon]:before:hidden"
                       : "text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
                   }
                 >
@@ -245,18 +246,18 @@ export function AppSidebar() {
     : "Gym Owner";
 
   return (
-    <Sidebar className="border-r border-sidebar-border/60">
-      <SidebarHeader className="p-4 pb-3">
-        <div className="flex items-center gap-3">
-          <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 shadow-lg shadow-amber-500/20 ring-1 ring-amber-300/30">
-            <Dumbbell className="h-5 w-5 text-slate-900" strokeWidth={2.5} />
-            <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-amber-200" />
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
+      <SidebarHeader className="p-4 pb-3 group-data-[collapsible=icon]:p-2">
+        <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
+          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-400 via-violet-500 to-violet-600 shadow-lg shadow-violet-500/30 ring-1 ring-violet-300/30">
+            <Dumbbell className="h-5 w-5 text-white" strokeWidth={2.5} />
+            <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-violet-200" />
           </div>
-          <div className="flex flex-col min-w-0">
+          <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
             <span className="text-[15px] font-bold tracking-tight truncate text-white" data-testid="text-app-name">
               {tenant?.appDisplayName || tenant?.gymName || "Fitro360"}
             </span>
-            <span className="text-[10px] uppercase tracking-[0.15em] font-medium text-amber-400/80 truncate">
+            <span className="text-[10px] uppercase tracking-[0.15em] font-medium text-violet-400/90 truncate">
               {role === "platform_admin" ? "Platform Console" : "Enterprise Suite"}
             </span>
           </div>

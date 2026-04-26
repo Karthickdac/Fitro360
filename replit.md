@@ -15,7 +15,8 @@ Fitro360 is a multi-tenant SaaS platform for gym management. It supports multipl
 - Tenant branding stored per tenant (colors, logo, name) - auto-applies CSS variables on login
 - Role-based routing: separate routers per role (AdminRouter, MemberRouter, TrainerRouter, ManagerRouter, GymOwnerRouter)
 - Sidebar navigation adapts to user role (members see portal, trainers see workspace, owners see full admin)
-- **Premium theme**: deep navy sidebar (HSL 222 39% 9%) + warm gold accent (HSL 43 74% 56%) for active items, with left-edge gold accent bar and subtle glow. Logo uses amber gradient with sparkle. Footer has online status dot.
+- **Premium theme**: deep violet-black sidebar (HSL 250 22% 8%) + electric violet accent (HSL 263 75% 66%) for active items, with left-edge violet accent bar and soft glow. Logo uses violet gradient with sparkle. Footer has online status dot.
+- **Collapsible sidebar**: shadcn `collapsible="icon"` mode — toggle via the trigger button in the top header or the keyboard shortcut Cmd/Ctrl+B. Icons remain visible when collapsed and show tooltips on hover.
 - **Enterprise sidebar groups** (gym_owner): Overview · Membership · Staff · Operations · Procurement · Finance · Tax & Compliance · Growth · Reports · System (10 sections)
 
 ## Database Tables

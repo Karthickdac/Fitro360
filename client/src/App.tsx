@@ -180,8 +180,17 @@ function AuthenticatedLayout() {
       <div className="flex h-screen w-full">
         <AppSidebar />
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="flex items-center justify-between gap-1 p-2 border-b shrink-0">
-            <SidebarTrigger data-testid="button-sidebar-toggle" />
+          <header className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-border/60 shrink-0 bg-background/95 backdrop-blur-sm">
+            <div className="flex items-center gap-2">
+              <SidebarTrigger
+                data-testid="button-sidebar-toggle"
+                className="h-9 w-9 rounded-lg hover:bg-accent text-foreground/70 hover:text-foreground transition-colors"
+              />
+              <div className="h-5 w-px bg-border/60 mx-1" />
+              <span className="text-xs font-medium text-muted-foreground hidden sm:inline">
+                Press <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-semibold bg-muted border border-border rounded">⌘B</kbd> to toggle
+              </span>
+            </div>
             <ThemeToggle />
           </header>
           <main className="flex-1 overflow-auto">
