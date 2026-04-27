@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { StatCard } from "@/components/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -7,12 +6,16 @@ import {
   Users,
   DollarSign,
   TrendingUp,
+  TrendingDown,
   AlertTriangle,
   Activity,
   Cake,
   CalendarClock,
   Banknote,
   CreditCard,
+  ArrowUpRight,
+  Sparkles,
+  type LucideIcon,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -21,23 +24,26 @@ import {
   Cell,
   Tooltip,
   ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
 } from "recharts";
 import { useMarket } from "@/hooks/use-market";
 import { useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import type { Member, Activity as ActivityType } from "@shared/schema";
 
-const CHART_COLORS = {
-  active: "hsl(160, 84%, 39%)",
-  expiring: "hsl(32, 95%, 55%)",
-  expired: "hsl(0, 72%, 60%)",
-};
-
 const statusBadgeColors: Record<string, string> = {
-  active: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900",
-  expiring: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900",
-  expired: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-900",
-  frozen: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-900",
+  active:
+    "bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900/60",
+  expiring:
+    "bg-amber-50 text-amber-700 border-amber-200/80 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900/60",
+  expired:
+    "bg-red-50 text-red-700 border-red-200/80 dark:bg-red-950/30 dark:text-red-300 dark:border-red-900/60",
+  frozen:
+    "bg-sky-50 text-sky-700 border-sky-200/80 dark:bg-sky-950/30 dark:text-sky-300 dark:border-sky-900/60",
 };
 
 const roleLabels: Record<string, string> = {
@@ -69,6 +75,85 @@ type DashboardAlerts = {
   expiringSoon: Array<{ id: string; firstName: string; lastName: string; email: string; membershipEnd: string | null; daysLeft: number }>;
   todaysSessions: Array<{ id: string; memberName: string; trainerName: string; startTime: string; endTime: string }>;
 };
+
+type AnalyticsResponse = {
+  monthlyData: Array<{ month: string; members: number; revenue: number; attendance: number }>;
+};
+
+interface PremiumStatProps {
+  label: string;
+  value: string | number;
+  icon: LucideIcon;
+  hint?: string;
+  trend?: number;
+  trendLabel?: string;
+  spark?: number[];
+  accent?: "indigo" | "emerald" | "amber" | "violet" | "neutral";
+  testId?: string;
+}
+
+const accentMap = {
+  indigo: { stroke: "hsl(238, 83%, 60%)", fill: "hsl(238, 83%, 60%)", icon: "text-indigo-600 dark:text-indigo-400", chip: "bg-indigo-50 dark:bg-indigo-950/40" },
+  emerald: { stroke: "hsl(160, 84%, 39%)", fill: "hsl(160, 84%, 39%)", icon: "text-emerald-600 dark:text-emerald-400", chip: "bg-emerald-50 dark:bg-emerald-950/40" },
+  amber: { stroke: "hsl(32, 95%, 50%)", fill: "hsl(32, 95%, 50%)", icon: "text-amber-600 dark:text-amber-400", chip: "bg-amber-50 dark:bg-amber-950/40" },
+  violet: { stroke: "hsl(263, 70%, 60%)", fill: "hsl(263, 70%, 60%)", icon: "text-violet-600 dark:text-violet-400", chip: "bg-violet-50 dark:bg-violet-950/40" },
+  neutral: { stroke: "hsl(var(--muted-foreground))", fill: "hsl(var(--muted-foreground))", icon: "text-muted-foreground", chip: "bg-muted" },
+} as const;
+
+function PremiumStat({ label, value, icon: Icon, hint, trend, trendLabel, spark, accent = "neutral", testId }: PremiumStatProps) {
+  const a = accentMap[accent];
+  const positive = (trend ?? 0) >= 0;
+  const sparkData = (spark || []).map((v, i) => ({ i, v }));
+  const gradId = `g-${label.replace(/\s+/g, "-").toLowerCase()}`;
+
+  return (
+    <div
+      className="group relative rounded-2xl bg-card border border-border/60 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_1px_3px_rgba(0,0,0,0.03)] dark:shadow-[0_1px_0_rgba(255,255,255,0.04)_inset] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:border-border transition-all duration-200 overflow-hidden"
+      data-testid={testId}
+    >
+      <div className="p-5">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">{label}</span>
+          <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${a.chip}`}>
+            <Icon className={`h-4 w-4 ${a.icon}`} />
+          </div>
+        </div>
+        <div className="mt-4 flex items-baseline gap-2">
+          <span className="text-3xl font-semibold tracking-tight tabular-nums text-foreground">{value}</span>
+          {trend !== undefined && (
+            <span
+              className={`inline-flex items-center gap-0.5 text-xs font-medium tabular-nums ${
+                positive ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
+              }`}
+            >
+              {positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              {positive ? "+" : ""}
+              {trend}%
+            </span>
+          )}
+        </div>
+        {(hint || trendLabel) && (
+          <p className="mt-1 text-xs text-muted-foreground">{hint || trendLabel}</p>
+        )}
+      </div>
+      {sparkData.length > 1 && (
+        <div className="h-12 -mt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={sparkData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+              <defs>
+                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={a.fill} stopOpacity={0.25} />
+                  <stop offset="100%" stopColor={a.fill} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <Area type="monotone" dataKey="v" stroke={a.stroke} strokeWidth={1.75} fill={`url(#${gradId})`} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const { fmt } = useMarket();
@@ -102,6 +187,10 @@ export default function DashboardPage() {
     queryKey: ["/api/activities"],
   });
 
+  const { data: analytics } = useQuery<AnalyticsResponse>({
+    queryKey: ["/api/analytics/dashboard"],
+  });
+
   const displayName = user?.firstName?.trim() || user?.username || "there";
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || user?.username || "";
   const roleLabel = user?.role ? roleLabels[user.role] || user.role : "";
@@ -110,22 +199,16 @@ export default function DashboardPage() {
 
   if (statsLoading) {
     return (
-      <div className="p-4 sm:p-6 space-y-6" data-testid="dashboard-loading">
-        <Card className="border">
-          <CardContent className="p-6">
-            <Skeleton className="h-6 w-64 mb-2" />
-            <Skeleton className="h-4 w-40" />
-          </CardContent>
-        </Card>
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6" data-testid="dashboard-loading">
+        <Skeleton className="h-40 w-full rounded-3xl" />
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
-              <CardContent className="p-5">
-                <Skeleton className="h-4 w-24 mb-2" />
-                <Skeleton className="h-8 w-16" />
-              </CardContent>
-            </Card>
+            <Skeleton key={i} className="h-36 rounded-2xl" />
           ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Skeleton className="h-72 rounded-2xl lg:col-span-2" />
+          <Skeleton className="h-72 rounded-2xl" />
         </div>
       </div>
     );
@@ -137,158 +220,369 @@ export default function DashboardPage() {
   const expiredCount = Math.max(0, totalMembers - activeMembers - expiringMembers);
   const activePercent = Math.round((activeMembers / Math.max(totalMembers, 1)) * 100);
 
+  const monthlyData = analytics?.monthlyData || [];
+  const memberSpark = monthlyData.map((d) => d.members);
+  const revenueSpark = monthlyData.map((d) => d.revenue);
+
   const membershipData = [
-    { name: "Active", value: activeMembers, color: CHART_COLORS.active },
-    { name: "Expiring", value: expiringMembers, color: CHART_COLORS.expiring },
-    { name: "Expired", value: expiredCount, color: CHART_COLORS.expired },
+    { name: "Active", value: activeMembers, color: "hsl(160, 84%, 39%)" },
+    { name: "Expiring", value: expiringMembers, color: "hsl(32, 95%, 55%)" },
+    { name: "Expired", value: expiredCount, color: "hsl(0, 72%, 60%)" },
   ];
 
   return (
-    <div className="p-4 sm:p-6 space-y-6" data-testid="page-dashboard">
-      {/* Personalized greeting */}
-      <Card className="border">
-        <CardContent className="p-5 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-4 min-w-0">
-              <div
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-base font-semibold"
-                data-testid="avatar-user"
-              >
-                {initials}
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6" data-testid="page-dashboard">
+      {/* Premium hero */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[hsl(250,30%,12%)] via-[hsl(258,35%,16%)] to-[hsl(263,45%,22%)] text-white shadow-[0_8px_32px_-12px_rgba(0,0,0,0.35)]">
+        {/* decorative mesh */}
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-24 -right-24 h-80 w-80 rounded-full bg-[hsl(263,80%,55%)]/30 blur-3xl" />
+          <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-[hsl(217,91%,55%)]/20 blur-3xl" />
+        </div>
+
+        <div className="relative p-6 sm:p-8 lg:p-10">
+          <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
+            <div className="flex items-start gap-4 sm:gap-5 min-w-0">
+              <div className="relative shrink-0">
+                <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-white/30 to-white/0 blur" />
+                <div
+                  className="relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm ring-1 ring-white/20 text-white text-lg font-semibold tracking-wide"
+                  data-testid="avatar-user"
+                >
+                  {initials}
+                </div>
               </div>
               <div className="min-w-0">
+                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-white/75 font-medium">
+                  <Sparkles className="h-3 w-3" />
+                  <span data-testid="text-today-date">{today}</span>
+                </div>
                 <h1
-                  className="text-xl sm:text-2xl font-semibold tracking-tight truncate"
+                  className="mt-2 font-serif text-3xl sm:text-4xl lg:text-[2.6rem] leading-[1.1] tracking-tight text-white"
                   data-testid="text-dashboard-greeting"
                 >
-                  {getGreeting()}, {displayName}
+                  {getGreeting()}, <span className="italic font-normal text-white/95">{displayName}</span>
                 </h1>
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-sm text-muted-foreground">
+                <p className="mt-3 text-sm text-white/80 max-w-xl">
+                  Here&apos;s how {tenant?.gymName || "your gym"} is performing today. Live metrics refresh every 30 seconds.
+                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
                   {roleLabel && (
-                    <Badge variant="secondary" className="font-normal" data-testid="badge-user-role">
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm px-2.5 py-1 text-xs font-medium text-white/90 ring-1 ring-white/15"
+                      data-testid="badge-user-role"
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                       {roleLabel}
-                    </Badge>
+                    </span>
                   )}
                   {tenant?.gymName && (
-                    <span data-testid="text-tenant-name" className="truncate">
+                    <span className="inline-flex items-center rounded-full bg-white/10 backdrop-blur-sm px-2.5 py-1 text-xs font-medium text-white/85 ring-1 ring-white/15" data-testid="text-tenant-name">
                       {tenant.gymName}
                     </span>
                   )}
-                  {tenant?.gymName && <span className="hidden sm:inline">·</span>}
-                  <span data-testid="text-today-date">{today}</span>
+                  {fullName && (
+                    <span className="text-xs text-white/50" data-testid="text-signed-in-as">
+                      Signed in as <span className="text-white/80 font-medium">{fullName}</span>
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
-            <div className="text-xs text-muted-foreground sm:text-right shrink-0">
-              <p>Live data · refreshes every 30s</p>
-              {fullName && (
-                <p className="mt-0.5" data-testid="text-signed-in-as">
-                  Signed in as <span className="font-medium text-foreground">{fullName}</span>
+
+            {/* Hero quick metrics */}
+            <div className="grid grid-cols-3 gap-px rounded-2xl bg-white/10 ring-1 ring-white/10 overflow-hidden w-full xl:w-auto">
+              <div className="bg-gradient-to-b from-white/5 to-transparent p-4 xl:px-6">
+                <p className="text-xs uppercase tracking-wider text-white/70 font-medium">Members</p>
+                <p className="mt-1 text-xl font-semibold tabular-nums">{totalMembers}</p>
+              </div>
+              <div className="bg-gradient-to-b from-white/5 to-transparent p-4 xl:px-6">
+                <p className="text-xs uppercase tracking-wider text-white/70 font-medium">Active</p>
+                <p className="mt-1 text-xl font-semibold tabular-nums">
+                  {activePercent}<span className="text-sm text-white/70">%</span>
                 </p>
-              )}
+              </div>
+              <div className="bg-gradient-to-b from-white/5 to-transparent p-4 xl:px-6">
+                <p className="text-xs uppercase tracking-wider text-white/70 font-medium">MRR</p>
+                <p className="mt-1 text-xl font-semibold tabular-nums">{fmt(stats?.monthlyRevenue || 0)}</p>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Headline stats */}
+      {/* Headline KPIs */}
       <section>
-        <h2 className="text-sm font-medium text-muted-foreground mb-3">Overview</h2>
+        <div className="flex items-end justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">Performance</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Trends over the last 6 months</p>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatCard
-            title="Total Members"
+          <PremiumStat
+            label="Total Members"
             value={totalMembers}
             icon={Users}
-            trend={{ value: stats?.memberGrowth || 0, label: "vs last month" }}
+            trend={stats?.memberGrowth || 0}
+            trendLabel="vs last month"
+            spark={memberSpark}
+            accent="indigo"
+            testId="stat-total-members"
           />
-          <StatCard
-            title="Active Members"
+          <PremiumStat
+            label="Active"
             value={activeMembers}
             icon={TrendingUp}
-            subtitle={`${activePercent}% of total`}
+            hint={`${activePercent}% of total roster`}
+            spark={memberSpark}
+            accent="emerald"
+            testId="stat-active-members"
           />
-          <StatCard
-            title="Monthly Revenue"
+          <PremiumStat
+            label="Monthly Revenue"
             value={fmt(stats?.monthlyRevenue || 0)}
             icon={DollarSign}
-            trend={{ value: stats?.revenueGrowth || 0, label: "vs last month" }}
+            trend={stats?.revenueGrowth || 0}
+            trendLabel="vs last month"
+            spark={revenueSpark}
+            accent="violet"
+            testId="stat-monthly-revenue"
           />
-          <StatCard
-            title="Expiring Soon"
+          <PremiumStat
+            label="Expiring Soon"
             value={expiringMembers}
             icon={AlertTriangle}
-            subtitle="Within 7 days"
+            hint="Within next 7 days"
+            accent="amber"
+            testId="stat-expiring-soon"
           />
         </div>
       </section>
 
-      {/* Today */}
+      {/* Revenue trend + Membership donut */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2 rounded-2xl border-border/60 shadow-sm overflow-hidden">
+          <CardHeader className="pb-2 flex flex-row items-start justify-between">
+            <div>
+              <CardTitle className="text-base font-semibold tracking-tight">Revenue Trend</CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Last 6 months · {fmt(monthlyData.reduce((s, m) => s + m.revenue, 0))} total
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/analytics")}
+              className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded px-1"
+              data-testid="link-view-analytics"
+            >
+              View analytics <ArrowUpRight className="h-3 w-3" />
+            </button>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="h-56">
+              {monthlyData.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                  No revenue history yet
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={monthlyData} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+                    <defs>
+                      <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(263, 70%, 60%)" stopOpacity={0.35} />
+                        <stop offset="100%" stopColor="hsl(263, 70%, 60%)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="month"
+                      stroke="hsl(var(--muted-foreground))"
+                      tick={{ fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      tick={{ fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={56}
+                      tickFormatter={(v) => fmt(v)}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: 10,
+                        fontSize: 12,
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+                      }}
+                      formatter={(value: number) => [fmt(value), "Revenue"]}
+                      labelStyle={{ color: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="hsl(263, 70%, 55%)"
+                      strokeWidth={2}
+                      fill="url(#revGrad)"
+                      activeDot={{ r: 5, strokeWidth: 2, stroke: "hsl(var(--card))" }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold tracking-tight">Membership Status</CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">Distribution across your roster</p>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="relative h-44">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={membershipData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={56}
+                    outerRadius={78}
+                    paddingAngle={2}
+                    dataKey="value"
+                    stroke="hsl(var(--card))"
+                    strokeWidth={2}
+                  >
+                    {membershipData.map((entry, index) => (
+                      <Cell key={index} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 10,
+                      fontSize: 12,
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Total</span>
+                <span className="text-2xl font-semibold tabular-nums tracking-tight">{totalMembers}</span>
+              </div>
+            </div>
+            <div className="mt-3 space-y-1.5">
+              {membershipData.map((item) => {
+                const pct = totalMembers > 0 ? Math.round((item.value / totalMembers) * 100) : 0;
+                return (
+                  <div key={item.name} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span className="text-muted-foreground">{item.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2 tabular-nums">
+                      <span className="font-medium text-foreground">{item.value}</span>
+                      <span className="text-muted-foreground w-9 text-right">{pct}%</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Today snapshot */}
       <section>
-        <h2 className="text-sm font-medium text-muted-foreground mb-3">Today</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-          <StatCard
-            title="Sales Today"
+        <div className="flex items-end justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">Today</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Live snapshot of activity in the last 24 hours</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+          <PremiumStat
+            label="Sales Today"
             value={fmt(salesToday?.perDay || 0)}
             icon={DollarSign}
-            subtitle={`${salesToday?.count || 0} transactions`}
-            color="blue"
+            hint={`${salesToday?.count || 0} transactions`}
+            accent="indigo"
+            testId="stat-sales-today"
           />
-          <StatCard
-            title="Cash"
+          <PremiumStat
+            label="Cash"
             value={fmt(salesToday?.cash || 0)}
             icon={Banknote}
-            subtitle="Today"
-            color="emerald"
+            hint="Settled today"
+            accent="emerald"
+            testId="stat-cash"
           />
-          <StatCard
-            title="Card / Online"
+          <PremiumStat
+            label="Card / Online"
             value={fmt(salesToday?.credit || 0)}
             icon={CreditCard}
-            subtitle="Today"
-            color="violet"
+            hint="Settled today"
+            accent="violet"
+            testId="stat-credit"
           />
-          <StatCard
-            title="Birthdays"
+          <PremiumStat
+            label="Birthdays"
             value={alerts?.birthdaysToday?.length || 0}
             icon={Cake}
-            subtitle="Reach out & wish"
-            color="amber"
+            hint="Reach out & wish"
+            accent="amber"
+            testId="stat-birthdays"
           />
-          <StatCard
-            title="Expiries"
+          <PremiumStat
+            label="Expiries"
             value={alerts?.expiringSoon?.length || 0}
             icon={CalendarClock}
-            subtitle="Renewal needed"
-            color="amber"
+            hint="Renewal needed"
+            accent="amber"
+            testId="stat-expiries"
           />
         </div>
       </section>
 
-      {/* Alerts + chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="border">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Cake className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-              Birthdays Today
-            </CardTitle>
+      {/* Alerts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950/40">
+                <Cake className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <CardTitle className="text-sm font-semibold">Birthdays Today</CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">Send a personal note</p>
+              </div>
+            </div>
+            {(alerts?.birthdaysToday || []).length > 0 && (
+              <Badge variant="secondary" className="font-normal tabular-nums">
+                {alerts!.birthdaysToday.length}
+              </Badge>
+            )}
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             {(alerts?.birthdaysToday || []).length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4" data-testid="text-no-birthdays">
+              <p className="text-sm text-muted-foreground text-center py-6" data-testid="text-no-birthdays">
                 No birthdays today
               </p>
             ) : (
-              <div className="space-y-1">
+              <div className="divide-y divide-border/60">
                 {alerts!.birthdaysToday.map((m) => (
                   <button
                     type="button"
                     key={m.id}
-                    className="w-full flex items-center gap-3 p-2 rounded-md hover-elevate active-elevate-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="group w-full flex items-center gap-3 py-3 px-1 text-left hover-elevate active-elevate-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => navigate(`/members/${m.id}`)}
                     data-testid={`birthday-${m.id}`}
                   >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-foreground text-xs font-semibold">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-900/40 dark:to-amber-950/30 text-amber-700 dark:text-amber-300 text-xs font-semibold ring-1 ring-amber-200/60 dark:ring-amber-900/40">
                       {(m.firstName[0] || "") + (m.lastName[0] || "")}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -297,6 +591,7 @@ export default function DashboardPage() {
                       </p>
                       <p className="text-xs text-muted-foreground truncate">{m.email}</p>
                     </div>
+                    <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/60 transition-colors group-hover:text-foreground" />
                   </button>
                 ))}
               </div>
@@ -304,29 +599,41 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <CalendarClock className="h-4 w-4 text-red-600 dark:text-red-400" />
-              Expiring Soon
-              <span className="text-xs font-normal text-muted-foreground">(next 7 days)</span>
-            </CardTitle>
+        <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 dark:bg-red-950/40">
+                <CalendarClock className="h-4 w-4 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <CardTitle className="text-sm font-semibold">Expiring Soon</CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">Renewals in next 7 days</p>
+              </div>
+            </div>
+            {(alerts?.expiringSoon || []).length > 0 && (
+              <Badge variant="secondary" className="font-normal tabular-nums">
+                {alerts!.expiringSoon.length}
+              </Badge>
+            )}
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             {(alerts?.expiringSoon || []).length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4" data-testid="text-no-expiries">
+              <p className="text-sm text-muted-foreground text-center py-6" data-testid="text-no-expiries">
                 No expirations in next 7 days
               </p>
             ) : (
-              <div className="space-y-1">
+              <div className="divide-y divide-border/60">
                 {alerts!.expiringSoon.slice(0, 5).map((m) => (
                   <button
                     type="button"
                     key={m.id}
-                    className="w-full flex items-center gap-3 p-2 rounded-md hover-elevate active-elevate-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="w-full flex items-center gap-3 py-3 px-1 text-left hover-elevate active-elevate-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => navigate(`/members/${m.id}`)}
                     data-testid={`expiry-${m.id}`}
                   >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-red-100 to-red-50 dark:from-red-900/40 dark:to-red-950/30 text-red-700 dark:text-red-300 text-xs font-semibold ring-1 ring-red-200/60 dark:ring-red-900/40">
+                      {(m.firstName[0] || "") + (m.lastName[0] || "")}
+                    </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate">
                         {m.firstName} {m.lastName}
@@ -335,10 +642,10 @@ export default function DashboardPage() {
                     </div>
                     <Badge
                       variant="outline"
-                      className={`shrink-0 ${
+                      className={`shrink-0 tabular-nums ${
                         m.daysLeft <= 1
-                          ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-900"
-                          : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900"
+                          ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900"
+                          : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900"
                       }`}
                     >
                       {m.daysLeft <= 0 ? "Today" : `${m.daysLeft}d`}
@@ -349,69 +656,30 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
-
-        <Card className="border">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              Membership Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-40">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={membershipData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={42}
-                    outerRadius={66}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {membershipData.map((entry, index) => (
-                      <Cell key={index} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      borderColor: "hsl(var(--border))",
-                      borderRadius: "8px",
-                      color: "hsl(var(--foreground))",
-                      fontSize: "12px",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-2">
-              {membershipData.map((item) => (
-                <div key={item.name} className="flex items-center gap-1.5">
-                  <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-xs text-muted-foreground">
-                    {item.name} <span className="font-medium text-foreground">({item.value})</span>
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Recent members + activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="border">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              Recent Members
-            </CardTitle>
+        <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40">
+                <Users className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <CardTitle className="text-sm font-semibold">Recent Members</CardTitle>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/members")}
+              className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded px-1"
+              data-testid="link-view-all-members"
+            >
+              View all <ArrowUpRight className="h-3 w-3" />
+            </button>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             {membersLoading ? (
-              <div className="space-y-3">
+              <div className="space-y-3 py-2">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="flex items-center gap-3">
                     <Skeleton className="h-9 w-9 rounded-full" />
@@ -423,21 +691,21 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (recentMembers || []).length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4" data-testid="text-no-members">
+              <p className="text-sm text-muted-foreground text-center py-6" data-testid="text-no-members">
                 No members yet
               </p>
             ) : (
-              <div className="space-y-1">
+              <div className="divide-y divide-border/60">
                 {(recentMembers || []).slice(0, 5).map((member) => (
                   <button
                     type="button"
                     key={member.id}
-                    className="w-full flex items-center justify-between gap-3 p-2 rounded-md hover-elevate active-elevate-2 text-left"
+                    className="w-full flex items-center justify-between gap-3 py-3 px-1 text-left hover-elevate active-elevate-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => navigate(`/members/${member.id}`)}
                     data-testid={`member-row-${member.id}`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-foreground text-xs font-semibold">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-100 to-indigo-50 dark:from-indigo-900/40 dark:to-indigo-950/30 text-indigo-700 dark:text-indigo-300 text-xs font-semibold ring-1 ring-indigo-200/60 dark:ring-indigo-900/40">
                         {(member.firstName?.[0] || "") + (member.lastName?.[0] || "")}
                       </div>
                       <div className="min-w-0">
@@ -463,16 +731,18 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Activity className="h-4 w-4 text-muted-foreground" />
-              Recent Activity
-            </CardTitle>
+        <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 dark:bg-violet-950/40">
+                <Activity className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+              </div>
+              <CardTitle className="text-sm font-semibold">Recent Activity</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             {activityLoading ? (
-              <div className="space-y-3">
+              <div className="space-y-3 py-2">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="flex items-center gap-3">
                     <Skeleton className="h-8 w-8 rounded-md" />
@@ -484,24 +754,24 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (recentActivity || []).length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4" data-testid="text-no-activity">
+              <p className="text-sm text-muted-foreground text-center py-6" data-testid="text-no-activity">
                 No recent activity
               </p>
             ) : (
-              <div className="space-y-1">
+              <div className="divide-y divide-border/60">
                 {(recentActivity || []).slice(0, 5).map((activity) => (
                   <div
                     key={activity.id}
-                    className="flex items-center gap-3 p-2 rounded-md"
+                    className="flex items-start gap-3 py-3 px-1"
                     data-testid={`activity-row-${activity.id}`}
                   >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                      <Activity className="h-4 w-4" />
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                      <Activity className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm truncate">{activity.description}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {activity.createdAt ? format(new Date(activity.createdAt), "MMM d, h:mm a") : ""}
+                      <p className="text-sm leading-snug">{activity.description}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">
+                        {activity.createdAt ? format(new Date(activity.createdAt), "MMM d · h:mm a") : ""}
                       </p>
                     </div>
                   </div>
