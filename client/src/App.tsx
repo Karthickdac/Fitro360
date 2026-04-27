@@ -43,6 +43,8 @@ import TaxSettingsPage from "@/pages/tax-settings";
 import SupplierBillsPage from "@/pages/supplier-bills";
 import VatReturnsPage from "@/pages/vat-returns";
 import CorporateTaxPage from "@/pages/corporate-tax";
+import FixedAssetsPage from "@/pages/fixed-assets";
+import MembershipTransfersPage from "@/pages/membership-transfers";
 
 function LoadingScreen() {
   return (
@@ -112,6 +114,8 @@ function ManagerRouter() {
       <Route path="/check-in" component={CheckInPage} />
       <Route path="/branches" component={BranchesPage} />
       <Route path="/membership-plans" component={MembershipPlansPage} />
+      <Route path="/membership-transfers" component={MembershipTransfersPage} />
+      <Route path="/fixed-assets" component={FixedAssetsPage} />
       <Route path="/activity" component={ActivityPage} />
       <Route path="/notifications" component={NotificationsPage} />
       <Route path="/analytics" component={AnalyticsPage} />
@@ -151,6 +155,8 @@ function GymOwnerRouter() {
       <Route path="/supplier-bills" component={SupplierBillsPage} />
       <Route path="/vat-returns" component={VatReturnsPage} />
       <Route path="/corporate-tax" component={CorporateTaxPage} />
+      <Route path="/fixed-assets" component={FixedAssetsPage} />
+      <Route path="/membership-transfers" component={MembershipTransfersPage} />
       <Route component={NotFound} />
     </Switch>
   );

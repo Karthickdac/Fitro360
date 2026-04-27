@@ -32,6 +32,8 @@ import {
   Briefcase,
   ShoppingCart,
   Sparkles,
+  ArrowRightLeft,
+  Boxes,
 } from "lucide-react";
 import {
   Sidebar,
@@ -112,6 +114,7 @@ const gymOverviewItems: NavItem[] = [
 const gymMembershipItems: NavItem[] = [
   { title: "Members", url: "/members", icon: Users },
   { title: "Membership Plans", url: "/membership-plans", icon: CreditCard },
+  { title: "Member Transfers", url: "/membership-transfers", icon: ArrowRightLeft },
   { title: "Check-in", url: "/check-in", icon: UserCheck },
 ];
 
@@ -124,6 +127,7 @@ const gymStaffItems: NavItem[] = [
 const gymOperationsItems: NavItem[] = [
   { title: "Branches", url: "/branches", icon: GitBranch },
   { title: "Inventory", url: "/inventory", icon: Package },
+  { title: "Fixed Assets", url: "/fixed-assets", icon: Boxes },
   { title: "Maintenance", url: "/maintenance", icon: Wrench },
 ];
 

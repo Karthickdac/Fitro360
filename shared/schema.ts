@@ -152,7 +152,12 @@ export const members = pgTable("members", {
   membershipStart: timestamp("membership_start").defaultNow(),
   membershipEnd: timestamp("membership_end"),
   status: text("status").notNull().default("active"),
+  nationality: text("nationality"),
+  dateOfBirth: date("date_of_birth"),
+  salespersonId: varchar("salesperson_id").references(() => users.id),
   emergencyContact: text("emergency_contact"),
+  emergencyContactName: text("emergency_contact_name"),
+  emergencyContactRelation: text("emergency_contact_relation"),
   notes: text("notes"),
   heightCm: decimal("height_cm", { precision: 5, scale: 1 }),
   weightKg: decimal("weight_kg", { precision: 5, scale: 1 }),
@@ -160,6 +165,46 @@ export const members = pgTable("members", {
   trainerId: varchar("trainer_id").references(() => users.id),
   referralCode: text("referral_code"),
   referredBy: varchar("referred_by"),
+  signatureDataUrl: text("signature_data_url"),
+  waiverAcceptedAt: timestamp("waiver_accepted_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const fixedAssets = pgTable("fixed_assets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  branchId: varchar("branch_id"),
+  assetCode: text("asset_code"),
+  name: text("name").notNull(),
+  category: text("category").notNull().default("equipment"),
+  location: text("location"),
+  vendorName: text("vendor_name"),
+  vendorContact: text("vendor_contact"),
+  purchaseDate: date("purchase_date"),
+  purchaseValue: decimal("purchase_value", { precision: 12, scale: 2 }).default("0"),
+  depreciationRate: decimal("depreciation_rate", { precision: 5, scale: 2 }).default("0"),
+  warrantyExpiry: date("warranty_expiry"),
+  amcExpiry: date("amc_expiry"),
+  serialNumber: text("serial_number"),
+  status: text("status").notNull().default("active"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const membershipTransfers = pgTable("membership_transfers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  fromMemberId: varchar("from_member_id").references(() => members.id).notNull(),
+  toMemberId: varchar("to_member_id").references(() => members.id).notNull(),
+  membershipPlanId: varchar("membership_plan_id"),
+  remainingDays: integer("remaining_days"),
+  transferFee: decimal("transfer_fee", { precision: 10, scale: 2 }).default("0"),
+  reason: text("reason"),
+  status: text("status").notNull().default("pending"),
+  approvedBy: varchar("approved_by"),
+  approvedAt: timestamp("approved_at"),
+  executedAt: timestamp("executed_at"),
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -435,6 +480,8 @@ export const insertActivitySchema = createInsertSchema(activities).omit({ id: tr
 export const insertSupplierBillSchema = createInsertSchema(supplierBills).omit({ id: true, createdAt: true });
 export const insertVatReturnSchema = createInsertSchema(vatReturns).omit({ id: true, createdAt: true });
 export const insertCorporateTaxReturnSchema = createInsertSchema(corporateTaxReturns).omit({ id: true, createdAt: true });
+export const insertFixedAssetSchema = createInsertSchema(fixedAssets).omit({ id: true, createdAt: true });
+export const insertMembershipTransferSchema = createInsertSchema(membershipTransfers).omit({ id: true, createdAt: true, approvedAt: true, executedAt: true });
 
 export const loginSchema = z.object({
   username: z.string().min(1),

@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import session from "express-session";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
-import { loginSchema, insertSupplierBillSchema, insertVatReturnSchema, insertCorporateTaxReturnSchema } from "@shared/schema";
+import { loginSchema, insertSupplierBillSchema, insertVatReturnSchema, insertCorporateTaxReturnSchema, insertFixedAssetSchema, insertMembershipTransferSchema } from "@shared/schema";
 import { z } from "zod";
 
 const SESSION_SECRET = process.env.SESSION_SECRET || "fitro360-dev-secret";
@@ -163,9 +163,17 @@ export async function registerRoutes(
         membershipType: z.string().min(1),
         status: z.string().optional(),
         trainerId: z.string().optional(),
+        salespersonId: z.string().optional(),
         heightCm: z.string().optional(),
         weightKg: z.string().optional(),
         branchId: z.string().optional(),
+        nationality: z.string().optional(),
+        dateOfBirth: z.string().optional(),
+        emergencyContact: z.string().optional(),
+        emergencyContactName: z.string().optional(),
+        emergencyContactRelation: z.string().optional(),
+        signatureDataUrl: z.string().optional(),
+        waiverAccepted: z.boolean().optional(),
       }).parse(req.body);
 
       const now = new Date();
@@ -193,14 +201,16 @@ export async function registerRoutes(
         if (h > 0) bmi = (w / (h * h)).toFixed(1);
       }
 
+      const { waiverAccepted, ...rest } = memberInput;
       const member = await storage.createMember({
-        ...memberInput,
+        ...rest,
         tenantId: user.tenantId,
         membershipStart: now,
         membershipEnd,
         status: "active",
         bmi,
-      });
+        waiverAcceptedAt: waiverAccepted ? now : undefined,
+      } as any);
 
       await storage.createActivity({
         tenantId: user.tenantId,
@@ -228,6 +238,12 @@ export async function registerRoutes(
       if (data.weightKg === "") data.weightKg = null;
       if (data.phone === "") data.phone = null;
       if (data.emergencyContact === "") data.emergencyContact = null;
+      if (data.emergencyContactName === "") data.emergencyContactName = null;
+      if (data.emergencyContactRelation === "") data.emergencyContactRelation = null;
+      if (data.nationality === "") data.nationality = null;
+      if (data.dateOfBirth === "") data.dateOfBirth = null;
+      if (data.salespersonId === "") data.salespersonId = null;
+      if (data.signatureDataUrl === "") data.signatureDataUrl = null;
       if (data.bmi === "") data.bmi = null;
       if (data.trainerId !== undefined && !["gym_owner", "manager", "platform_admin"].includes(user.role)) {
         return res.status(403).json({ message: "Only gym owners and managers can assign trainers" });
@@ -1888,6 +1904,133 @@ export async function registerRoutes(
     } catch (error: any) {
       return res.status(400).json({ message: error.message });
     }
+  });
+
+  // ─── Fixed Assets ───────────────────────────────────────
+  app.get("/api/fixed-assets", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.json([]);
+    const list = await storage.getFixedAssetsByTenant(user.tenantId);
+    return res.json(list);
+  });
+
+  app.post("/api/fixed-assets", authMiddleware, requireRole("gym_owner", "manager", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const data = insertFixedAssetSchema.parse({ ...req.body, tenantId: user.tenantId });
+      const asset = await storage.createFixedAsset(data);
+      await storage.createActivity({
+        tenantId: user.tenantId,
+        userId: user.id,
+        type: "asset_added",
+        description: `Fixed asset "${data.name}" was added`,
+      });
+      return res.json(asset);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/fixed-assets/:id", authMiddleware, requireRole("gym_owner", "manager", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const updated = await storage.updateFixedAsset(req.params.id, req.body);
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/fixed-assets/:id", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      await storage.deleteFixedAsset(req.params.id);
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  // ─── Membership Transfers ───────────────────────────────
+  app.get("/api/membership-transfers", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.json([]);
+    const list = await storage.getMembershipTransfersByTenant(user.tenantId);
+    return res.json(list);
+  });
+
+  app.post("/api/membership-transfers", authMiddleware, requireRole("gym_owner", "manager", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const data = insertMembershipTransferSchema.parse({ ...req.body, tenantId: user.tenantId });
+
+      const fromMember = await storage.getMember(data.fromMemberId);
+      const toMember = await storage.getMember(data.toMemberId);
+      if (!fromMember || fromMember.tenantId !== user.tenantId) return res.status(404).json({ message: "Source member not found" });
+      if (!toMember || toMember.tenantId !== user.tenantId) return res.status(404).json({ message: "Destination member not found" });
+      if (data.fromMemberId === data.toMemberId) return res.status(400).json({ message: "Source and destination must be different" });
+
+      let remainingDays: number | undefined;
+      if (fromMember.membershipEnd) {
+        const ms = new Date(fromMember.membershipEnd).getTime() - Date.now();
+        remainingDays = Math.max(0, Math.ceil(ms / (24 * 60 * 60 * 1000)));
+      }
+
+      const transfer = await storage.createMembershipTransfer({
+        ...data,
+        membershipPlanId: data.membershipPlanId || fromMember.membershipPlanId || undefined,
+        remainingDays: data.remainingDays ?? remainingDays,
+      } as any);
+
+      await storage.createActivity({
+        tenantId: user.tenantId,
+        userId: user.id,
+        type: "transfer_requested",
+        description: `Transfer requested: ${fromMember.firstName} ${fromMember.lastName} → ${toMember.firstName} ${toMember.lastName}`,
+      });
+      return res.json(transfer);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/membership-transfers/:id/approve", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const result = await storage.executeMembershipTransfer(req.params.id, user.id);
+      if (!result) return res.status(404).json({ message: "Transfer not found" });
+      return res.json(result);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/membership-transfers/:id/reject", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const updated = await storage.updateMembershipTransfer(req.params.id, {
+        status: "rejected",
+        approvedBy: user.id,
+      } as any);
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  // ─── Dashboard: Today's Sales & Alerts ─────────────────
+  app.get("/api/dashboard/sales-today", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+    const stats = await storage.getSalesToday(user.tenantId);
+    return res.json(stats);
+  });
+
+  app.get("/api/dashboard/alerts", authMiddleware, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+    const alerts = await storage.getDashboardAlerts(user.tenantId);
+    return res.json(alerts);
   });
 
   return httpServer;

@@ -6,7 +6,7 @@ import {
   equipment, suppliers, invoices, notifications, coupons, referrals,
   memberMetrics, equipmentMaintenance, paymentRecords,
   trainerCommissions, trainerLeaves, trainerProfiles, membershipPlans,
-  supplierBills, vatReturns, corporateTaxReturns,
+  supplierBills, vatReturns, corporateTaxReturns, fixedAssets, membershipTransfers,
   type Tenant, type InsertTenant,
   type User, type InsertUser,
   type Branch, type InsertBranch,
@@ -32,6 +32,8 @@ import {
   type SupplierBill, type InsertSupplierBill,
   type VatReturn, type InsertVatReturn,
   type CorporateTaxReturn, type InsertCorporateTaxReturn,
+  type FixedAsset, type InsertFixedAsset,
+  type MembershipTransfer, type InsertMembershipTransfer,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -187,6 +189,32 @@ export interface IStorage {
     accountingProfit: number;
     taxableIncome: number;
     taxDue: number;
+  }>;
+
+  getFixedAssetsByTenant(tenantId: string): Promise<FixedAsset[]>;
+  getFixedAsset(id: string): Promise<FixedAsset | undefined>;
+  createFixedAsset(asset: InsertFixedAsset): Promise<FixedAsset>;
+  updateFixedAsset(id: string, data: Partial<InsertFixedAsset>): Promise<FixedAsset | undefined>;
+  deleteFixedAsset(id: string): Promise<void>;
+
+  getMembershipTransfersByTenant(tenantId: string): Promise<MembershipTransfer[]>;
+  getMembershipTransfer(id: string): Promise<MembershipTransfer | undefined>;
+  createMembershipTransfer(transfer: InsertMembershipTransfer): Promise<MembershipTransfer>;
+  updateMembershipTransfer(id: string, data: Partial<InsertMembershipTransfer>): Promise<MembershipTransfer | undefined>;
+  executeMembershipTransfer(id: string, approvedBy: string): Promise<MembershipTransfer | undefined>;
+
+  getSalesToday(tenantId: string): Promise<{
+    perDayTotal: number;
+    cashTotal: number;
+    creditTotal: number;
+    perDayCount: number;
+    cashCount: number;
+    creditCount: number;
+  }>;
+  getDashboardAlerts(tenantId: string): Promise<{
+    birthdaysToday: { id: string; firstName: string; lastName: string; dateOfBirth: string | null }[];
+    expiringSoon: { id: string; firstName: string; lastName: string; membershipEnd: string | null; daysLeft: number }[];
+    ptSessionsToday: { id: string; title: string; startTime: string; endTime: string; trainerId: string }[];
   }>;
 
   getDashboardStats(tenantId: string): Promise<{
@@ -937,6 +965,166 @@ export class DatabaseStorage implements IStorage {
       taxableIncome: Math.round(taxableIncome * 100) / 100,
       taxDue: Math.round(taxDue * 100) / 100,
     };
+  }
+
+  async getFixedAssetsByTenant(tenantId: string): Promise<FixedAsset[]> {
+    return db.select().from(fixedAssets).where(eq(fixedAssets.tenantId, tenantId)).orderBy(desc(fixedAssets.createdAt));
+  }
+
+  async getFixedAsset(id: string): Promise<FixedAsset | undefined> {
+    const [asset] = await db.select().from(fixedAssets).where(eq(fixedAssets.id, id));
+    return asset;
+  }
+
+  async createFixedAsset(asset: InsertFixedAsset): Promise<FixedAsset> {
+    const [created] = await db.insert(fixedAssets).values(asset as any).returning();
+    return created;
+  }
+
+  async updateFixedAsset(id: string, data: Partial<InsertFixedAsset>): Promise<FixedAsset | undefined> {
+    if (!data || Object.keys(data).length === 0) return this.getFixedAsset(id);
+    const [updated] = await db.update(fixedAssets).set(data as any).where(eq(fixedAssets.id, id)).returning();
+    return updated;
+  }
+
+  async deleteFixedAsset(id: string): Promise<void> {
+    await db.delete(fixedAssets).where(eq(fixedAssets.id, id));
+  }
+
+  async getMembershipTransfersByTenant(tenantId: string): Promise<MembershipTransfer[]> {
+    return db.select().from(membershipTransfers).where(eq(membershipTransfers.tenantId, tenantId)).orderBy(desc(membershipTransfers.createdAt));
+  }
+
+  async getMembershipTransfer(id: string): Promise<MembershipTransfer | undefined> {
+    const [t] = await db.select().from(membershipTransfers).where(eq(membershipTransfers.id, id));
+    return t;
+  }
+
+  async createMembershipTransfer(transfer: InsertMembershipTransfer): Promise<MembershipTransfer> {
+    const [created] = await db.insert(membershipTransfers).values(transfer as any).returning();
+    return created;
+  }
+
+  async updateMembershipTransfer(id: string, data: Partial<InsertMembershipTransfer>): Promise<MembershipTransfer | undefined> {
+    if (!data || Object.keys(data).length === 0) return this.getMembershipTransfer(id);
+    const [updated] = await db.update(membershipTransfers).set(data as any).where(eq(membershipTransfers.id, id)).returning();
+    return updated;
+  }
+
+  async executeMembershipTransfer(id: string, approvedBy: string): Promise<MembershipTransfer | undefined> {
+    const transfer = await this.getMembershipTransfer(id);
+    if (!transfer) return undefined;
+    if (transfer.status === "completed") return transfer;
+
+    const [fromMember] = await db.select().from(members).where(eq(members.id, transfer.fromMemberId));
+    const [toMember] = await db.select().from(members).where(eq(members.id, transfer.toMemberId));
+    if (!fromMember || !toMember) return undefined;
+
+    await db.update(members).set({
+      membershipPlanId: fromMember.membershipPlanId,
+      membershipType: fromMember.membershipType,
+      membershipStart: fromMember.membershipStart,
+      membershipEnd: fromMember.membershipEnd,
+      status: "active",
+    } as any).where(eq(members.id, transfer.toMemberId));
+
+    await db.update(members).set({
+      membershipPlanId: null,
+      membershipEnd: null,
+      status: "transferred",
+    } as any).where(eq(members.id, transfer.fromMemberId));
+
+    const now = new Date();
+    const [updated] = await db.update(membershipTransfers).set({
+      status: "completed",
+      approvedBy,
+      approvedAt: now,
+      executedAt: now,
+    } as any).where(eq(membershipTransfers.id, id)).returning();
+
+    await db.insert(activities).values({
+      tenantId: transfer.tenantId,
+      userId: approvedBy,
+      type: "membership_transfer",
+      description: `Membership transferred from ${fromMember.firstName} ${fromMember.lastName} to ${toMember.firstName} ${toMember.lastName}`,
+      metadata: { transferId: id, fromMemberId: transfer.fromMemberId, toMemberId: transfer.toMemberId },
+    } as any);
+
+    return updated;
+  }
+
+  async getSalesToday(tenantId: string) {
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+    const todayPayments = await db.select().from(paymentRecords).where(and(
+      eq(paymentRecords.tenantId, tenantId),
+      eq(paymentRecords.status, "completed"),
+      between(paymentRecords.createdAt, todayStart, todayEnd),
+    ));
+
+    let cashTotal = 0, creditTotal = 0, cashCount = 0, creditCount = 0;
+    for (const p of todayPayments) {
+      const amt = Number(p.amount || 0);
+      const m = (p.method || "cash").toLowerCase();
+      if (m === "cash") { cashTotal += amt; cashCount++; }
+      else { creditTotal += amt; creditCount++; }
+    }
+
+    return {
+      perDayTotal: Math.round((cashTotal + creditTotal) * 100) / 100,
+      cashTotal: Math.round(cashTotal * 100) / 100,
+      creditTotal: Math.round(creditTotal * 100) / 100,
+      perDayCount: todayPayments.length,
+      cashCount,
+      creditCount,
+    };
+  }
+
+  async getDashboardAlerts(tenantId: string) {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const allMembers = await db.select().from(members).where(eq(members.tenantId, tenantId));
+
+    const birthdaysToday = allMembers
+      .filter(m => {
+        if (!m.dateOfBirth) return false;
+        const dob = new Date(m.dateOfBirth as any);
+        return dob.getMonth() + 1 === month && dob.getDate() === day;
+      })
+      .map(m => ({ id: m.id, firstName: m.firstName, lastName: m.lastName, dateOfBirth: m.dateOfBirth as any }));
+
+    const expiringSoon = allMembers
+      .filter(m => {
+        if (!m.membershipEnd || m.status !== "active") return false;
+        const end = new Date(m.membershipEnd);
+        return end >= now && end <= sevenDaysLater;
+      })
+      .map(m => {
+        const end = new Date(m.membershipEnd!);
+        const daysLeft = Math.max(0, Math.ceil((end.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)));
+        return { id: m.id, firstName: m.firstName, lastName: m.lastName, membershipEnd: m.membershipEnd as any, daysLeft };
+      })
+      .sort((a, b) => a.daysLeft - b.daysLeft);
+
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+    const todaysSessions = await db.select().from(trainerSessions).where(and(
+      eq(trainerSessions.tenantId, tenantId),
+      gte(trainerSessions.startTime, todayStart),
+      lte(trainerSessions.startTime, todayEnd),
+    ));
+
+    const ptSessionsToday = todaysSessions
+      .filter(s => (s.type || "personal") === "personal")
+      .map(s => ({
+        id: s.id, title: s.title, trainerId: s.trainerId,
+        startTime: s.startTime as any, endTime: s.endTime as any,
+      }));
+
+    return { birthdaysToday, expiringSoon, ptSessionsToday };
   }
 }
 

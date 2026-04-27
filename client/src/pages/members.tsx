@@ -46,11 +46,14 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Search, Users, MoreHorizontal, Snowflake, RefreshCw, Ruler, Download, UserCheck } from "lucide-react";
+import { Plus, Search, Users, MoreHorizontal, Snowflake, RefreshCw, Ruler, Download, UserCheck, Eraser, ChevronRight } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { useMarket } from "@/hooks/use-market";
+import { useLocation } from "wouter";
+import { useRef, useEffect } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { Member, User, MembershipPlan } from "@shared/schema";
 
 const addMemberSchema = z.object({
@@ -61,13 +64,107 @@ const addMemberSchema = z.object({
   membershipPlanId: z.string().optional(),
   membershipType: z.string().default("monthly"),
   trainerId: z.string().optional(),
+  salespersonId: z.string().optional(),
   heightCm: z.string().optional(),
   weightKg: z.string().optional(),
+  nationality: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  emergencyContactName: z.string().optional(),
+  emergencyContact: z.string().optional(),
+  emergencyContactRelation: z.string().optional(),
+  signatureDataUrl: z.string().optional(),
+  waiverAccepted: z.boolean().default(false),
 });
+
+function SignaturePad({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawingRef = useRef(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "#111";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    if (value) {
+      const img = new Image();
+      img.onload = () => ctx.drawImage(img, 0, 0);
+      img.src = value;
+    }
+  }, []);
+
+  const getPos = (e: React.MouseEvent | React.TouchEvent) => {
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const evt = "touches" in e ? e.touches[0] : e;
+    return { x: (evt.clientX - rect.left) * scaleX, y: (evt.clientY - rect.top) * scaleY };
+  };
+
+  const start = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    drawingRef.current = true;
+    const ctx = canvasRef.current!.getContext("2d")!;
+    const { x, y } = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  };
+
+  const move = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!drawingRef.current) return;
+    e.preventDefault();
+    const ctx = canvasRef.current!.getContext("2d")!;
+    const { x, y } = getPos(e);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const end = () => {
+    if (!drawingRef.current) return;
+    drawingRef.current = false;
+    onChange(canvasRef.current!.toDataURL("image/png"));
+  };
+
+  const clear = () => {
+    const canvas = canvasRef.current!;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    onChange("");
+  };
+
+  return (
+    <div className="space-y-2">
+      <canvas
+        ref={canvasRef}
+        width={500}
+        height={140}
+        className="w-full border border-border rounded-md bg-white touch-none cursor-crosshair"
+        onMouseDown={start}
+        onMouseMove={move}
+        onMouseUp={end}
+        onMouseLeave={end}
+        onTouchStart={start}
+        onTouchMove={move}
+        onTouchEnd={end}
+        data-testid="signature-canvas"
+      />
+      <Button type="button" variant="outline" size="sm" onClick={clear} data-testid="button-clear-signature">
+        <Eraser className="h-3.5 w-3.5 mr-1" /> Clear
+      </Button>
+    </div>
+  );
+}
 
 export default function MembersPage() {
   const { config } = useMarket();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -85,9 +182,15 @@ export default function MembersPage() {
     queryKey: ["/api/trainers"],
   });
 
+  const { data: salespeople } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+  });
+
   const { data: membershipPlans } = useQuery<MembershipPlan[]>({
     queryKey: ["/api/membership-plans"],
   });
+
+  const planMap = new Map((membershipPlans || []).map(p => [p.id, p]));
 
   const [assignTrainerDialogOpen, setAssignTrainerDialogOpen] = useState(false);
   const [assignTrainerMember, setAssignTrainerMember] = useState<Member | null>(null);
@@ -118,14 +221,25 @@ export default function MembersPage() {
       membershipPlanId: "",
       membershipType: "monthly",
       trainerId: "",
+      salespersonId: "",
       heightCm: "",
       weightKg: "",
+      nationality: "",
+      dateOfBirth: "",
+      emergencyContactName: "",
+      emergencyContact: "",
+      emergencyContactRelation: "",
+      signatureDataUrl: "",
+      waiverAccepted: false,
     },
   });
 
   const addMemberMutation = useMutation({
     mutationFn: async (data: z.infer<typeof addMemberSchema>) => {
-      const res = await apiRequest("POST", "/api/members", data);
+      const cleaned = Object.fromEntries(
+        Object.entries(data).filter(([_, v]) => v !== "" && v !== undefined)
+      );
+      const res = await apiRequest("POST", "/api/members", cleaned);
       return res.json();
     },
     onSuccess: () => {
@@ -301,38 +415,94 @@ export default function MembersPage() {
                       </FormItem>
                     )} />
                   )}
-                  <FormField control={form.control} name="trainerId" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Assign Trainer</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-trainer"><SelectValue placeholder="Select trainer (optional)" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {(trainers || []).map((t) => (
-                            <SelectItem key={t.id} value={t.id}>{t.firstName} {t.lastName}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
                   <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="heightCm" render={({ field }) => (
+                    <FormField control={form.control} name="trainerId" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Height (cm)</FormLabel>
-                        <FormControl><Input type="number" placeholder="175" {...field} data-testid="input-height" /></FormControl>
-                        <FormMessage />
+                        <FormLabel>Trainer</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-trainer"><SelectValue placeholder="Optional" /></SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {(trainers || []).map((t) => (
+                              <SelectItem key={t.id} value={t.id}>{t.firstName} {t.lastName}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </FormItem>
                     )} />
-                    <FormField control={form.control} name="weightKg" render={({ field }) => (
+                    <FormField control={form.control} name="salespersonId" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Weight (kg)</FormLabel>
-                        <FormControl><Input type="number" placeholder="70" {...field} data-testid="input-weight" /></FormControl>
-                        <FormMessage />
+                        <FormLabel>Salesperson</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-salesperson"><SelectValue placeholder="Who closed this sale" /></SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {(salespeople || []).filter(u => ["sales_executive", "manager", "gym_owner"].includes(u.role)).map((s) => (
+                              <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </FormItem>
                     )} />
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField control={form.control} name="dateOfBirth" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Date of Birth</FormLabel>
+                        <FormControl><Input type="date" {...field} data-testid="input-dob" /></FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="nationality" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nationality</FormLabel>
+                        <FormControl><Input placeholder="Indian, Emirati..." {...field} data-testid="input-nationality" /></FormControl>
+                      </FormItem>
+                    )} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <FormLabel>Emergency Contact</FormLabel>
+                    <div className="grid grid-cols-3 gap-2">
+                      <FormField control={form.control} name="emergencyContactName" render={({ field }) => (
+                        <FormItem>
+                          <FormControl><Input placeholder="Name" {...field} data-testid="input-emg-name" /></FormControl>
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="emergencyContact" render={({ field }) => (
+                        <FormItem>
+                          <FormControl><Input placeholder="Phone" {...field} data-testid="input-emg-phone" /></FormControl>
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="emergencyContactRelation" render={({ field }) => (
+                        <FormItem>
+                          <FormControl><Input placeholder="Relation" {...field} data-testid="input-emg-relation" /></FormControl>
+                        </FormItem>
+                      )} />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 rounded-md border border-border p-3 bg-muted/20">
+                    <FormLabel className="text-sm font-semibold">Liability Waiver & Signature</FormLabel>
+                    <FormField control={form.control} name="signatureDataUrl" render={({ field }) => (
+                      <FormItem>
+                        <SignaturePad value={field.value || ""} onChange={field.onChange} />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="waiverAccepted" render={({ field }) => (
+                      <FormItem className="flex items-center gap-2 space-y-0">
+                        <FormControl>
+                          <Checkbox checked={field.value} onCheckedChange={field.onChange} data-testid="checkbox-waiver" />
+                        </FormControl>
+                        <FormLabel className="text-xs text-muted-foreground font-normal cursor-pointer">
+                          I accept the liability waiver, terms & conditions, and gym policies
+                        </FormLabel>
+                      </FormItem>
+                    )} />
+                  </div>
+
                   <Button type="submit" className="w-full" disabled={addMemberMutation.isPending} data-testid="button-submit-member">
                     {addMemberMutation.isPending ? "Adding..." : "Add Member"}
                   </Button>
@@ -405,7 +575,7 @@ export default function MembersPage() {
                 <TableRow>
                   <TableHead>Member</TableHead>
                   <TableHead className="hidden md:table-cell">Email</TableHead>
-                  <TableHead className="hidden sm:table-cell">Membership</TableHead>
+                  <TableHead className="hidden sm:table-cell">Plan</TableHead>
                   <TableHead className="hidden lg:table-cell">Trainer</TableHead>
                   <TableHead className="hidden lg:table-cell">BMI</TableHead>
                   <TableHead className="hidden lg:table-cell">Expires</TableHead>
@@ -414,8 +584,16 @@ export default function MembersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredMembers.map((member) => (
-                  <TableRow key={member.id} data-testid={`row-member-${member.id}`}>
+                {filteredMembers.map((member) => {
+                  const plan = member.membershipPlanId ? planMap.get(member.membershipPlanId) : null;
+                  const planLabel = plan?.name || member.membershipType.replace("_", " ");
+                  return (
+                  <TableRow
+                    key={member.id}
+                    data-testid={`row-member-${member.id}`}
+                    onClick={() => navigate(`/members/${member.id}`)}
+                    className="cursor-pointer hover-elevate"
+                  >
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white text-sm font-bold ${["bg-blue-500","bg-emerald-500","bg-violet-500","bg-amber-500","bg-rose-500","bg-cyan-500","bg-indigo-500","bg-pink-500"][parseInt(member.id, 36) % 8]}`}>
@@ -436,8 +614,8 @@ export default function MembersPage() {
                         member.membershipType === "quarterly" ? "bg-blue-100 text-blue-700 border-blue-200" :
                         member.membershipType === "monthly" ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
                         "bg-amber-100 text-amber-700 border-amber-200"
-                      }`}>
-                        {member.membershipType.replace("_", " ")}
+                      }`} data-testid={`badge-plan-${member.id}`}>
+                        {planLabel}
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-sm">
@@ -536,7 +714,8 @@ export default function MembersPage() {
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           )}

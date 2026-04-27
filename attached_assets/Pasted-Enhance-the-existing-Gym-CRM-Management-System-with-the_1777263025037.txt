@@ -1,0 +1,62 @@
+Enhance the existing Gym CRM / Management System with the following requirements:
+
+1. Add a **Fixed Asset Register Module** to manage gym assets with fields such as asset name, category, purchase date, purchase value, vendor details, warranty/AMC expiry, asset status, and branch/location.
+
+2. Implement an automated **Notification & Reminder System**:
+
+   * Send birthday notifications to members/users.
+   * Send membership expiry reminders.
+   * Send personal training session notifications/reminders.
+   * Show admin alerts for today’s birthdays, expiring memberships, and upcoming PT sessions.
+
+3. Make the system **paperless** by digitizing operations:
+
+   * Digital membership forms
+   * Online waiver/consent forms
+   * E-signatures
+   * Digital invoices/receipts
+   * Digital PT schedules
+   * Digital attendance/check-ins
+
+4. Update the **Dashboard**:
+
+   * Remove the “Revenue Overview” widget.
+   * Add widgets/cards for:
+
+     * Per Day Sales
+     * Cash Sales
+     * Credit Sales
+     * Today’s Member Birthdays / DOB
+     * Today’s Member Expiry List
+   * Cash and credit sales should update in real time immediately after a sale is made.
+
+5. Modify the **Members Page**:
+
+   * Instead of showing generic plans like Monthly / Quarterly, display the actual package selected by the member (e.g., Gold Package, Platinum PT Package, Annual Transformation Plan).
+
+6. Modify the **Membership Type Module**:
+
+   * Remove the Height and Weight fields.
+
+7. Enhance the **Member Registration / Profile Form** by adding:
+
+   * Nationality
+   * Emergency Contact
+   * Date of Birth
+   * Salesperson / staff who sold the membership
+
+8. Add a **Transfer Membership Feature**:
+
+   * Allow membership transfer from one member to another.
+   * Maintain transfer history logs.
+   * Include admin approval workflow if needed.
+
+9. Fix the issue where **member details cannot be viewed on click**.
+
+10. Ensure all **Sales Integrations** are connected so cash and credit sales instantly reflect across:
+
+* Dashboard
+* Reports
+* Member purchase history
+
+The UI should remain modern, responsive, and easy to use. Ensure all new features are scalable, optimized, and production-ready.

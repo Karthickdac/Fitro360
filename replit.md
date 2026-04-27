@@ -20,12 +20,14 @@ Fitro360 is a multi-tenant SaaS platform for gym management. It supports multipl
 - **Enterprise sidebar groups** (gym_owner): Overview · Membership · Staff · Operations · Procurement · Finance · Tax & Compliance · Growth · Reports · System (10 sections)
 
 ## Database Tables
+- `fixed_assets` - Fixed Asset Register: name, assetCode, category (equipment/furniture/electronics/vehicle/building/other), location, vendorName/Contact, purchaseDate, purchaseValue, warrantyExpiry, amcExpiry, serialNumber, status (active/maintenance/retired/disposed), branchId, depreciation tracking
+- `membership_transfers` - Member-to-member transfer requests: fromMemberId, toMemberId, membershipPlanId, transferDate, reason, status (pending/approved/rejected), approvedBy, fee, remainingDays, notes. Approval swaps the source member's plan onto the destination and marks the source "transferred"
 - `tenants` - Gym organizations with branding config (primaryColor, secondaryColor, domain, subdomain, faviconUrl, emailTemplateBg, emailTemplateAccent, smsSenderId, invoiceHeader, invoiceFooter, market) + tax fields (legalName, tradeLicenseNumber, trn, vatRegisteredOn, vatFilingFrequency, ctTrn, ctRegisteredOn, fyStartMonth)
 - `supplier_bills` - Purchase invoices used for input VAT recovery and CT expense deduction (supplierId, billNumber, billDate, category, subtotal, vatRate, vatAmount, total, vatTreatment, isDeductible, status)
 - `vat_returns` - VAT 201 returns with FTA boxes (1a standard sales/VAT, 2 zero-rated, 3 exempt, 4 reverse charge, 6 imports, 9 standard purchases/input VAT, totals, netVatPayable, status: draft/filed/paid)
 - `corporate_tax_returns` - UAE Corporate Tax filings (fyStart/End, totalRevenue, totalExpenses, accountingProfit, addBacks, exemptIncome, reliefClaimed, smallBusinessRelief, taxableIncome, threshold 375000, taxRate 9%, taxDue)
 - `users` - All users across tenants with role-based access
-- `members` - Gym members with BMI tracking (height, weight, bmi) + trainer assignment (trainerId) + membershipPlanId
+- `members` - Gym members with BMI tracking (height, weight, bmi) + trainer assignment (trainerId) + membershipPlanId + nationality, dateOfBirth, salespersonId, emergencyContactName, emergencyContactRelation, signatureDataUrl (base64 PNG), waiverAcceptedAt (paperless onboarding)
 - `membership_plans` - Gym-specific membership plans per tenant (name, durationType, durationDays, price, currency, setupFee, features, perks, color, isPopular, isActive, sortOrder)
 - `member_metrics` - Historical progress tracking (weight, BMI, body fat over time)
 - `subscription_plans` - SaaS pricing tiers (basic/pro/enterprise)
@@ -56,8 +58,10 @@ client/src/
     login.tsx         - Login page
     dashboard.tsx     - Gym owner dashboard
     membership-plans.tsx - Comprehensive membership plan management (CRUD, perks, features, pricing)
-    members.tsx       - Member CRUD with BMI, freeze/renew, export
+    members.tsx       - Member CRUD with BMI, freeze/renew, export. Plan column shows actual plan name (joined via membershipPlanId). Rows are clickable → /members/:id. Add form includes nationality, DOB, salesperson, emergency contact (name/phone/relation), inline HTML5 signature pad + waiver checkbox (paperless onboarding)
     member-detail.tsx - Member detail with progress charts, metrics history
+    fixed-assets.tsx  - Fixed Asset Register (CRUD) with vendor, warranty/AMC expiry alerts, category badges
+    membership-transfers.tsx - Member-to-member transfer requests with approve/reject workflow (gym_owner approval)
     member-portal.tsx - Member self-service portal (attendance, profile, sessions)
     trainer-portal.tsx - Trainer workspace (my schedule, my members)
     trainers.tsx      - Trainer listing
@@ -95,6 +99,17 @@ server/
 shared/
   schema.ts           - Drizzle schema + Zod validators
 ```
+
+## Real-time Dashboard
+- Hero label "Live view — auto-refreshes every 30 seconds." Stats refetch every 30s; alerts refetch every 60s.
+- Top KPI row (4 tiles): Total Members, Active Members, Monthly Revenue, Expiring Soon.
+- "Today's Snapshot" row (5 tiles): Per Day Sales, Cash Sales, Credit Sales, Birthdays Today, Today's Expiry. Sourced from `/api/dashboard/sales-today` (sums `payment_records` for today by method) and `/api/dashboard/alerts` (members with DOB month/day == today and members with `membershipEnd` within 7 days).
+- Alerts panel row (3 cards): Birthdays Today list, Expiring Soon (7d) list (clickable → member detail), Membership Status pie chart.
+- Old "Revenue Overview" bar chart removed.
+
+## Paperless Onboarding
+- The Add Member dialog includes an inline HTML5 canvas signature pad (`SignaturePad` component in `members.tsx`). Drawn signature is captured as a base64 PNG data URL and stored in `members.signatureDataUrl`.
+- Waiver acceptance is a checkbox; when checked, the server stamps `members.waiverAcceptedAt = now`.
 
 ## Demo Credentials
 - Platform Admin: admin / admin123

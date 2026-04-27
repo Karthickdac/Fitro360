@@ -3,21 +3,17 @@ import { StatCard } from "@/components/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, DollarSign, TrendingUp, AlertTriangle, Activity } from "lucide-react";
+import { Users, DollarSign, TrendingUp, AlertTriangle, Activity, Cake, CalendarClock, Banknote, CreditCard, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
+  Tooltip,
+  ResponsiveContainer,
 } from "recharts";
 import { useMarket } from "@/hooks/use-market";
+import { useLocation } from "wouter";
 import type { Member, Activity as ActivityType } from "@shared/schema";
 
 const CHART_COLORS = [
@@ -46,8 +42,17 @@ const activityIconColors = [
   "bg-rose-100 text-rose-600",
 ];
 
+type SalesToday = { perDay: number; cash: number; credit: number; count: number };
+type DashboardAlerts = {
+  birthdaysToday: Array<{ id: string; firstName: string; lastName: string; email: string }>;
+  expiringSoon: Array<{ id: string; firstName: string; lastName: string; email: string; membershipEnd: string | null; daysLeft: number }>;
+  todaysSessions: Array<{ id: string; memberName: string; trainerName: string; startTime: string; endTime: string }>;
+};
+
 export default function DashboardPage() {
-  const { fmt, fmtShort } = useMarket();
+  const { fmt } = useMarket();
+  const [, navigate] = useLocation();
+
   const { data: stats, isLoading: statsLoading } = useQuery<{
     totalMembers: number;
     activeMembers: number;
@@ -55,7 +60,17 @@ export default function DashboardPage() {
     monthlyRevenue: number;
     revenueGrowth: number;
     memberGrowth: number;
-  }>({ queryKey: ["/api/dashboard/stats"] });
+  }>({ queryKey: ["/api/dashboard/stats"], refetchInterval: 30000 });
+
+  const { data: salesToday } = useQuery<SalesToday>({
+    queryKey: ["/api/dashboard/sales-today"],
+    refetchInterval: 30000,
+  });
+
+  const { data: alerts } = useQuery<DashboardAlerts>({
+    queryKey: ["/api/dashboard/alerts"],
+    refetchInterval: 60000,
+  });
 
   const { data: recentMembers, isLoading: membersLoading } = useQuery<Member[]>({
     queryKey: ["/api/members"],
@@ -69,15 +84,6 @@ export default function DashboardPage() {
     { name: "Active", value: stats?.activeMembers || 0, color: CHART_COLORS[0] },
     { name: "Expiring", value: stats?.expiringMembers || 0, color: CHART_COLORS[2] },
     { name: "Expired", value: Math.max(0, (stats?.totalMembers || 0) - (stats?.activeMembers || 0) - (stats?.expiringMembers || 0)), color: CHART_COLORS[4] },
-  ];
-
-  const revenueData = [
-    { month: "Jan", revenue: 12400 },
-    { month: "Feb", revenue: 13100 },
-    { month: "Mar", revenue: 14200 },
-    { month: "Apr", revenue: 13800 },
-    { month: "May", revenue: 15600 },
-    { month: "Jun", revenue: stats?.monthlyRevenue || 16200 },
   ];
 
   if (statsLoading) {
@@ -106,7 +112,7 @@ export default function DashboardPage() {
         </div>
         <div className="relative z-10">
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight" data-testid="text-dashboard-title">Dashboard</h1>
-          <p className="text-blue-100 mt-1 text-sm">Welcome back. Here's what's happening today.</p>
+          <p className="text-blue-100 mt-1 text-sm">Live view — auto-refreshes every 30 seconds.</p>
         </div>
       </div>
 
@@ -141,49 +147,127 @@ export default function DashboardPage() {
         />
       </div>
 
+      <div>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+          <Sparkles className="h-3.5 w-3.5 text-violet-500" />
+          Today's Snapshot
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+          <StatCard
+            title="Per Day Sales"
+            value={fmt(salesToday?.perDay || 0)}
+            icon={DollarSign}
+            subtitle={`${salesToday?.count || 0} txn today`}
+            color="blue"
+          />
+          <StatCard
+            title="Cash Sales"
+            value={fmt(salesToday?.cash || 0)}
+            icon={Banknote}
+            subtitle="Today"
+            color="emerald"
+          />
+          <StatCard
+            title="Credit Sales"
+            value={fmt(salesToday?.credit || 0)}
+            icon={CreditCard}
+            subtitle="Card / online today"
+            color="violet"
+          />
+          <StatCard
+            title="Birthdays Today"
+            value={alerts?.birthdaysToday?.length || 0}
+            icon={Cake}
+            subtitle="Reach out & wish"
+            color="amber"
+          />
+          <StatCard
+            title="Today's Expiry"
+            value={alerts?.expiringSoon?.length || 0}
+            icon={CalendarClock}
+            subtitle="Renewal needed"
+            color="amber"
+          />
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2 border-0 shadow-lg overflow-hidden">
-          <div className="h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500" />
-          <CardHeader className="pb-2">
+        <Card className="border-0 shadow-lg overflow-hidden">
+          <div className="h-1.5 bg-gradient-to-r from-amber-500 to-orange-500" />
+          <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
-                <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <div className="h-7 w-7 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+                <Cake className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               </div>
-              Revenue Overview
+              Birthdays Today
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={revenueData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(217, 91%, 60%)" stopOpacity={1} />
-                      <stop offset="100%" stopColor="hsl(250, 80%, 60%)" stopOpacity={0.8} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="month" className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v: number) => fmtShort(v)} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      borderColor: "hsl(var(--border))",
-                      borderRadius: "8px",
-                      color: "hsl(var(--foreground))",
-                    }}
-                    formatter={(value: number) => [fmt(value), "Revenue"]}
-                  />
-                  <Bar dataKey="revenue" fill="url(#revenueGradient)" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {(alerts?.birthdaysToday || []).length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No birthdays today</p>
+            ) : (
+              <div className="space-y-2">
+                {alerts!.birthdaysToday.map((m, idx) => (
+                  <div
+                    key={m.id}
+                    className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/members/${m.id}`)}
+                    data-testid={`birthday-${m.id}`}
+                  >
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${avatarColors[idx % avatarColors.length]} text-white text-sm font-bold`}>
+                      {m.firstName[0]}{m.lastName[0]}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold truncate">{m.firstName} {m.lastName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{m.email}</p>
+                    </div>
+                    <Cake className="h-4 w-4 text-amber-500" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg overflow-hidden">
+          <div className="h-1.5 bg-gradient-to-r from-red-500 to-rose-500" />
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
+                <CalendarClock className="h-4 w-4 text-red-600 dark:text-red-400" />
+              </div>
+              Expiring Soon (7d)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(alerts?.expiringSoon || []).length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No expirations in next 7 days</p>
+            ) : (
+              <div className="space-y-2">
+                {alerts!.expiringSoon.slice(0, 5).map((m) => (
+                  <div
+                    key={m.id}
+                    className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/members/${m.id}`)}
+                    data-testid={`expiry-${m.id}`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold truncate">{m.firstName} {m.lastName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{m.email}</p>
+                    </div>
+                    <Badge variant="outline" className={m.daysLeft <= 1 ? "bg-red-100 text-red-700 border-red-200" : "bg-amber-100 text-amber-700 border-amber-200"}>
+                      {m.daysLeft <= 0 ? "Today" : `${m.daysLeft}d`}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card className="border-0 shadow-lg overflow-hidden">
           <div className="h-1.5 bg-gradient-to-r from-emerald-500 to-teal-500" />
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <div className="h-7 w-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
                 <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
@@ -192,15 +276,15 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-48">
+            <div className="h-44">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={membershipData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={50}
-                    outerRadius={75}
+                    innerRadius={45}
+                    outerRadius={70}
                     paddingAngle={3}
                     dataKey="value"
                   >
@@ -219,11 +303,11 @@ export default function DashboardPage() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex justify-center gap-4 mt-2">
+            <div className="flex justify-center gap-3 mt-2">
               {membershipData.map((item) => (
                 <div key={item.name} className="flex items-center gap-1.5">
                   <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-xs font-medium text-muted-foreground">{item.name}</span>
+                  <span className="text-xs font-medium text-muted-foreground">{item.name} ({item.value})</span>
                 </div>
               ))}
             </div>
@@ -260,7 +344,8 @@ export default function DashboardPage() {
                 {(recentMembers || []).slice(0, 5).map((member, idx) => (
                   <div
                     key={member.id}
-                    className="flex items-center justify-between gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors"
+                    className="flex items-center justify-between gap-3 p-2.5 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/members/${member.id}`)}
                     data-testid={`member-row-${member.id}`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
