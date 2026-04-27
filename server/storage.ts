@@ -1,7 +1,7 @@
 import { eq, and, desc, gte, lte, sql, between } from "drizzle-orm";
 import { db } from "./db";
 import {
-  tenants, users, members, subscriptionPlans, activities,
+  tenants, users, members, subscriptionPlans, processedStripeEvents, activities,
   branches, attendance, trainerSessions, sessionBookings,
   equipment, suppliers, invoices, notifications, coupons, referrals,
   memberMetrics, equipmentMaintenance, paymentRecords,
@@ -40,12 +40,17 @@ export interface IStorage {
   getTenant(id: string): Promise<Tenant | undefined>;
   getTenantByDomain(domain: string): Promise<Tenant | undefined>;
   getTenantBySubdomain(subdomain: string): Promise<Tenant | undefined>;
+  getTenantByStripeCustomerId(customerId: string): Promise<Tenant | undefined>;
   getAllTenants(): Promise<Tenant[]>;
   createTenant(tenant: InsertTenant): Promise<Tenant>;
   updateTenant(id: string, data: Partial<InsertTenant>): Promise<Tenant | undefined>;
   deleteTenant(id: string): Promise<void>;
   getTenantUserCount(tenantId: string): Promise<number>;
   getTenantMemberCount(tenantId: string): Promise<number>;
+  getTenantsWithExpiredGrace(now: Date): Promise<Tenant[]>;
+  getPlanByStripePriceId(priceId: string): Promise<SubscriptionPlan | undefined>;
+  isStripeEventProcessed(eventId: string): Promise<boolean>;
+  markStripeEventProcessed(eventId: string, type: string): Promise<void>;
 
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -250,6 +255,49 @@ export class DatabaseStorage implements IStorage {
   async getTenantBySubdomain(subdomain: string): Promise<Tenant | undefined> {
     const [tenant] = await db.select().from(tenants).where(eq(tenants.subdomain, subdomain));
     return tenant;
+  }
+
+  async getTenantByStripeCustomerId(customerId: string): Promise<Tenant | undefined> {
+    const [tenant] = await db.select().from(tenants).where(eq(tenants.stripeCustomerId, customerId));
+    return tenant;
+  }
+
+  async getTenantsWithExpiredGrace(now: Date): Promise<Tenant[]> {
+    return db
+      .select()
+      .from(tenants)
+      .where(
+        and(
+          eq(tenants.isActive, true),
+          lte(tenants.gracePeriodEndsAt, now),
+          sql`${tenants.subscriptionStatus} IN ('past_due','unpaid','incomplete_expired')`,
+        ),
+      );
+  }
+
+  async getPlanByStripePriceId(priceId: string): Promise<SubscriptionPlan | undefined> {
+    const [plan] = await db
+      .select()
+      .from(subscriptionPlans)
+      .where(
+        sql`${subscriptionPlans.stripeMonthlyPriceId} = ${priceId} OR ${subscriptionPlans.stripeAnnualPriceId} = ${priceId}`,
+      );
+    return plan;
+  }
+
+  async isStripeEventProcessed(eventId: string): Promise<boolean> {
+    const [row] = await db
+      .select({ id: processedStripeEvents.id })
+      .from(processedStripeEvents)
+      .where(eq(processedStripeEvents.id, eventId));
+    return !!row;
+  }
+
+  async markStripeEventProcessed(eventId: string, type: string): Promise<void> {
+    await db
+      .insert(processedStripeEvents)
+      .values({ id: eventId, type })
+      .onConflictDoNothing();
   }
 
   async getAllTenants(): Promise<Tenant[]> {

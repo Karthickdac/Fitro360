@@ -33,6 +33,13 @@ export const tenants = pgTable("tenants", {
   tradeLicenseNumber: text("trade_license_number"),
   isActive: boolean("is_active").default(true),
   trialEndsAt: timestamp("trial_ends_at"),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  subscriptionStatus: text("subscription_status").default("trialing"),
+  subscriptionInterval: text("subscription_interval").default("monthly"),
+  currentPeriodEnd: timestamp("current_period_end"),
+  gracePeriodEndsAt: timestamp("grace_period_ends_at"),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -443,6 +450,16 @@ export const subscriptionPlans = pgTable("subscription_plans", {
   features: jsonb("features").$type<string[]>().default([]),
   isPopular: boolean("is_popular").default(false),
   isActive: boolean("is_active").default(true),
+  stripeProductId: text("stripe_product_id"),
+  stripeMonthlyPriceId: text("stripe_monthly_price_id"),
+  stripeAnnualPriceId: text("stripe_annual_price_id"),
+});
+
+// Track Stripe webhook events that have been processed (idempotency).
+export const processedStripeEvents = pgTable("processed_stripe_events", {
+  id: varchar("id").primaryKey(), // stripe event id, e.g. evt_...
+  type: text("type").notNull(),
+  processedAt: timestamp("processed_at").notNull().defaultNow(),
 });
 
 export const activities = pgTable("activities", {

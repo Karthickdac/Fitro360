@@ -5,11 +5,104 @@ import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { loginSchema, insertSupplierBillSchema, insertVatReturnSchema, insertCorporateTaxReturnSchema, insertFixedAssetSchema, insertMembershipTransferSchema } from "@shared/schema";
 import { z } from "zod";
+import {
+  getUncachableStripeClient,
+  getStripePublishableKey,
+  isStripeReady,
+} from "./stripeClient";
 
 const SESSION_SECRET = process.env.SESSION_SECRET || "fitro360-dev-secret";
 
 function paramId(req: Request): string {
   return req.params.id as string;
+}
+
+// Returns a trusted base URL for the running server. Never trusts the Host header
+// from incoming requests (which is attacker-controllable) — important for OAuth-style
+// redirect URLs returned to Stripe Checkout / Billing Portal.
+function getTrustedBaseUrl(): string {
+  if (process.env.REPLIT_DEPLOYMENT === "1" && process.env.REPLIT_DOMAINS) {
+    return `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`;
+  }
+  if (process.env.REPLIT_DEV_DOMAIN) {
+    return `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  }
+  if (process.env.REPLIT_DOMAINS) {
+    return `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`;
+  }
+  return `http://localhost:${process.env.PORT || 5000}`;
+}
+
+// Stripe prices are immutable. To update price we create new ones and store the latest IDs.
+async function syncPlanToStripe(planId: string) {
+  if (!isStripeReady()) throw new Error("Stripe not initialized");
+  const plan = await storage.getPlan(planId);
+  if (!plan) throw new Error("Plan not found");
+  const stripe = await getUncachableStripeClient();
+
+  let productId = plan.stripeProductId;
+  const productPayload: any = {
+    name: `Fitro360 ${plan.name}`,
+    description: ((plan.features as string[]) || []).slice(0, 5).join(", ") || undefined,
+    active: plan.isActive ?? true,
+    metadata: { planId: plan.id, planName: plan.name },
+  };
+  if (productId) {
+    try {
+      await stripe.products.update(productId, productPayload);
+    } catch {
+      productId = null;
+    }
+  }
+  if (!productId) {
+    const created = await stripe.products.create(productPayload);
+    productId = created.id;
+  }
+
+  const monthlyAmount = Math.round(Number(plan.priceMonthly) * 100);
+  const annualAmount = Math.round(Number(plan.priceAnnual) * 100);
+
+  let monthlyPriceId = plan.stripeMonthlyPriceId;
+  let annualPriceId = plan.stripeAnnualPriceId;
+
+  // Re-create price if amount changed (or none exists)
+  const ensurePrice = async (
+    existingId: string | null | undefined,
+    amount: number,
+    interval: "month" | "year",
+  ) => {
+    if (existingId) {
+      try {
+        const p = await stripe.prices.retrieve(existingId);
+        if (
+          p.unit_amount === amount &&
+          p.recurring?.interval === interval &&
+          p.active
+        )
+          return existingId;
+        // archive the old one
+        try {
+          await stripe.prices.update(existingId, { active: false });
+        } catch {}
+      } catch {}
+    }
+    const created = await stripe.prices.create({
+      product: productId!,
+      unit_amount: amount,
+      currency: "usd",
+      recurring: { interval },
+    });
+    return created.id;
+  };
+
+  monthlyPriceId = await ensurePrice(monthlyPriceId, monthlyAmount, "month");
+  annualPriceId = await ensurePrice(annualPriceId, annualAmount, "year");
+
+  return await storage.updatePlan(planId, {
+    stripeProductId: productId,
+    stripeMonthlyPriceId: monthlyPriceId,
+    stripeAnnualPriceId: annualPriceId,
+  } as any);
 }
 
 declare module "express-session" {
@@ -1605,7 +1698,14 @@ export async function registerRoutes(
         isActive: z.boolean().optional().default(true),
       }).parse(req.body);
       const plan = await storage.createPlan(input);
-      return res.json(plan);
+      // Best-effort sync to Stripe
+      try {
+        await syncPlanToStripe(plan.id);
+      } catch (e: any) {
+        console.warn("[stripe] auto-sync failed for new plan:", e.message);
+      }
+      const fresh = await storage.getPlan(plan.id);
+      return res.json(fresh);
     } catch (error: any) {
       return res.status(400).json({ message: error.message });
     }
@@ -1616,7 +1716,13 @@ export async function registerRoutes(
       const existing = await storage.getPlan(req.params.id);
       if (!existing) return res.status(404).json({ message: "Plan not found" });
       const plan = await storage.updatePlan(req.params.id, req.body);
-      return res.json(plan);
+      try {
+        await syncPlanToStripe(req.params.id);
+      } catch (e: any) {
+        console.warn("[stripe] auto-sync failed for plan update:", e.message);
+      }
+      const fresh = await storage.getPlan(req.params.id);
+      return res.json(fresh);
     } catch (error: any) {
       return res.status(400).json({ message: error.message });
     }
@@ -1626,8 +1732,27 @@ export async function registerRoutes(
     try {
       const existing = await storage.getPlan(req.params.id);
       if (!existing) return res.status(404).json({ message: "Plan not found" });
+      // Archive on Stripe (don't delete — preserves invoice history)
+      if (existing.stripeProductId && isStripeReady()) {
+        try {
+          const stripe = await getUncachableStripeClient();
+          await stripe.products.update(existing.stripeProductId, { active: false });
+        } catch (e: any) {
+          console.warn("[stripe] archive on delete failed:", e.message);
+        }
+      }
       await storage.deletePlan(req.params.id);
       return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/plans/:id/sync-stripe", authMiddleware, requireRole("platform_admin"), async (req: Request, res: Response) => {
+    try {
+      if (!isStripeReady()) return res.status(503).json({ message: "Stripe not initialized" });
+      const plan = await syncPlanToStripe(req.params.id);
+      return res.json(plan);
     } catch (error: any) {
       return res.status(400).json({ message: error.message });
     }
@@ -2031,6 +2156,282 @@ export async function registerRoutes(
     if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
     const alerts = await storage.getDashboardAlerts(user.tenantId);
     return res.json(alerts);
+  });
+
+  // ─── Stripe Settings (Platform Admin) ──────────────────
+  app.get("/api/admin/stripe/status", authMiddleware, requireRole("platform_admin"), async (_req: Request, res: Response) => {
+    try {
+      const ready = isStripeReady();
+      let mode: "test" | "live" | "unknown" = "unknown";
+      let accountId: string | null = null;
+      let displayName: string | null = null;
+      let webhookUrl: string | null = null;
+      if (ready) {
+        try {
+          const stripe = await getUncachableStripeClient();
+          const acct: any = await stripe.accounts.retrieve();
+          accountId = acct.id;
+          displayName = acct.business_profile?.name || acct.settings?.dashboard?.display_name || acct.email;
+          // Determine mode by inspecting publishable key
+          const pk = await getStripePublishableKey();
+          mode = pk.startsWith("pk_live_") ? "live" : "test";
+          const baseUrl = process.env.REPLIT_DEPLOYMENT === "1"
+            ? `https://${(process.env.REPLIT_DOMAINS || "").split(",")[0]}`
+            : `https://${(process.env.REPLIT_DEV_DOMAIN || (process.env.REPLIT_DOMAINS || "").split(",")[0])}`;
+          webhookUrl = `${baseUrl}/api/stripe/webhook`;
+        } catch (e: any) {
+          console.warn("[stripe] status retrieve error:", e.message);
+        }
+      }
+      const allPlans = await storage.getAllPlans();
+      const planSync = allPlans.map((p) => ({
+        id: p.id,
+        name: p.name,
+        priceMonthly: p.priceMonthly,
+        priceAnnual: p.priceAnnual,
+        isActive: p.isActive,
+        synced: !!(p.stripeProductId && p.stripeMonthlyPriceId && p.stripeAnnualPriceId),
+        stripeProductId: p.stripeProductId,
+      }));
+      return res.json({ ready, mode, accountId, displayName, webhookUrl, planSync });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/stripe/sync-all", authMiddleware, requireRole("platform_admin"), async (_req: Request, res: Response) => {
+    try {
+      if (!isStripeReady()) return res.status(503).json({ message: "Stripe not initialized" });
+      const plans = await storage.getAllPlans();
+      const results: Array<{ id: string; name: string; ok: boolean; error?: string }> = [];
+      for (const p of plans) {
+        try {
+          await syncPlanToStripe(p.id);
+          results.push({ id: p.id, name: p.name, ok: true });
+        } catch (e: any) {
+          results.push({ id: p.id, name: p.name, ok: false, error: e.message });
+        }
+      }
+      return res.json({ results });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ─── Admin Billing Overview ─────────────────────────────
+  app.get("/api/admin/billing/tenants", authMiddleware, requireRole("platform_admin"), async (_req: Request, res: Response) => {
+    try {
+      const tenants = await storage.getAllTenants();
+      const plans = await storage.getAllPlans();
+      const planByName: Record<string, any> = {};
+      plans.forEach((p) => (planByName[p.name.toLowerCase()] = p));
+      const data = tenants.map((t) => {
+        const plan = t.subscriptionPlan ? planByName[t.subscriptionPlan.toLowerCase()] : null;
+        const monthlyRevenue = plan && t.subscriptionStatus === "active"
+          ? (t.subscriptionInterval === "annual"
+              ? Number(plan.priceAnnual) / 12
+              : Number(plan.priceMonthly))
+          : 0;
+        return {
+          id: t.id,
+          gymName: t.gymName,
+          email: t.email,
+          subscriptionPlan: t.subscriptionPlan,
+          subscriptionStatus: t.subscriptionStatus || "trialing",
+          subscriptionInterval: t.subscriptionInterval || "monthly",
+          currentPeriodEnd: t.currentPeriodEnd,
+          gracePeriodEndsAt: t.gracePeriodEndsAt,
+          cancelAtPeriodEnd: t.cancelAtPeriodEnd,
+          stripeCustomerId: t.stripeCustomerId,
+          stripeSubscriptionId: t.stripeSubscriptionId,
+          isActive: t.isActive,
+          monthlyRevenue,
+        };
+      });
+      const mrr = data.reduce((s, t) => s + (t.monthlyRevenue || 0), 0);
+      const counts = data.reduce(
+        (acc, t) => {
+          acc[t.subscriptionStatus] = (acc[t.subscriptionStatus] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+      return res.json({ tenants: data, mrr, counts });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ─── Gym-Owner Billing ──────────────────────────────────
+  app.get("/api/billing/me", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const tenant = await storage.getTenant(user.tenantId);
+      if (!tenant) return res.status(404).json({ message: "Tenant not found" });
+      const plans = await storage.getAllPlans();
+
+      let upcomingInvoice: any = null;
+      let invoices: any[] = [];
+      let paymentMethod: any = null;
+
+      if (isStripeReady() && tenant.stripeCustomerId) {
+        try {
+          const stripe = await getUncachableStripeClient();
+          const customer: any = await stripe.customers.retrieve(tenant.stripeCustomerId, {
+            expand: ["invoice_settings.default_payment_method"],
+          });
+          const pm = customer.invoice_settings?.default_payment_method;
+          if (pm && typeof pm !== "string") {
+            paymentMethod = {
+              brand: pm.card?.brand,
+              last4: pm.card?.last4,
+              expMonth: pm.card?.exp_month,
+              expYear: pm.card?.exp_year,
+            };
+          }
+          const inv = await stripe.invoices.list({
+            customer: tenant.stripeCustomerId,
+            limit: 12,
+          });
+          invoices = inv.data.map((i: any) => ({
+            id: i.id,
+            number: i.number,
+            amount: i.amount_paid || i.amount_due,
+            currency: i.currency,
+            status: i.status,
+            created: i.created,
+            periodStart: i.period_start,
+            periodEnd: i.period_end,
+            hostedInvoiceUrl: i.hosted_invoice_url,
+            invoicePdf: i.invoice_pdf,
+          }));
+          if (tenant.stripeSubscriptionId) {
+            try {
+              const sub: any = await stripe.subscriptions.retrieve(tenant.stripeSubscriptionId);
+              upcomingInvoice = {
+                periodEnd: sub.current_period_end || sub.items?.data?.[0]?.current_period_end,
+                amount: sub.items?.data?.[0]?.price?.unit_amount,
+                currency: sub.items?.data?.[0]?.price?.currency,
+              };
+            } catch {}
+          }
+        } catch (e: any) {
+          console.warn("[stripe] /billing/me retrieve error:", e.message);
+        }
+      }
+
+      return res.json({
+        tenant: {
+          id: tenant.id,
+          gymName: tenant.gymName,
+          subscriptionPlan: tenant.subscriptionPlan,
+          subscriptionStatus: tenant.subscriptionStatus || "trialing",
+          subscriptionInterval: tenant.subscriptionInterval || "monthly",
+          currentPeriodEnd: tenant.currentPeriodEnd,
+          gracePeriodEndsAt: tenant.gracePeriodEndsAt,
+          cancelAtPeriodEnd: tenant.cancelAtPeriodEnd,
+          isActive: tenant.isActive,
+          hasCustomer: !!tenant.stripeCustomerId,
+          hasSubscription: !!tenant.stripeSubscriptionId,
+        },
+        plans: plans.map((p) => ({
+          id: p.id,
+          name: p.name,
+          priceMonthly: p.priceMonthly,
+          priceAnnual: p.priceAnnual,
+          features: p.features,
+          maxMembers: p.maxMembers,
+          isPopular: p.isPopular,
+          isActive: p.isActive,
+          synced: !!(p.stripeMonthlyPriceId && p.stripeAnnualPriceId),
+        })),
+        paymentMethod,
+        invoices,
+        upcomingInvoice,
+        stripeReady: isStripeReady(),
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/billing/checkout", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      if (!isStripeReady()) return res.status(503).json({ message: "Stripe not initialized" });
+      const user = (req as any).user;
+      const tenant = await storage.getTenant(user.tenantId);
+      if (!tenant) return res.status(404).json({ message: "Tenant not found" });
+
+      const input = z.object({
+        planId: z.string().min(1),
+        interval: z.enum(["monthly", "annual"]).default("monthly"),
+      }).parse(req.body);
+
+      const plan = await storage.getPlan(input.planId);
+      if (!plan) return res.status(404).json({ message: "Plan not found" });
+      const priceId = input.interval === "annual" ? plan.stripeAnnualPriceId : plan.stripeMonthlyPriceId;
+      if (!priceId) {
+        return res.status(400).json({
+          message: "This plan is not yet synced with Stripe. Ask your platform admin to sync it.",
+        });
+      }
+
+      const stripe = await getUncachableStripeClient();
+
+      // Reuse customer if exists, otherwise create
+      let customerId = tenant.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          name: tenant.gymName,
+          email: tenant.email || undefined,
+          metadata: { tenantId: tenant.id },
+        });
+        customerId = customer.id;
+        await storage.updateTenant(tenant.id, { stripeCustomerId: customerId });
+      }
+
+      const baseUrl = getTrustedBaseUrl();
+      const successUrl = `${baseUrl}/settings/billing?status=success&session_id={CHECKOUT_SESSION_ID}`;
+      const cancelUrl = `${baseUrl}/settings/billing?status=canceled`;
+
+      const session = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        customer: customerId,
+        line_items: [{ price: priceId, quantity: 1 }],
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        allow_promotion_codes: true,
+        subscription_data: {
+          metadata: { tenantId: tenant.id, planId: plan.id, interval: input.interval },
+        },
+        metadata: { tenantId: tenant.id, planId: plan.id, interval: input.interval },
+      });
+
+      return res.json({ url: session.url });
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/billing/portal", authMiddleware, requireRole("gym_owner", "platform_admin"), async (req: Request, res: Response) => {
+    try {
+      if (!isStripeReady()) return res.status(503).json({ message: "Stripe not initialized" });
+      const user = (req as any).user;
+      const tenant = await storage.getTenant(user.tenantId);
+      if (!tenant?.stripeCustomerId) {
+        return res.status(400).json({ message: "No Stripe customer; subscribe first." });
+      }
+      const stripe = await getUncachableStripeClient();
+      const baseUrl = getTrustedBaseUrl();
+      const session = await stripe.billingPortal.sessions.create({
+        customer: tenant.stripeCustomerId,
+        return_url: `${baseUrl}/settings/billing`,
+      });
+      return res.json({ url: session.url });
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
   });
 
   return httpServer;

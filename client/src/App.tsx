@@ -38,6 +38,9 @@ import TenantsPage from "@/pages/admin/tenants";
 import PlansPage from "@/pages/admin/plans";
 import AdminSettingsPage from "@/pages/admin/settings";
 import AdminReportsPage from "@/pages/admin/reports";
+import AdminBillingPage from "@/pages/admin/billing";
+import AdminStripeSettingsPage from "@/pages/admin/stripe-settings";
+import BillingPage from "@/pages/billing";
 import MembershipPlansPage from "@/pages/membership-plans";
 import TaxSettingsPage from "@/pages/tax-settings";
 import SupplierBillsPage from "@/pages/supplier-bills";
@@ -67,6 +70,8 @@ function AdminRouter() {
       <Route path="/admin/reports" component={AdminReportsPage} />
       <Route path="/admin/activity" component={ActivityPage} />
       <Route path="/admin/notifications" component={NotificationsPage} />
+      <Route path="/admin/billing" component={AdminBillingPage} />
+      <Route path="/admin/stripe-settings" component={AdminStripeSettingsPage} />
       <Route path="/admin/settings" component={AdminSettingsPage} />
       <Route component={NotFound} />
     </Switch>
@@ -157,6 +162,7 @@ function GymOwnerRouter() {
       <Route path="/corporate-tax" component={CorporateTaxPage} />
       <Route path="/fixed-assets" component={FixedAssetsPage} />
       <Route path="/membership-transfers" component={MembershipTransfersPage} />
+      <Route path="/settings/billing" component={BillingPage} />
       <Route component={NotFound} />
     </Switch>
   );

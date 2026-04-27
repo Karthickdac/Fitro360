@@ -69,6 +69,11 @@ const platformAdminMonitorItems: NavItem[] = [
   { title: "Notifications", url: "/admin/notifications", icon: Bell },
 ];
 
+const platformAdminBillingItems: NavItem[] = [
+  { title: "Tenant Billing", url: "/admin/billing", icon: DollarSign },
+  { title: "Stripe Settings", url: "/admin/stripe-settings", icon: CreditCard },
+];
+
 const platformAdminSystemItems: NavItem[] = [
   { title: "Settings", url: "/admin/settings", icon: Shield },
 ];
@@ -160,6 +165,7 @@ const gymReportsItems: NavItem[] = [
 
 const gymAdminItems: NavItem[] = [
   { title: "Notifications", url: "/notifications", icon: Bell },
+  { title: "Billing", url: "/settings/billing", icon: CreditCard },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
@@ -364,6 +370,7 @@ export function AppSidebar() {
           <>
             <NavGroup label="Platform" items={platformAdminMainItems} location={location} navigate={navigate} />
             <NavGroup label="Monitoring" items={platformAdminMonitorItems} location={location} navigate={navigate} />
+            <NavGroup label="Billing" items={platformAdminBillingItems} location={location} navigate={navigate} />
             <NavGroup label="System" items={platformAdminSystemItems} location={location} navigate={navigate} />
           </>
         )}

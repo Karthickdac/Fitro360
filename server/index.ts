@@ -2,6 +2,12 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { handleStripeWebhook, suspendExpiredGraceTenants } from "./stripeWebhook";
+import {
+  getStripeSync,
+  setWebhookSecret,
+  setStripeReady,
+} from "./stripeClient";
 
 const app = express();
 const httpServer = createServer(app);
@@ -11,6 +17,13 @@ declare module "http" {
     rawBody: unknown;
   }
 }
+
+// Stripe webhook MUST be registered before express.json() so the body stays raw
+app.post(
+  "/api/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  handleStripeWebhook,
+);
 
 app.use(
   express.json({
@@ -59,6 +72,46 @@ app.use((req, res, next) => {
   next();
 });
 
+async function initStripe() {
+  try {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      log("Stripe init skipped: DATABASE_URL missing", "stripe");
+      return;
+    }
+
+    const { runMigrations } = await import("stripe-replit-sync");
+    await runMigrations({ databaseUrl });
+
+    const stripeSync = await getStripeSync();
+
+    const baseUrl = process.env.REPLIT_DEPLOYMENT === "1"
+      ? `https://${(process.env.REPLIT_DOMAINS || "").split(",")[0]}`
+      : `https://${(process.env.REPLIT_DEV_DOMAIN || (process.env.REPLIT_DOMAINS || "").split(",")[0])}`;
+
+    if (!baseUrl || baseUrl === "https://") {
+      log("Stripe init skipped: no public domain available", "stripe");
+      return;
+    }
+
+    const { webhook } = await stripeSync.findOrCreateManagedWebhook(
+      `${baseUrl}/api/stripe/webhook`,
+    );
+    if (webhook?.secret) setWebhookSecret(webhook.secret);
+
+    // Backfill in the background so startup is not blocked
+    stripeSync
+      .syncBackfill()
+      .then(() => log("Stripe backfill complete", "stripe"))
+      .catch((e: any) => log(`Stripe backfill error: ${e.message}`, "stripe"));
+
+    setStripeReady(true);
+    log(`Stripe initialized; webhook ${baseUrl}/api/stripe/webhook`, "stripe");
+  } catch (err: any) {
+    log(`Stripe init failed: ${err.message}`, "stripe");
+  }
+}
+
 (async () => {
   const { seedDatabase } = await import("./seed");
   try {
@@ -82,9 +135,6 @@ app.use((req, res, next) => {
     return res.status(status).json({ message });
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
   } else {
@@ -92,10 +142,6 @@ app.use((req, res, next) => {
     await setupVite(httpServer, app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
   httpServer.listen(
     {
@@ -105,6 +151,10 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+      // Kick Stripe initialization off in the background after the server is listening
+      initStripe();
+      // Sweep for expired grace periods every 6 hours
+      setInterval(suspendExpiredGraceTenants, 6 * 60 * 60 * 1000);
     },
   );
 })();
