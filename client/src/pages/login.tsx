@@ -277,140 +277,230 @@ export default function LoginPage() {
 
       {/* Login Form Section */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-8 bg-background relative overflow-hidden">
-        {/* Subtle violet glow */}
-        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary/[0.04] rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-violet-500/[0.03] rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+        {/* Animated ambient orbs */}
+        <div className="absolute top-0 right-0 w-[460px] h-[460px] bg-primary/[0.06] dark:bg-primary/[0.08] rounded-full blur-3xl -translate-y-1/3 translate-x-1/3 pointer-events-none animate-float-slow" />
+        <div className="absolute bottom-0 left-0 w-[340px] h-[340px] bg-violet-500/[0.05] dark:bg-violet-500/[0.06] rounded-full blur-3xl translate-y-1/3 -translate-x-1/3 pointer-events-none animate-float-slower" />
+        <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-fuchsia-500/[0.03] rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
 
-        <div className="w-full max-w-[400px] relative z-10">
-          {/* Form header */}
-          <div className="mb-8 lg:mt-0 -mt-2 lg:text-left text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1 mb-4 rounded-full bg-primary/10 border border-primary/15 lg:flex lg:w-fit">
-              <Globe className="h-3 w-3 text-primary" />
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">Secure Sign In</span>
+        {/* Subtle dot grid */}
+        <div
+          aria-hidden
+          className="absolute inset-0 opacity-[0.025] dark:opacity-[0.04] pointer-events-none"
+          style={{
+            backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)",
+            backgroundSize: "28px 28px",
+          }}
+        />
+
+        <div className="w-full max-w-[420px] relative z-10">
+          {/* Animated card frame */}
+          <div className="relative">
+            {/* Halo gradient ring (focus-within highlights) */}
+            <div
+              aria-hidden
+              className="absolute -inset-px rounded-2xl bg-gradient-to-br from-primary/30 via-violet-500/10 to-fuchsia-500/20 opacity-0 group-[.is-focused]:opacity-100 transition-opacity duration-500 pointer-events-none blur-md"
+            />
+
+            {/* Form header */}
+            <div
+              className="mb-7 lg:mt-0 -mt-2 lg:text-left text-center animate-in fade-in slide-in-from-bottom-2 duration-500"
+            >
+              <div
+                className="group/badge inline-flex items-center gap-2 px-3 py-1 mb-4 rounded-full bg-primary/10 border border-primary/20 lg:flex lg:w-fit hover:bg-primary/15 hover:border-primary/30 hover:shadow-[0_0_18px_rgba(167,139,250,0.25)] transition-all cursor-default"
+                data-testid="badge-secure-signin"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-60 animate-ping" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                </span>
+                <Globe className="h-3 w-3 text-primary group-hover/badge:rotate-[20deg] transition-transform duration-500" />
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">Secure Sign In</span>
+              </div>
+              <h2
+                className="text-3xl font-bold tracking-tight inline-flex items-baseline gap-1"
+                data-testid="text-login-heading"
+              >
+                <span className="bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
+                  Welcome back
+                </span>
+                <span aria-hidden className="inline-block w-[3px] h-7 bg-primary rounded-sm animate-caret-blink translate-y-1" />
+              </h2>
+              <p className="text-muted-foreground mt-2 text-sm">
+                Enter your credentials to access your workspace.
+              </p>
             </div>
-            <h2 className="text-3xl font-bold tracking-tight" data-testid="text-login-heading">
-              Welcome back
-            </h2>
-            <p className="text-muted-foreground mt-2 text-sm">
-              Enter your credentials to access your workspace.
-            </p>
-          </div>
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-semibold uppercase tracking-wider text-foreground/70">Username</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter your username"
-                        className="h-11 px-4 text-sm bg-card/50 border-border/60 focus-visible:ring-primary/30 focus-visible:border-primary/40 transition-all"
-                        {...field}
-                        data-testid="input-username"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-center justify-between">
-                      <FormLabel className="text-xs font-semibold uppercase tracking-wider text-foreground/70">Password</FormLabel>
-                      <button
-                        type="button"
-                        className="text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
-                        data-testid="link-forgot-password"
-                      >
-                        Forgot password?
-                      </button>
-                    </div>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Enter your password"
-                          className="h-11 px-4 pr-11 text-sm bg-card/50 border-border/60 focus-visible:ring-primary/30 focus-visible:border-primary/40 transition-all"
-                          {...field}
-                          data-testid="input-password"
-                        />
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4 animate-in fade-in slide-in-from-bottom-3 duration-700"
+                style={{ animationDelay: "80ms", animationFillMode: "both" }}
+              >
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem className="group/field">
+                      <FormLabel className="text-xs font-semibold uppercase tracking-wider text-foreground/70 group-focus-within/field:text-primary transition-colors">
+                        Username
+                      </FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          {/* Focus ring glow */}
+                          <span
+                            aria-hidden
+                            className="pointer-events-none absolute -inset-px rounded-md bg-gradient-to-r from-primary/40 via-violet-500/20 to-fuchsia-500/30 opacity-0 group-focus-within/field:opacity-100 blur-md transition-opacity duration-300"
+                          />
+                          <Input
+                            placeholder="Enter your username"
+                            autoComplete="username"
+                            className="relative h-11 px-4 text-sm bg-card/60 border-border/60 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 hover:border-border transition-colors"
+                            {...field}
+                            data-testid="input-username"
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem className="group/field">
+                      <div className="flex items-center justify-between">
+                        <FormLabel className="text-xs font-semibold uppercase tracking-wider text-foreground/70 group-focus-within/field:text-primary transition-colors">
+                          Password
+                        </FormLabel>
                         <button
                           type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                          data-testid="button-toggle-password"
+                          className="text-[11px] font-medium text-primary hover:text-primary/80 hover:underline underline-offset-2 transition-colors"
+                          data-testid="link-forgot-password"
                         >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          Forgot password?
                         </button>
                       </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button
-                type="submit"
-                className="w-full h-11 text-sm font-semibold bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
-                disabled={isLoading}
-                data-testid="button-login"
-                style={branding?.primaryColor ? { backgroundImage: `linear-gradient(to right, ${branding.primaryColor}, ${branding.secondaryColor || branding.primaryColor})` } : undefined}
+                      <FormControl>
+                        <div className="relative">
+                          <span
+                            aria-hidden
+                            className="pointer-events-none absolute -inset-px rounded-md bg-gradient-to-r from-primary/40 via-violet-500/20 to-fuchsia-500/30 opacity-0 group-focus-within/field:opacity-100 blur-md transition-opacity duration-300"
+                          />
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Enter your password"
+                            autoComplete="current-password"
+                            className="relative h-11 px-4 pr-11 text-sm bg-card/60 border-border/60 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 hover:border-border transition-colors"
+                            {...field}
+                            data-testid="input-password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                            className="absolute z-10 right-2.5 top-1/2 -translate-y-1/2 h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent active:scale-95 transition-all"
+                            data-testid="button-toggle-password"
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="submit"
+                  className="group/btn relative w-full h-12 text-sm font-semibold overflow-hidden bg-gradient-to-r from-primary via-violet-500 to-violet-600 hover:from-primary hover:via-violet-500 hover:to-violet-700 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-px active:translate-y-0 active:scale-[0.99] transition-all duration-200"
+                  disabled={isLoading}
+                  data-testid="button-login"
+                  style={branding?.primaryColor ? { backgroundImage: `linear-gradient(to right, ${branding.primaryColor}, ${branding.secondaryColor || branding.primaryColor})` } : undefined}
+                >
+                  {/* Shine sweep on hover */}
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover/btn:opacity-100 group-hover/btn:animate-shine-sweep"
+                  />
+                  {isLoading ? (
+                    <span className="relative inline-flex items-center">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing in...
+                    </span>
+                  ) : (
+                    <span className="relative inline-flex items-center">
+                      Sign in to dashboard
+                      <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
+                    </span>
+                  )}
+                </Button>
+              </form>
+            </Form>
+
+            {!isSubdomain && (
+              <div
+                className="mt-7 p-4 rounded-xl bg-gradient-to-br from-card/70 to-card/30 border border-border/60 backdrop-blur-sm lg:text-left text-center hover:border-primary/30 hover:shadow-[0_0_24px_-12px_rgba(167,139,250,0.5)] transition-all animate-in fade-in slide-in-from-bottom-4 duration-700"
+                style={{ animationDelay: "180ms", animationFillMode: "both" }}
+                data-testid="section-demo-accounts"
               >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  <>
-                    Sign in to dashboard
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </form>
-          </Form>
-
-          {!isSubdomain && (
-            <div
-              className="mt-7 p-4 rounded-xl bg-gradient-to-br from-card/60 to-card/30 border border-border/50 backdrop-blur-sm lg:text-left text-center"
-              data-testid="section-demo-accounts"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <p className="text-[10px] text-foreground/70 font-bold uppercase tracking-widest">Demo Accounts</p>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-70 animate-ping" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                    </span>
+                    <p className="text-[10px] text-foreground/70 font-bold uppercase tracking-widest">Demo Accounts</p>
+                  </div>
+                  <span className="text-[9px] uppercase tracking-wider text-muted-foreground/70 font-medium hidden lg:inline">
+                    Click to autofill
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    { role: "Owner", username: "gymowner", password: "gym123" },
+                    { role: "Manager", username: "manager1", password: "manager123" },
+                    { role: "Trainer", username: "trainer1", password: "trainer123" },
+                    { role: "Member", username: "member1", password: "member123" },
+                  ].map((acc) => (
+                    <button
+                      key={acc.role}
+                      type="button"
+                      onClick={() => {
+                        form.setValue("username", acc.username, { shouldValidate: false });
+                        form.setValue("password", acc.password, { shouldValidate: false });
+                      }}
+                      className="group/demo flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-left text-[11px] text-muted-foreground hover:bg-primary/5 hover:text-foreground border border-transparent hover:border-primary/20 active:scale-[0.98] transition-all"
+                      data-testid={`button-demo-${acc.role.toLowerCase()}`}
+                    >
+                      <span className="min-w-0 truncate">
+                        <span className="font-semibold text-foreground/85">{acc.role}:</span>{" "}
+                        <span className="font-mono">{acc.username}</span>
+                      </span>
+                      <ArrowRight className="h-3 w-3 shrink-0 text-primary/0 group-hover/demo:text-primary group-hover/demo:translate-x-0.5 transition-all" />
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] text-muted-foreground">
-                <p><span className="font-semibold text-foreground/80">Owner:</span> gymowner / gym123</p>
-                <p><span className="font-semibold text-foreground/80">Manager:</span> manager1 / manager123</p>
-                <p><span className="font-semibold text-foreground/80">Trainer:</span> trainer1 / trainer123</p>
-                <p><span className="font-semibold text-foreground/80">Member:</span> member1 / member123</p>
+            )}
+
+            {!isSubdomain && (
+              <p className="mt-6 text-center text-[11px] text-muted-foreground">
+                By signing in you agree to our{" "}
+                <a href="#" className="text-primary hover:underline underline-offset-2">Terms</a> &{" "}
+                <a href="#" className="text-primary hover:underline underline-offset-2">Privacy Policy</a>
+              </p>
+            )}
+
+            {isSubdomain && (
+              <div className="mt-8 flex items-center justify-center gap-2">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border/60 to-transparent" />
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
+                  Powered by <span className="font-bold text-primary">Fitro360</span>
+                </span>
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border/60 to-transparent" />
               </div>
-            </div>
-          )}
-
-          {!isSubdomain && (
-            <p className="mt-6 text-center text-[11px] text-muted-foreground">
-              By signing in you agree to our{" "}
-              <a href="#" className="text-primary hover:underline">Terms</a> &{" "}
-              <a href="#" className="text-primary hover:underline">Privacy Policy</a>
-            </p>
-          )}
-
-          {isSubdomain && (
-            <div className="mt-8 flex items-center justify-center gap-2">
-              <div className="h-px flex-1 bg-border/50" />
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
-                Powered by <span className="font-bold text-primary">Fitro360</span>
-              </span>
-              <div className="h-px flex-1 bg-border/50" />
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
