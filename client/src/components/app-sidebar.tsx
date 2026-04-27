@@ -114,22 +114,22 @@ const gymOverviewItems: NavItem[] = [
 
 const gymMembershipItems: NavItem[] = [
   { title: "Members", url: "/members", icon: Users },
+  { title: "Check-in", url: "/check-in", icon: UserCheck },
   { title: "Membership Plans", url: "/membership-plans", icon: CreditCard },
   { title: "Member Transfers", url: "/membership-transfers", icon: ArrowRightLeft },
-  { title: "Check-in", url: "/check-in", icon: UserCheck },
 ];
 
 const gymStaffItems: NavItem[] = [
   { title: "Trainers", url: "/trainers", icon: Dumbbell },
-  { title: "Trainer Management", url: "/trainer-management", icon: Award },
   { title: "Schedule", url: "/schedule", icon: CalendarDays },
+  { title: "Trainer Management", url: "/trainer-management", icon: Award },
 ];
 
 const gymOperationsItems: NavItem[] = [
   { title: "Branches", url: "/branches", icon: GitBranch },
   { title: "Inventory", url: "/inventory", icon: Package },
-  { title: "Fixed Assets", url: "/fixed-assets", icon: Boxes },
   { title: "Maintenance", url: "/maintenance", icon: Wrench },
+  { title: "Fixed Assets", url: "/fixed-assets", icon: Boxes },
 ];
 
 const gymProcurementItems: NavItem[] = [
@@ -214,7 +214,7 @@ function NavGroup({
         aria-expanded={open}
         aria-controls={`navgroup-${label}`}
         data-testid={`button-navgroup-${label.toLowerCase().replace(/\s|&/g, "-")}`}
-        className="group/header w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[10px] uppercase tracking-[0.18em] font-semibold text-sidebar-foreground/40 hover:text-sidebar-foreground/80 hover:bg-sidebar-accent/30 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-sidebar-ring group-data-[collapsible=icon]:hidden"
+        className="group/header w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[10px] uppercase tracking-[0.18em] font-semibold text-sidebar-foreground/65 hover:text-white hover:bg-sidebar-accent/30 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-sidebar-ring group-data-[collapsible=icon]:hidden"
       >
         <span className="flex items-center gap-1.5">
           {label}
@@ -250,8 +250,8 @@ function NavGroup({
                       className={cn(
                         "relative h-8 rounded-md transition-colors group/item",
                         isActive
-                          ? "bg-gradient-to-r from-sidebar-accent via-sidebar-accent/85 to-transparent text-sidebar-primary font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-r-full before:bg-gradient-to-b before:from-sidebar-primary before:to-violet-400 before:shadow-[0_0_10px_rgba(167,139,250,0.7)] group-data-[collapsible=icon]:before:hidden"
-                          : "text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent/45"
+                          ? "bg-gradient-to-r from-sidebar-accent via-sidebar-accent/85 to-transparent !text-white font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-r-full before:bg-gradient-to-b before:from-sidebar-primary before:to-violet-400 before:shadow-[0_0_10px_rgba(167,139,250,0.7)] group-data-[collapsible=icon]:before:hidden"
+                          : "text-sidebar-foreground/75 hover:text-white hover:bg-sidebar-accent/45"
                       )}
                     >
                       <a
@@ -266,8 +266,8 @@ function NavGroup({
                           className={cn(
                             "h-4 w-4 shrink-0 transition-colors",
                             isActive
-                              ? "text-sidebar-primary"
-                              : "text-sidebar-foreground/50 group-hover/item:text-sidebar-foreground/80"
+                              ? "text-sidebar-primary drop-shadow-[0_0_6px_rgba(167,139,250,0.5)]"
+                              : "text-sidebar-foreground/70 group-hover/item:text-white"
                           )}
                         />
                         <span className="text-[13px]">{item.title}</span>
@@ -384,12 +384,12 @@ export function AppSidebar() {
             <NavGroup label="Overview" items={gymOverviewItems} location={location} navigate={navigate} />
             <NavGroup label="Membership" items={gymMembershipItems} location={location} navigate={navigate} />
             <NavGroup label="Staff" items={gymStaffItems} location={location} navigate={navigate} />
+            <NavGroup label="Finance" items={gymFinanceItems} location={location} navigate={navigate} />
+            <NavGroup label="Growth" items={gymGrowthItems} location={location} navigate={navigate} defaultOpen={false} />
             <NavGroup label="Operations" items={gymOperationsItems} location={location} navigate={navigate} defaultOpen={false} />
             <NavGroup label="Procurement" items={gymProcurementItems} location={location} navigate={navigate} defaultOpen={false} />
-            <NavGroup label="Finance" items={gymFinanceItems} location={location} navigate={navigate} />
-            <NavGroup label="Tax & Compliance" items={gymComplianceItems} location={location} navigate={navigate} defaultOpen={false} />
-            <NavGroup label="Growth" items={gymGrowthItems} location={location} navigate={navigate} defaultOpen={false} />
             <NavGroup label="Reports" items={gymReportsItems} location={location} navigate={navigate} defaultOpen={false} />
+            <NavGroup label="Tax & Compliance" items={gymComplianceItems} location={location} navigate={navigate} defaultOpen={false} />
             <NavGroup label="System" items={gymAdminItems} location={location} navigate={navigate} defaultOpen={false} />
           </>
         )}
