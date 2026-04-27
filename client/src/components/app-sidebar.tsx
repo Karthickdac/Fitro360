@@ -29,29 +29,31 @@ import {
   Calculator,
   ScrollText,
   Landmark,
-  Briefcase,
   ShoppingCart,
   Sparkles,
   ArrowRightLeft,
   Boxes,
+  ChevronDown,
 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
   SidebarSeparator,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 type NavItem = { title: string; url: string; icon: any; badge?: string };
 
@@ -105,7 +107,6 @@ const managerSystemItems: NavItem[] = [
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
-// Comprehensive enterprise-level grouping for gym owners
 const gymOverviewItems: NavItem[] = [
   { title: "Executive Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
@@ -162,55 +163,131 @@ const gymAdminItems: NavItem[] = [
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
-function NavGroup({ label, items, location, navigate }: {
+function isItemActive(itemUrl: string, location: string) {
+  return location === itemUrl || (itemUrl !== "/" && location.startsWith(itemUrl + "/"));
+}
+
+function NavGroup({
+  label,
+  items,
+  location,
+  navigate,
+  defaultOpen = true,
+}: {
   label: string;
   items: NavItem[];
   location: string;
   navigate: (to: string) => void;
+  defaultOpen?: boolean;
 }) {
+  const { state: sidebarState } = useSidebar();
+  const isIconMode = sidebarState === "collapsed";
+  const storageKey = `fitro360.sidebar.group.${label}`;
+
+  const groupHasActive = items.some((i) => isItemActive(i.url, location));
+
+  const [open, setOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return defaultOpen;
+    const stored = window.localStorage.getItem(storageKey);
+    if (stored === null) return defaultOpen;
+    return stored === "true";
+  });
+
+  useEffect(() => {
+    if (groupHasActive && !open) setOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupHasActive]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(storageKey, String(open));
+    } catch {}
+  }, [open, storageKey]);
+
+  const showItems = isIconMode || open;
+
   return (
-    <SidebarGroup className="px-2 py-1.5">
-      <SidebarGroupLabel className="text-[10px] uppercase tracking-[0.18em] font-semibold text-sidebar-foreground/35 px-2.5 mb-1.5">
-        {label}
-      </SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu className="gap-0.5">
-          {items.map((item) => {
-            const isActive = location === item.url || (item.url !== "/" && location.startsWith(item.url + "/"));
-            return (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton
-                  asChild
-                  data-active={isActive}
-                  tooltip={item.title}
-                  className={
-                    isActive
-                      ? "relative bg-sidebar-accent text-sidebar-primary font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-r-full before:bg-sidebar-primary before:shadow-[0_0_10px_rgba(167,139,250,0.6)] group-data-[collapsible=icon]:before:hidden"
-                      : "text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
-                  }
-                >
-                  <a
-                    href={item.url}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigate(item.url);
-                    }}
-                    data-testid={`link-nav-${item.title.toLowerCase().replace(/\s/g, "-")}`}
-                  >
-                    <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"}`} />
-                    <span className="text-[13px]">{item.title}</span>
-                    {item.badge && (
-                      <Badge variant="secondary" className="ml-auto h-4 px-1.5 text-[9px] font-semibold bg-sidebar-primary/15 text-sidebar-primary border-0">
-                        {item.badge}
-                      </Badge>
-                    )}
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
-      </SidebarGroupContent>
+    <SidebarGroup className="px-2 py-0.5">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls={`navgroup-${label}`}
+        data-testid={`button-navgroup-${label.toLowerCase().replace(/\s|&/g, "-")}`}
+        className="group/header w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[10px] uppercase tracking-[0.18em] font-semibold text-sidebar-foreground/40 hover:text-sidebar-foreground/80 hover:bg-sidebar-accent/30 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-sidebar-ring group-data-[collapsible=icon]:hidden"
+      >
+        <span className="flex items-center gap-1.5">
+          {label}
+          {groupHasActive && (
+            <span className="h-1 w-1 rounded-full bg-sidebar-primary shadow-[0_0_6px_rgba(167,139,250,0.8)]" />
+          )}
+        </span>
+        <ChevronDown
+          className={cn(
+            "h-3 w-3 shrink-0 transition-transform duration-200",
+            !open && "-rotate-90"
+          )}
+        />
+      </button>
+      <div
+        id={`navgroup-${label}`}
+        className={cn(
+          "grid transition-[grid-template-rows,opacity] duration-200 ease-out",
+          showItems ? "grid-rows-[1fr] opacity-100 mt-0.5" : "grid-rows-[0fr] opacity-0"
+        )}
+      >
+        <div className="overflow-hidden">
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-0.5">
+              {items.map((item) => {
+                const isActive = isItemActive(item.url, location);
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      data-active={isActive}
+                      tooltip={item.title}
+                      className={cn(
+                        "relative h-8 rounded-md transition-colors group/item",
+                        isActive
+                          ? "bg-gradient-to-r from-sidebar-accent via-sidebar-accent/85 to-transparent text-sidebar-primary font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-r-full before:bg-gradient-to-b before:from-sidebar-primary before:to-violet-400 before:shadow-[0_0_10px_rgba(167,139,250,0.7)] group-data-[collapsible=icon]:before:hidden"
+                          : "text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent/45"
+                      )}
+                    >
+                      <a
+                        href={item.url}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          navigate(item.url);
+                        }}
+                        data-testid={`link-nav-${item.title.toLowerCase().replace(/\s/g, "-")}`}
+                      >
+                        <item.icon
+                          className={cn(
+                            "h-4 w-4 shrink-0 transition-colors",
+                            isActive
+                              ? "text-sidebar-primary"
+                              : "text-sidebar-foreground/50 group-hover/item:text-sidebar-foreground/80"
+                          )}
+                        />
+                        <span className="text-[13px]">{item.title}</span>
+                        {item.badge && (
+                          <Badge
+                            variant="secondary"
+                            className="ml-auto h-4 px-1.5 text-[9px] font-semibold bg-sidebar-primary/15 text-sidebar-primary border-0"
+                          >
+                            {item.badge}
+                          </Badge>
+                        )}
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </div>
+      </div>
     </SidebarGroup>
   );
 }
@@ -242,23 +319,37 @@ export function AppSidebar() {
   const role = user.role;
   const initials = `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase();
 
-  const roleLabel = role === "platform_admin" ? "Platform Admin"
-    : role === "member" ? "Member"
-    : role === "trainer" ? "Trainer"
-    : role === "manager" ? "Manager"
-    : role === "sales_executive" ? "Sales Executive"
-    : "Gym Owner";
+  const roleLabel =
+    role === "platform_admin"
+      ? "Platform Admin"
+      : role === "member"
+      ? "Member"
+      : role === "trainer"
+      ? "Trainer"
+      : role === "manager"
+      ? "Manager"
+      : role === "sales_executive"
+      ? "Sales Executive"
+      : "Gym Owner";
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
-      <SidebarHeader className="p-4 pb-3 group-data-[collapsible=icon]:p-2">
+      {/* Premium ambient glow behind header */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-violet-500/[0.07] via-violet-500/[0.02] to-transparent"
+      />
+      <SidebarHeader className="relative p-4 pb-3 group-data-[collapsible=icon]:p-2">
         <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
           <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-400 via-violet-500 to-violet-600 shadow-lg shadow-violet-500/30 ring-1 ring-violet-300/30">
             <Dumbbell className="h-5 w-5 text-white" strokeWidth={2.5} />
             <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-violet-200" />
           </div>
           <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
-            <span className="text-[15px] font-bold tracking-tight truncate text-white" data-testid="text-app-name">
+            <span
+              className="text-[15px] font-bold tracking-tight truncate text-white"
+              data-testid="text-app-name"
+            >
               {tenant?.appDisplayName || tenant?.gymName || "Fitro360"}
             </span>
             <span className="text-[10px] uppercase tracking-[0.15em] font-medium text-violet-400/90 truncate">
@@ -268,7 +359,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarSeparator className="opacity-40" />
-      <SidebarContent className="px-0 py-1">
+      <SidebarContent className="px-0 py-2 relative">
         {role === "platform_admin" && (
           <>
             <NavGroup label="Platform" items={platformAdminMainItems} location={location} navigate={navigate} />
@@ -285,7 +376,7 @@ export function AppSidebar() {
         {role === "manager" && (
           <>
             <NavGroup label="Gym Management" items={managerMainItems} location={location} navigate={navigate} />
-            <NavGroup label="System" items={managerSystemItems} location={location} navigate={navigate} />
+            <NavGroup label="System" items={managerSystemItems} location={location} navigate={navigate} defaultOpen={false} />
           </>
         )}
         {(role === "gym_owner" || role === "sales_executive") && (
@@ -293,19 +384,19 @@ export function AppSidebar() {
             <NavGroup label="Overview" items={gymOverviewItems} location={location} navigate={navigate} />
             <NavGroup label="Membership" items={gymMembershipItems} location={location} navigate={navigate} />
             <NavGroup label="Staff" items={gymStaffItems} location={location} navigate={navigate} />
-            <NavGroup label="Operations" items={gymOperationsItems} location={location} navigate={navigate} />
-            <NavGroup label="Procurement" items={gymProcurementItems} location={location} navigate={navigate} />
+            <NavGroup label="Operations" items={gymOperationsItems} location={location} navigate={navigate} defaultOpen={false} />
+            <NavGroup label="Procurement" items={gymProcurementItems} location={location} navigate={navigate} defaultOpen={false} />
             <NavGroup label="Finance" items={gymFinanceItems} location={location} navigate={navigate} />
-            <NavGroup label="Tax & Compliance" items={gymComplianceItems} location={location} navigate={navigate} />
-            <NavGroup label="Growth" items={gymGrowthItems} location={location} navigate={navigate} />
-            <NavGroup label="Reports" items={gymReportsItems} location={location} navigate={navigate} />
-            <NavGroup label="System" items={gymAdminItems} location={location} navigate={navigate} />
+            <NavGroup label="Tax & Compliance" items={gymComplianceItems} location={location} navigate={navigate} defaultOpen={false} />
+            <NavGroup label="Growth" items={gymGrowthItems} location={location} navigate={navigate} defaultOpen={false} />
+            <NavGroup label="Reports" items={gymReportsItems} location={location} navigate={navigate} defaultOpen={false} />
+            <NavGroup label="System" items={gymAdminItems} location={location} navigate={navigate} defaultOpen={false} />
           </>
         )}
       </SidebarContent>
       <SidebarSeparator className="opacity-40" />
-      <SidebarFooter className="p-3">
-        <div className="flex items-center gap-3 rounded-lg p-2 hover:bg-sidebar-accent/40 transition-colors">
+      <SidebarFooter className="p-3 group-data-[collapsible=icon]:p-2">
+        <div className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-sidebar-accent/40 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
           <div className="relative">
             <Avatar className="h-9 w-9 ring-2 ring-sidebar-border/60">
               <AvatarFallback className={`${roleColorMap[role] || "bg-amber-500"} text-white text-xs font-bold`}>
@@ -314,17 +405,23 @@ export function AppSidebar() {
             </Avatar>
             <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-sidebar shadow-sm shadow-emerald-500/50" />
           </div>
-          <div className="flex flex-col min-w-0 flex-1 gap-0.5">
-            <span className="text-[13px] font-semibold truncate text-sidebar-foreground" data-testid="text-user-name">
+          <div className="flex flex-col min-w-0 flex-1 gap-0.5 group-data-[collapsible=icon]:hidden">
+            <span
+              className="text-[13px] font-semibold truncate text-sidebar-foreground"
+              data-testid="text-user-name"
+            >
               {user.firstName} {user.lastName}
             </span>
-            <Badge variant="secondary" className={`w-fit text-[9px] px-1.5 py-0 font-semibold uppercase tracking-wider ${roleBadgeMap[role] || "bg-amber-500/15 text-amber-300"}`}>
+            <Badge
+              variant="secondary"
+              className={`w-fit text-[9px] px-1.5 py-0 font-semibold uppercase tracking-wider ${roleBadgeMap[role] || "bg-amber-500/15 text-amber-300"}`}
+            >
               {roleLabel}
             </Badge>
           </div>
           <button
             onClick={logout}
-            className="p-2 rounded-lg text-sidebar-foreground/50 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+            className="p-2 rounded-lg text-sidebar-foreground/50 hover:text-rose-400 hover:bg-rose-500/10 transition-colors group-data-[collapsible=icon]:hidden"
             data-testid="button-logout"
             title="Sign out"
           >
