@@ -12,3 +12,9 @@ id = "23VSUpfP0mAF4V3nfqNyO"
 uri = "file://attached_assets/Fitro360-Client-Pitch.pdf"
 type = "pdf"
 title = "Fitro360 — Client Pitch (Owner, Trainer, Member)"
+
+[[outputs]]
+id = "8h4SkJKQIfqIT8W_0im7h"
+uri = "file://attached_assets/Fitro360-Sales-Deck.pdf"
+type = "pdf"
+title = "Fitro360 — Sales Deck (11 pages, landscape)"
