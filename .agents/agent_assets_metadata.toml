@@ -6,3 +6,9 @@ id = "hW32L7FN1Vy-YGtdXPDbt"
 uri = "file://attached_assets/Fitro360-User-Manual.pdf"
 type = "pdf"
 title = "Fitro360 — Premium User Manual (v1.0)"
+
+[[outputs]]
+id = "23VSUpfP0mAF4V3nfqNyO"
+uri = "file://attached_assets/Fitro360-Client-Pitch.pdf"
+type = "pdf"
+title = "Fitro360 — Client Pitch (Owner, Trainer, Member)"
