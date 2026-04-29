@@ -1,0 +1,92 @@
+┌────┬────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name           │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 2  │ fitro360       │ default     │ 1.0.0   │ fork    │ 262570   │ 0s     │ 0    │ online    │ 0%       │ 14.9mb   │ root     │ disabled │
+│ 1  │ mystics-api    │ default     │ N/A     │ fork    │ 249286   │ 10h    │ 13   │ online    │ 0%       │ 227.3mb  │ root     │ disabled │
+└────┴────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[PM2] Saving current process list...
+[PM2] Successfully saved in /root/.pm2/dump.pm2
+[TAILING] Tailing last 40 lines for [fitro360] process (change the value with --lines option)
+/root/.pm2/logs/fitro360-out.log last 40 lines:
+2|fitro360 | 6:07:04 PM [express] serving on port 5000
+2|fitro360 | 6:07:10 PM [stripe] Stripe init failed: X-Replit-Token not found for repl/depl
+2|fitro360 | 9:30:46 PM [express] GET /api/branding 304 in 10ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+2|fitro360 | 9:30:46 PM [express] GET /api/auth/me 401 in 1ms :: {"message":"Not authenticated"}
+2|fitro360 | 9:30:46 PM [express] GET /api/branding 304 in 10ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+2|fitro360 | 9:31:47 PM [express] POST /api/auth/login 400 in 101ms :: {"message":"column \"trn\" does not exist"}
+2|fitro360 | 9:31:52 PM [express] POST /api/auth/login 400 in 92ms :: {"message":"column \"trn\" does not exist"}
+2|fitro360 | 9:31:58 PM [express] GET /api/branding 304 in 10ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+2|fitro360 | 9:31:58 PM [express] GET /api/auth/me 500 in 14ms :: {"message":"column \"trn\" does not exist"}
+2|fitro360 | 9:31:59 PM [express] GET /api/branding 304 in 10ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+2|fitro360 | 9:32:05 PM [express] POST /api/auth/login 400 in 89ms :: {"message":"column \"trn\" does not exist"}
+2|fitro360 | 10:18:04 PM [express] GET /api/branding 304 in 11ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+2|fitro360 | 10:18:05 PM [express] GET /api/auth/me 500 in 12ms :: {"message":"column \"trn\" does not exist"}
+2|fitro360 | 10:18:05 PM [express] GET /api/branding 304 in 9ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+2|fitro360 | 12:02:02 AM [express] GET /api/branding 304 in 9ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+2|fitro360 | 12:02:02 AM [express] GET /api/auth/me 401 in 1ms :: {"message":"Not authenticated"}
+2|fitro360 | 12:02:03 AM [express] GET /api/branding 304 in 10ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+2|fitro360 | 12:19:00 AM [express] GET /api/branding 304 in 8ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+2|fitro360 | 12:19:00 AM [express] GET /api/auth/me 401 in 0ms :: {"message":"Not authenticated"}
+2|fitro360 | 12:19:00 AM [express] GET /api/branding 304 in 9ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+2|fitro360 | 12:19:13 AM [express] POST /api/auth/login 400 in 97ms :: {"message":"column \"trn\" does not exist"}
+2|fitro360 | 3:08:24 AM [express] GET /api/branding 200 in 8ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+2|fitro360 | 3:08:25 AM [express] GET /api/auth/me 401 in 1ms :: {"message":"Not authenticated"}
+2|fitro360 | 3:08:25 AM [express] GET /api/branding 304 in 8ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+2|fitro360 | 3:08:32 AM [express] POST /api/auth/login 400 in 83ms :: {"message":"column \"trn\" does not exist"}
+2|fitro360 | 3:08:39 AM [express] POST /api/auth/login 400 in 93ms :: {"message":"column \"trn\" does not exist"}
+2|fitro360 | 3:08:45 AM [express] GET /api/branding 304 in 8ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+2|fitro360 | 3:08:45 AM [express] GET /api/auth/me 500 in 12ms :: {"message":"column \"trn\" does not exist"}
+2|fitro360 | 3:08:47 AM [express] GET /api/branding 304 in 9ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+2|fitro360 | 3:08:47 AM [express] GET /api/auth/me 500 in 11ms :: {"message":"column \"trn\" does not exist"}
+2|fitro360 | 3:08:48 AM [express] GET /api/branding 304 in 9ms :: {"gymName":"Fitro360","primaryColor":"#1e40af","secondaryColor":"#3b82f6"}
+2|fitro360 | 3:08:51 AM [express] POST /api/auth/login 400 in 110ms :: {"message":"column \"trn\" does not exist"}
+2|fitro360 | 3:09:02 AM [express] POST /api/auth/login 400 in 94ms :: {"message":"column \"trn\" does not exist"}
+2|fitro360 | 3:10:09 AM [express] POST /api/auth/login 400 in 83ms :: {"message":"column \"trn\" does not exist"}
+2|fitro360 | 3:28:52 AM [express] serving on port 5000
+2|fitro360 | 3:28:52 AM [stripe] Stripe init failed: X-Replit-Token not found for repl/depl
+2|fitro360 | 3:33:31 AM [express] serving on port 5000
+2|fitro360 | 3:33:32 AM [stripe] Stripe init failed: X-Replit-Token not found for repl/depl
+2|fitro360 | Database already seeded, skipping...
+2|fitro360 | 4:10:36 AM [express] serving on port 5000
+
+/root/.pm2/logs/fitro360-error.log last 40 lines:
+2|fitro360 |   column: undefined,
+2|fitro360 |   dataType: undefined,
+2|fitro360 |   constraint: undefined,
+2|fitro360 |   file: 'parse_relation.c',
+2|fitro360 |   line: '3722',
+2|fitro360 |   routine: 'errorMissingColumn'
+2|fitro360 | }
+2|fitro360 | Warning: connect.session() MemoryStore is not
+2|fitro360 | designed for a production environment, as it will leak
+2|fitro360 | memory, and will not scale past a single process.
+2|fitro360 | Seed error: error: column "stripe_product_id" does not exist
+2|fitro360 |     at /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:74:13330
+2|fitro360 |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+2|fitro360 |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:80:37959
+2|fitro360 |     at async Ose (/home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:90:39470)
+2|fitro360 |     at async /home/fitro360/htdocs/www.fitro360.com/fitro360/dist/index.cjs:105:39293 {
+2|fitro360 |   length: 118,
+2|fitro360 |   severity: 'ERROR',
+2|fitro360 |   code: '42703',
+2|fitro360 |   detail: undefined,
+2|fitro360 |   hint: undefined,
+2|fitro360 |   position: '109',
+2|fitro360 |   internalPosition: undefined,
+2|fitro360 |   internalQuery: undefined,
+2|fitro360 |   where: undefined,
+2|fitro360 |   schema: undefined,
+2|fitro360 |   table: undefined,
+2|fitro360 |   column: undefined,
+2|fitro360 |   dataType: undefined,
+2|fitro360 |   constraint: undefined,
+2|fitro360 |   file: 'parse_relation.c',
+2|fitro360 |   line: '3722',
+2|fitro360 |   routine: 'errorMissingColumn'
+2|fitro360 | }
+2|fitro360 | Warning: connect.session() MemoryStore is not
+2|fitro360 | designed for a production environment, as it will leak
+2|fitro360 | memory, and will not scale past a single process.
+2|fitro360 | Warning: connect.session() MemoryStore is not
+2|fitro360 | designed for a production environment, as it will leak
+2|fitro360 | memory, and will not scale past a single process.
