@@ -148,7 +148,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
   app.post(
     "/api/devices/:id/open-door",
     authMiddleware,
-    requireRole("gym_owner", "manager", "trainer"),
+    requireRole("gym_owner", "manager"),
     async (req: Request, res: Response) => {
       const user = (req as any).user;
       const device = await storage.getDevice(paramId(req));
