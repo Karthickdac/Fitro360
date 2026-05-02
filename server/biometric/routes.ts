@@ -729,6 +729,34 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
       return res.json(result);
     },
   );
+  // Phase B/C brands. All seven use signed JSON webhooks with the same
+  // X-Fitro360-Sig HMAC scheme as Hikvision. The global express.json()
+  // already parses the body and stashes raw bytes on req.rawBody for the
+  // signature check, so no route-level raw parser is needed here.
+  //
+  // OPERATOR SETUP — every brand below identifies the source device via
+  // the request's serial number (Device.serialNumber). Adapters parse
+  // _user_ identity from the body, but the device itself is resolved
+  // before parsing so cross-tenant requests can be rejected immediately.
+  // When wiring up the brand's webhook on the device / vendor cloud
+  // console, the serial MUST be propagated in one of:
+  //   • query string  ?SN=<serialNumber>  (preferred — matches ADMS family)
+  //   • query string  ?serial=<serialNumber>
+  //   • HTTP header   X-Device-Serial: <serialNumber>
+  // Vendor-specific notes:
+  //   suprema  — set "Custom URL" to .../suprema/webhook?SN={device.serial}
+  //   matrix   — Event Server URL: .../matrix/webhook?SN={DeviceID}
+  //   anviz    — CrossChex Cloud webhook supports header injection
+  //   dahua    — DSS Pro listening URL accepts query string templating
+  //   idemia   — BioBridge callback URL: .../idemia/webhook?SN={deviceId}
+  //   virdi    — UNIS event push URL: .../virdi/webhook?SN={TerminalID}
+  //   hid      — Origo webhook profile: append ?SN={readerId}
+  for (const brand of ["suprema", "matrix", "anviz", "dahua", "idemia", "virdi", "hid"]) {
+    app.post(
+      `/api/biometric/${brand}/webhook`,
+      async (req: Request, res: Response) => handleWebhook(brand, req, res),
+    );
+  }
 }
 
 // ─── ADMS protocol command dispatch ─────────────────────────

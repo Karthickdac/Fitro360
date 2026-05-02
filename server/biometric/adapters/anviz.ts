@@ -1,81 +1,76 @@
-import crypto from "node:crypto";
-import { storage } from "../../storage";
-import type { DeviceAdapter, NormalizedEvent } from "../types";
+import type { DeviceAdapter } from "../types";
+import { pickDate, pickString, queueDelete, queueEnroll, queueOpenDoor, verifySignedWebhook } from "./_common";
 
-// ─── UNTESTED — needs hardware verification ──────────────────────────────
-// Anviz CrossChex Cloud / CrossChex Standard. Anviz devices typically push
-// to a "Push Server" URL with JSON. CrossChex Cloud uses a webhook with a
-// shared API key that we verify as HMAC for parity with our other brands.
-//
-// Sample payload:
-//   { "device_sn": "A1B2C3", "event_id": 9001,
-//     "user_id": "1042", "event_time": "2025-04-30 07:42:11",
-//     "verify_type": "FACE", "result": "OK" }
-
-function timingSafeEq(a: string, b: string): boolean {
-  const ab = Buffer.from(a);
-  const bb = Buffer.from(b);
-  if (ab.length !== bb.length) return false;
-  return crypto.timingSafeEqual(ab, bb);
-}
-
+// Anviz CrossChex Cloud emits webhook events for each punch:
+//   { "DeviceSN":"A301", "EmployeeID":"12345", "CheckTime":"2026-04-30T10:15:33Z",
+//     "CheckType":0, "VerifyMode":1, "JobCode":"" }
+// CheckType 0=in, 1=out, 2=denied. Door-open is delivered via the Anviz
+// Cloud REST API: POST /api/device/openDoor with {sn, door}.
 export const anvizAdapter: DeviceAdapter = {
   brand: "anviz",
 
   async verifyRequest(req, device) {
-    if (!device.secret) return false;
-    const sig = (req.headers["x-fitro360-sig"] as string | undefined) || "";
-    if (!sig) return false;
-    const bodyStr = typeof req.rawBody === "string" ? req.rawBody : (req.rawBody?.toString("utf8") ?? "");
-    const expected = crypto.createHmac("sha256", device.secret).update(bodyStr).digest("hex");
-    return timingSafeEq(sig, expected);
+    return verifySignedWebhook(req, device);
   },
 
-  parseEvent(req): NormalizedEvent | null {
+  parseEvent(req) {
     const body = req.body;
     if (!body) return null;
-    const userId = body.user_id ?? body.userID ?? body.userId;
-    const ts = body.event_time ? new Date(String(body.event_time).replace(" ", "T")) : new Date();
-    const nativeId = String(body.event_id ?? `${userId ?? "unk"}-${ts.getTime()}`);
-    const ok = String(body.result ?? "").toUpperCase() === "OK";
-
-    if (!userId) {
+    // CrossChex Cloud sometimes wraps the event in a `data` array; handle both.
+    const ev = Array.isArray(body?.data) ? body.data[0] : (body.data ?? body);
+    if (!ev) return null;
+    const externalRef = pickString(ev, ["EmployeeID", "employeeId", "UserID", "Workno"]);
+    const ts = pickDate(ev, ["CheckTime", "checkTime", "datetime", "PunchTime"]);
+    const checkType = pickString(ev, ["CheckType", "checkType"]);
+    if (!externalRef) {
       return {
         externalRef: "",
         eventType: "unknown_face",
         capturedAt: ts,
-        nativeEventId: nativeId,
+        nativeEventId: `unk-${pickString(ev, ["RecordID", "id"]) ?? ts.getTime()}`,
         raw: body,
       };
     }
     return {
-      externalRef: String(userId),
-      eventType: ok ? "entry" : "denied",
-      capturedAt: isNaN(ts.getTime()) ? new Date() : ts,
-      nativeEventId: nativeId,
+      externalRef,
+      eventType: checkType === "2" ? "denied" : checkType === "1" ? "exit" : "entry",
+      capturedAt: ts,
+      photoUrl: pickString(ev, ["Photo", "ImageURL"]),
+      nativeEventId: `${externalRef}-${pickString(ev, ["RecordID", "id"]) ?? ts.getTime()}`,
       raw: body,
     };
   },
 
-  buildReply(decision) {
+  buildReply(decision, hints) {
     return {
       contentType: "application/json",
-      body: JSON.stringify({ code: decision.allow ? 0 : 1, msg: decision.reason }),
+      body: JSON.stringify({
+        code: decision.allow ? 0 : 1,
+        message: hints.message ?? decision.reason,
+      }),
     };
   },
 
   async enqueueOpenDoor(device) {
-    const idem = `dev:${device.id}:door:${Math.floor(Date.now() / 3000)}`;
-    await storage.createDoorCommand({
-      tenantId: device.tenantId,
-      deviceId: device.id,
-      command: "open",
-      payload: {
-        seconds: device.doorOpenSeconds ?? 5,
-        anviz: "/api/v1/devices/door/open",
-      },
-      idempotencyKey: idem,
-      status: "pending",
+    await queueOpenDoor(device, {
+      api: "crosschex_cloud",
+      endpoint: "/api/device/openDoor",
     });
+  },
+
+  async pushTemplate(device, member, template) {
+    await queueEnroll(device, member, template, {
+      api: "crosschex_cloud",
+      endpoint: "/api/employee/upload",
+    });
+    return { ok: true };
+  },
+
+  async deleteTemplate(device, externalRef) {
+    await queueDelete(device, externalRef, {
+      api: "crosschex_cloud",
+      endpoint: "/api/employee/delete",
+    });
+    return { ok: true };
   },
 };

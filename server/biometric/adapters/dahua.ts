@@ -1,85 +1,76 @@
-import crypto from "node:crypto";
-import { storage } from "../../storage";
-import type { DeviceAdapter, NormalizedEvent } from "../types";
+import type { DeviceAdapter } from "../types";
+import { pickDate, pickString, queueDelete, queueEnroll, queueOpenDoor, verifySignedWebhook } from "./_common";
 
-// ─── UNTESTED — needs hardware verification ──────────────────────────────
-// Dahua DSS Express / Dahua HTTP API. Dahua access controllers push events
-// in a multipart-or-JSON format roughly compatible with Hikvision's ISAPI
-// shape. We support the JSON variant; multipart is a Phase C follow-up.
-//
-// Sample payload (DSS-routed):
-//   { "info": { "EventCode": "AccessControl",
-//        "DeviceID": "DH-K-12345",
-//        "Card": { "CardNo": "8801023" },
-//        "User": { "UserID": "1042", "UserName": "Jane" },
-//        "Time": "2025-04-30 07:42:11",
-//        "Status": 1 }}
-
-function timingSafeEq(a: string, b: string): boolean {
-  const ab = Buffer.from(a);
-  const bb = Buffer.from(b);
-  if (ab.length !== bb.length) return false;
-  return crypto.timingSafeEqual(ab, bb);
-}
-
+// Dahua DSS Pro / "HTTP Listening" mode posts JSON access events:
+//   { "Code":"AccessControl", "Action":"Pulse", "Index":0,
+//     "Data": { "UserID":"12345", "CardNo":"AABBCC11",
+//               "Method":3, "ErrorCode":0, "UTC":1714467333,
+//               "DoorID":1, "Status":1 } }
+// Status 1 = open success, 2 = denied. Door-open via NetSDK or HTTP CGI:
+//   POST /cgi-bin/accessControl.cgi?action=openDoor&channel=1&UserID=...
 export const dahuaAdapter: DeviceAdapter = {
   brand: "dahua",
 
   async verifyRequest(req, device) {
-    if (!device.secret) return false;
-    const sig = (req.headers["x-fitro360-sig"] as string | undefined) || "";
-    if (!sig) return false;
-    const bodyStr = typeof req.rawBody === "string" ? req.rawBody : (req.rawBody?.toString("utf8") ?? "");
-    const expected = crypto.createHmac("sha256", device.secret).update(bodyStr).digest("hex");
-    return timingSafeEq(sig, expected);
+    return verifySignedWebhook(req, device);
   },
 
-  parseEvent(req): NormalizedEvent | null {
+  parseEvent(req) {
     const body = req.body;
     if (!body) return null;
-    const info = body.info ?? body.Event ?? body;
-    if (!info) return null;
-    const userId =
-      info.User?.UserID ?? info.UserID ?? info.userId ?? info.Card?.CardNo;
-    const tsStr = info.Time ?? info.EventTime ?? "";
-    const ts = tsStr ? new Date(String(tsStr).replace(" ", "T")) : new Date();
-    const nativeId = `${userId ?? "unk"}-${info.EventCode ?? ""}-${ts.getTime()}`;
-    const ok = info.Status === 1 || info.Status === "1" || info.Result === "OK";
-
-    if (!userId) {
+    const data = body.Data ?? body.data ?? body;
+    const externalRef = pickString(data, ["UserID", "userId", "CardNo", "cardNo"]);
+    const ts = pickDate(data, ["UTC", "utc", "Time", "time", "DateTime"]);
+    const status = pickString(data, ["Status", "status"]);
+    if (!externalRef) {
       return {
         externalRef: "",
         eventType: "unknown_face",
         capturedAt: ts,
-        nativeEventId: nativeId,
+        nativeEventId: `unk-${pickString(body, ["Index", "RecordNo"]) ?? ts.getTime()}`,
         raw: body,
       };
     }
     return {
-      externalRef: String(userId),
-      eventType: ok ? "entry" : "denied",
-      capturedAt: isNaN(ts.getTime()) ? new Date() : ts,
-      nativeEventId: nativeId,
+      externalRef,
+      eventType: status === "2" ? "denied" : "entry",
+      capturedAt: ts,
+      photoUrl: pickString(data, ["SnapURL", "ImageURL"]),
+      nativeEventId: `${externalRef}-${pickString(body, ["Index", "RecordNo"]) ?? ts.getTime()}`,
       raw: body,
     };
   },
 
-  buildReply(_decision) {
-    return { contentType: "application/json", body: JSON.stringify({ code: 200 }) };
+  buildReply(decision, hints) {
+    return {
+      contentType: "application/json",
+      body: JSON.stringify({
+        Result: decision.allow ? 0 : 1,
+        Message: hints.message ?? decision.reason,
+      }),
+    };
   },
 
   async enqueueOpenDoor(device) {
-    const idem = `dev:${device.id}:door:${Math.floor(Date.now() / 3000)}`;
-    await storage.createDoorCommand({
-      tenantId: device.tenantId,
-      deviceId: device.id,
-      command: "open",
-      payload: {
-        seconds: device.doorOpenSeconds ?? 5,
-        dahua: "/cgi-bin/accessControl.cgi?action=openDoor&channel=1",
-      },
-      idempotencyKey: idem,
-      status: "pending",
+    await queueOpenDoor(device, {
+      api: "dahua_cgi",
+      endpoint: "/cgi-bin/accessControl.cgi?action=openDoor&channel=1",
     });
+  },
+
+  async pushTemplate(device, member, template) {
+    await queueEnroll(device, member, template, {
+      api: "dahua_cgi",
+      endpoint: "/cgi-bin/AccessUser.cgi?action=insertMulti",
+    });
+    return { ok: true };
+  },
+
+  async deleteTemplate(device, externalRef) {
+    await queueDelete(device, externalRef, {
+      api: "dahua_cgi",
+      endpoint: "/cgi-bin/AccessUser.cgi?action=remove",
+    });
+    return { ok: true };
   },
 };
