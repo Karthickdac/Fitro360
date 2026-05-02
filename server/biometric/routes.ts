@@ -323,7 +323,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
   app.get(
     "/api/access-events",
     authMiddleware,
-    requireRole("gym_owner", "manager", "sales_executive", "trainer"),
+    requireRole("gym_owner", "manager"),
     async (req: Request, res: Response) => {
       const user = getUser(req)!;
       if (!user.tenantId) return res.json([]);
@@ -353,7 +353,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
       const member = await storage.getMember(String(req.params.memberId));
       if (!member) return res.status(404).json({ message: "Member not found" });
       const isSelf = member.userId && member.userId === user.id;
-      const isStaff = ["gym_owner", "manager", "sales_executive", "trainer"].includes(user.role);
+      const isStaff = ["gym_owner", "manager"].includes(user.role);
       if (!isSelf && !(isStaff && member.tenantId === user.tenantId)) {
         return res.status(403).json({ message: "Forbidden" });
       }
