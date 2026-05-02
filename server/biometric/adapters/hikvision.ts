@@ -80,9 +80,9 @@ export const hikvisionAdapter: DeviceAdapter = {
   },
 
   async enqueueOpenDoor(device) {
+    // Race-safe via storage.createDoorCommand — UNIQUE(idempotencyKey)
+    // collapses concurrent triggers in the same 3s bucket to one insert.
     const idem = `dev:${device.id}:door:${Math.floor(Date.now() / 3000)}`;
-    const existing = await storage.getDoorCommandByIdempotencyKey(idem);
-    if (existing) return;
     await storage.createDoorCommand({
       tenantId: device.tenantId,
       deviceId: device.id,

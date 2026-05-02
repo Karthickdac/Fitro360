@@ -50,7 +50,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
   app.get(
     "/api/devices",
     authMiddleware,
-    requireRole("gym_owner", "manager", "sales_executive"),
+    requireRole("gym_owner", "manager"),
     async (req: Request, res: Response) => {
       const user = getUser(req)!;
       if (!user.tenantId) return res.json([]);

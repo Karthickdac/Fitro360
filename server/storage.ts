@@ -1429,8 +1429,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createDoorCommand(cmd: InsertDoorCommand): Promise<DoorCommand> {
-    const [created] = await db.insert(doorCommands).values(cmd).returning();
-    return created;
+    // Race-safe: idempotencyKey has a UNIQUE constraint, so concurrent
+    // requests in the same 3-second bucket collapse to a single insert.
+    // The losing inserts return zero rows; we then fetch and return the
+    // existing winner so callers always get back the canonical command.
+    const inserted = await db.insert(doorCommands)
+      .values(cmd)
+      .onConflictDoNothing({ target: doorCommands.idempotencyKey })
+      .returning();
+    if (inserted.length > 0) return inserted[0];
+    const existing = await this.getDoorCommandByIdempotencyKey(cmd.idempotencyKey);
+    if (existing) return existing;
+    // Defensive — should be unreachable. Surface clearly instead of returning undefined.
+    throw new Error("createDoorCommand: insert returned no rows and no existing row found");
   }
 
   async markDoorCommandPickedUp(id: string): Promise<void> {
