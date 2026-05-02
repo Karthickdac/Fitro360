@@ -7,6 +7,7 @@ import {
   memberMetrics, equipmentMaintenance, paymentRecords,
   trainerCommissions, trainerLeaves, trainerProfiles, membershipPlans,
   supplierBills, vatReturns, corporateTaxReturns, fixedAssets, membershipTransfers,
+  devices, biometricTemplates, accessEvents, doorCommands, processedBiometricEvents,
   type Tenant, type InsertTenant,
   type User, type InsertUser,
   type Branch, type InsertBranch,
@@ -34,6 +35,10 @@ import {
   type CorporateTaxReturn, type InsertCorporateTaxReturn,
   type FixedAsset, type InsertFixedAsset,
   type MembershipTransfer, type InsertMembershipTransfer,
+  type Device, type InsertDevice,
+  type BiometricTemplate, type InsertBiometricTemplate,
+  type AccessEvent, type InsertAccessEvent,
+  type DoorCommand, type InsertDoorCommand,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -207,6 +212,36 @@ export interface IStorage {
   createMembershipTransfer(transfer: InsertMembershipTransfer): Promise<MembershipTransfer>;
   updateMembershipTransfer(id: string, data: Partial<InsertMembershipTransfer>): Promise<MembershipTransfer | undefined>;
   executeMembershipTransfer(id: string, approvedBy: string): Promise<MembershipTransfer | undefined>;
+
+  // Biometric access control
+  getDevicesByTenant(tenantId: string): Promise<Device[]>;
+  getDevice(id: string): Promise<Device | undefined>;
+  getDeviceBySerial(serialNumber: string): Promise<Device | undefined>;
+  createDevice(device: InsertDevice): Promise<Device>;
+  updateDevice(id: string, data: Partial<InsertDevice> & { lastSeenAt?: Date | null; lastError?: string | null }): Promise<Device | undefined>;
+  deleteDevice(id: string): Promise<void>;
+
+  getTemplatesByMember(memberId: string): Promise<BiometricTemplate[]>;
+  getTemplatesByTenant(tenantId: string): Promise<BiometricTemplate[]>;
+  getTemplate(id: string): Promise<BiometricTemplate | undefined>;
+  getTemplateByExternalRef(deviceId: string, externalRef: string): Promise<BiometricTemplate | undefined>;
+  createTemplate(template: InsertBiometricTemplate): Promise<BiometricTemplate>;
+  updateTemplate(id: string, data: Partial<InsertBiometricTemplate>): Promise<BiometricTemplate | undefined>;
+  deleteTemplate(id: string): Promise<void>;
+  deleteTemplatesByMember(memberId: string): Promise<void>;
+
+  getAccessEventsByTenant(tenantId: string, opts?: { branchId?: string; deviceId?: string; memberId?: string; decision?: string; limit?: number }): Promise<AccessEvent[]>;
+  getAccessEventsByMember(memberId: string, limit?: number): Promise<AccessEvent[]>;
+  createAccessEvent(event: InsertAccessEvent): Promise<AccessEvent>;
+
+  isBiometricEventProcessed(id: string): Promise<boolean>;
+  markBiometricEventProcessed(id: string, deviceId: string): Promise<void>;
+
+  getPendingDoorCommands(deviceId: string): Promise<DoorCommand[]>;
+  getDoorCommandByIdempotencyKey(key: string): Promise<DoorCommand | undefined>;
+  createDoorCommand(cmd: InsertDoorCommand): Promise<DoorCommand>;
+  markDoorCommandPickedUp(id: string): Promise<void>;
+  markDoorCommandComplete(id: string, status: "done" | "failed", error?: string): Promise<void>;
 
   getSalesToday(tenantId: string): Promise<{
     perDayTotal: number;
@@ -1173,6 +1208,157 @@ export class DatabaseStorage implements IStorage {
       }));
 
     return { birthdaysToday, expiringSoon, ptSessionsToday };
+  }
+
+  // ─── Biometric: Devices ───────────────────────────────────
+  async getDevicesByTenant(tenantId: string): Promise<Device[]> {
+    return db.select().from(devices)
+      .where(eq(devices.tenantId, tenantId))
+      .orderBy(desc(devices.createdAt));
+  }
+
+  async getDevice(id: string): Promise<Device | undefined> {
+    const [d] = await db.select().from(devices).where(eq(devices.id, id));
+    return d;
+  }
+
+  async getDeviceBySerial(serialNumber: string): Promise<Device | undefined> {
+    const [d] = await db.select().from(devices).where(eq(devices.serialNumber, serialNumber));
+    return d;
+  }
+
+  async createDevice(device: InsertDevice): Promise<Device> {
+    const [created] = await db.insert(devices).values(device as any).returning();
+    return created;
+  }
+
+  async updateDevice(id: string, data: any): Promise<Device | undefined> {
+    if (!data || Object.keys(data).length === 0) return this.getDevice(id);
+    const [updated] = await db.update(devices).set(data as any).where(eq(devices.id, id)).returning();
+    return updated;
+  }
+
+  async deleteDevice(id: string): Promise<void> {
+    // Templates and access events keep their device reference for audit;
+    // we null deviceId by re-pointing rather than cascade-delete history.
+    await db.delete(doorCommands).where(eq(doorCommands.deviceId, id));
+    await db.delete(devices).where(eq(devices.id, id));
+  }
+
+  // ─── Biometric: Templates ─────────────────────────────────
+  async getTemplatesByMember(memberId: string): Promise<BiometricTemplate[]> {
+    return db.select().from(biometricTemplates)
+      .where(eq(biometricTemplates.memberId, memberId))
+      .orderBy(desc(biometricTemplates.enrolledAt));
+  }
+
+  async getTemplatesByTenant(tenantId: string): Promise<BiometricTemplate[]> {
+    return db.select().from(biometricTemplates)
+      .where(eq(biometricTemplates.tenantId, tenantId))
+      .orderBy(desc(biometricTemplates.enrolledAt));
+  }
+
+  async getTemplate(id: string): Promise<BiometricTemplate | undefined> {
+    const [t] = await db.select().from(biometricTemplates).where(eq(biometricTemplates.id, id));
+    return t;
+  }
+
+  async getTemplateByExternalRef(deviceId: string, externalRef: string): Promise<BiometricTemplate | undefined> {
+    const [t] = await db.select().from(biometricTemplates)
+      .where(and(eq(biometricTemplates.deviceId, deviceId), eq(biometricTemplates.externalRef, externalRef)));
+    return t;
+  }
+
+  async createTemplate(template: InsertBiometricTemplate): Promise<BiometricTemplate> {
+    const [created] = await db.insert(biometricTemplates).values(template as any).returning();
+    return created;
+  }
+
+  async updateTemplate(id: string, data: Partial<InsertBiometricTemplate>): Promise<BiometricTemplate | undefined> {
+    if (!data || Object.keys(data).length === 0) return this.getTemplate(id);
+    const [updated] = await db.update(biometricTemplates).set(data as any).where(eq(biometricTemplates.id, id)).returning();
+    return updated;
+  }
+
+  async deleteTemplate(id: string): Promise<void> {
+    await db.delete(biometricTemplates).where(eq(biometricTemplates.id, id));
+  }
+
+  async deleteTemplatesByMember(memberId: string): Promise<void> {
+    await db.delete(biometricTemplates).where(eq(biometricTemplates.memberId, memberId));
+  }
+
+  // ─── Biometric: Access events ─────────────────────────────
+  async getAccessEventsByTenant(tenantId: string, opts: { branchId?: string; deviceId?: string; memberId?: string; decision?: string; limit?: number } = {}): Promise<AccessEvent[]> {
+    const conditions = [eq(accessEvents.tenantId, tenantId)];
+    if (opts.branchId) conditions.push(eq(accessEvents.branchId, opts.branchId));
+    if (opts.deviceId) conditions.push(eq(accessEvents.deviceId, opts.deviceId));
+    if (opts.memberId) conditions.push(eq(accessEvents.memberId, opts.memberId));
+    if (opts.decision) conditions.push(eq(accessEvents.decision, opts.decision));
+    return db.select().from(accessEvents)
+      .where(and(...conditions))
+      .orderBy(desc(accessEvents.capturedAt))
+      .limit(opts.limit ?? 200);
+  }
+
+  async getAccessEventsByMember(memberId: string, limit = 50): Promise<AccessEvent[]> {
+    return db.select().from(accessEvents)
+      .where(eq(accessEvents.memberId, memberId))
+      .orderBy(desc(accessEvents.capturedAt))
+      .limit(limit);
+  }
+
+  async createAccessEvent(event: InsertAccessEvent): Promise<AccessEvent> {
+    const [created] = await db.insert(accessEvents).values(event as any).returning();
+    return created;
+  }
+
+  // ─── Biometric: Idempotency ───────────────────────────────
+  async isBiometricEventProcessed(id: string): Promise<boolean> {
+    const [row] = await db.select({ id: processedBiometricEvents.id })
+      .from(processedBiometricEvents)
+      .where(eq(processedBiometricEvents.id, id));
+    return !!row;
+  }
+
+  async markBiometricEventProcessed(id: string, deviceId: string): Promise<void> {
+    await db.insert(processedBiometricEvents)
+      .values({ id, deviceId })
+      .onConflictDoNothing();
+  }
+
+  // ─── Biometric: Door commands ─────────────────────────────
+  async getPendingDoorCommands(deviceId: string): Promise<DoorCommand[]> {
+    return db.select().from(doorCommands)
+      .where(and(eq(doorCommands.deviceId, deviceId), eq(doorCommands.status, "pending")))
+      .orderBy(doorCommands.createdAt)
+      .limit(10);
+  }
+
+  async getDoorCommandByIdempotencyKey(key: string): Promise<DoorCommand | undefined> {
+    const [cmd] = await db.select().from(doorCommands).where(eq(doorCommands.idempotencyKey, key));
+    return cmd;
+  }
+
+  async createDoorCommand(cmd: InsertDoorCommand): Promise<DoorCommand> {
+    const [created] = await db.insert(doorCommands).values(cmd as any).returning();
+    return created;
+  }
+
+  async markDoorCommandPickedUp(id: string): Promise<void> {
+    await db.update(doorCommands).set({
+      status: "picked_up",
+      pickedUpAt: new Date(),
+      attempts: sql`${doorCommands.attempts} + 1`,
+    } as any).where(eq(doorCommands.id, id));
+  }
+
+  async markDoorCommandComplete(id: string, status: "done" | "failed", error?: string): Promise<void> {
+    await db.update(doorCommands).set({
+      status,
+      completedAt: new Date(),
+      errorMessage: error ?? null,
+    } as any).where(eq(doorCommands.id, id));
   }
 }
 

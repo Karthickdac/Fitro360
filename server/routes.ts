@@ -4,6 +4,7 @@ import session from "express-session";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { loginSchema, insertSupplierBillSchema, insertVatReturnSchema, insertCorporateTaxReturnSchema, insertFixedAssetSchema, insertMembershipTransferSchema } from "@shared/schema";
+import { registerBiometricRoutes } from "./biometric/routes";
 import { z } from "zod";
 import {
   getUncachableStripeClient,
@@ -2433,6 +2434,9 @@ export async function registerRoutes(
       return res.status(400).json({ message: error.message });
     }
   });
+
+  // ─── Biometric Access Control (devices, templates, events, webhooks) ───
+  registerBiometricRoutes(app, authMiddleware);
 
   return httpServer;
 }

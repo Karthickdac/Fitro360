@@ -49,7 +49,7 @@ import {
 import {
   CalendarCheck, Shield, Clock, Activity, User, Calendar,
   TrendingDown, Weight, Ruler, Percent, Dumbbell, BookOpen,
-  Check, X, Loader2, Phone, AlertCircle,
+  Check, X, Loader2, Phone, AlertCircle, ScanFace, DoorOpen,
 } from "lucide-react";
 import { format, differenceInDays, differenceInMinutes } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -76,6 +76,7 @@ const tabRouteMap: Record<string, string> = {
   sessions: "/portal/schedule",
   progress: "/portal/progress",
   profile: "/portal/profile",
+  entries: "/portal/entries",
 };
 
 export default function MemberPortalPage({ initialTab = "dashboard" }: { initialTab?: string }) {
@@ -278,6 +279,10 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
           <TabsTrigger value="sessions" className="flex-1 min-w-0 rounded-lg text-xs sm:text-sm px-2 sm:px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-md" data-testid="tab-sessions">
             <span className="sm:hidden">Sessions</span>
             <span className="hidden sm:inline">Book Sessions</span>
+          </TabsTrigger>
+          <TabsTrigger value="entries" className="flex-1 min-w-0 rounded-lg text-xs sm:text-sm px-2 sm:px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white data-[state=active]:shadow-md" data-testid="tab-entries">
+            <span className="sm:hidden">Entries</span>
+            <span className="hidden sm:inline">My Entries</span>
           </TabsTrigger>
           <TabsTrigger value="profile" className="flex-1 min-w-0 rounded-lg text-xs sm:text-sm px-2 sm:px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-rose-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md" data-testid="tab-profile">
             <span className="sm:hidden">Profile</span>
@@ -734,6 +739,10 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
           )}
         </TabsContent>
 
+        <TabsContent value="entries" className="space-y-6 mt-6" data-testid="panel-entries">
+          <MyEntriesPanel memberId={member?.id} />
+        </TabsContent>
+
         <TabsContent value="profile" className="space-y-6 mt-6" data-testid="panel-profile">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
@@ -1025,5 +1034,61 @@ export default function MemberPortalPage({ initialTab = "dashboard" }: { initial
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// ─── My Entries: biometric access history for the current member ──────
+function MyEntriesPanel({ memberId }: { memberId?: string }) {
+  const { data: events = [], isLoading } = useQuery<any[]>({
+    queryKey: ["/api/access-events/by-member", memberId],
+    enabled: !!memberId,
+    refetchInterval: 15000,
+  });
+
+  if (!memberId) {
+    return <p className="text-sm text-muted-foreground">Loading your profile...</p>;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <DoorOpen className="h-4 w-4" /> Recent gym entries
+        </CardTitle>
+        <CardDescription>Last 100 entries detected by your gym's biometric devices.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        ) : events.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <ScanFace className="mx-auto h-12 w-12 opacity-30 mb-3" />
+            <p>No biometric entries yet. Ask your gym to enrol you on the door reader.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {events.map((e) => {
+              const isAllow = e.decision === "allow";
+              return (
+                <div key={e.id} className="flex items-center gap-3 border rounded-md p-3"
+                  data-testid={`row-my-entry-${e.id}`}
+                >
+                  <div className={`h-9 w-9 rounded-full flex items-center justify-center ${isAllow ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}>
+                    {isAllow ? <Check className="h-5 w-5" /> : <X className="h-5 w-5" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium">{e.reason || e.eventType}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {format(new Date(e.capturedAt), "PPp")}
+                    </div>
+                  </div>
+                  <Badge variant={isAllow ? "default" : "destructive"}>{e.eventType}</Badge>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

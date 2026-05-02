@@ -33,6 +33,9 @@ import {
   Sparkles,
   ArrowRightLeft,
   Boxes,
+  Fingerprint,
+  ScanFace,
+  History,
   ChevronDown,
 } from "lucide-react";
 import {
@@ -105,6 +108,9 @@ const managerMainItems: NavItem[] = [
 
 const managerSystemItems: NavItem[] = [
   { title: "Branches", url: "/branches", icon: GitBranch },
+  { title: "Devices", url: "/devices", icon: Fingerprint },
+  { title: "Enrol Member", url: "/enrolment", icon: ScanFace },
+  { title: "Access Log", url: "/access-events", icon: History },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Reports", url: "/reports", icon: FileBarChart },
   { title: "Activity", url: "/activity", icon: Activity },
@@ -135,6 +141,12 @@ const gymOperationsItems: NavItem[] = [
   { title: "Inventory", url: "/inventory", icon: Package },
   { title: "Maintenance", url: "/maintenance", icon: Wrench },
   { title: "Fixed Assets", url: "/fixed-assets", icon: Boxes },
+];
+
+const gymAccessControlItems: NavItem[] = [
+  { title: "Devices", url: "/devices", icon: Fingerprint },
+  { title: "Enrol Member", url: "/enrolment", icon: ScanFace },
+  { title: "Access Log", url: "/access-events", icon: History },
 ];
 
 const gymProcurementItems: NavItem[] = [
@@ -394,6 +406,7 @@ export function AppSidebar() {
             <NavGroup label="Finance" items={gymFinanceItems} location={location} navigate={navigate} />
             <NavGroup label="Growth" items={gymGrowthItems} location={location} navigate={navigate} defaultOpen={false} />
             <NavGroup label="Operations" items={gymOperationsItems} location={location} navigate={navigate} defaultOpen={false} />
+            <NavGroup label="Access Control" items={gymAccessControlItems} location={location} navigate={navigate} defaultOpen={false} />
             <NavGroup label="Procurement" items={gymProcurementItems} location={location} navigate={navigate} defaultOpen={false} />
             <NavGroup label="Reports" items={gymReportsItems} location={location} navigate={navigate} defaultOpen={false} />
             <NavGroup label="Tax & Compliance" items={gymComplianceItems} location={location} navigate={navigate} defaultOpen={false} />

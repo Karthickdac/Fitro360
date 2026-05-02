@@ -48,6 +48,9 @@ import VatReturnsPage from "@/pages/vat-returns";
 import CorporateTaxPage from "@/pages/corporate-tax";
 import FixedAssetsPage from "@/pages/fixed-assets";
 import MembershipTransfersPage from "@/pages/membership-transfers";
+import DevicesPage from "@/pages/devices";
+import EnrolmentPage from "@/pages/enrolment";
+import AccessEventsPage from "@/pages/access-events";
 
 function LoadingScreen() {
   return (
@@ -121,6 +124,9 @@ function ManagerRouter() {
       <Route path="/membership-plans" component={MembershipPlansPage} />
       <Route path="/membership-transfers" component={MembershipTransfersPage} />
       <Route path="/fixed-assets" component={FixedAssetsPage} />
+      <Route path="/devices" component={DevicesPage} />
+      <Route path="/enrolment" component={EnrolmentPage} />
+      <Route path="/access-events" component={AccessEventsPage} />
       <Route path="/activity" component={ActivityPage} />
       <Route path="/notifications" component={NotificationsPage} />
       <Route path="/analytics" component={AnalyticsPage} />
@@ -162,6 +168,9 @@ function GymOwnerRouter() {
       <Route path="/corporate-tax" component={CorporateTaxPage} />
       <Route path="/fixed-assets" component={FixedAssetsPage} />
       <Route path="/membership-transfers" component={MembershipTransfersPage} />
+      <Route path="/devices" component={DevicesPage} />
+      <Route path="/enrolment" component={EnrolmentPage} />
+      <Route path="/access-events" component={AccessEventsPage} />
       <Route path="/settings/billing" component={BillingPage} />
       <Route component={NotFound} />
     </Switch>
