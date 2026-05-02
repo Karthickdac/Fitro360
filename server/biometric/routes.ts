@@ -480,27 +480,22 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
 // /iclock/getrequest with their SerialNumber. We respond with any pending
 // queued commands in ADMS line-protocol format ("C:<id>:<CMD>\n") and mark
 // them as picked-up so they aren't redelivered. The device then runs the
-// command and POSTs back to /iclock/devicecmd with status. Device firmware
-// does not support HMAC headers on these endpoints; we authenticate with the
-// SerialNumber + optional `pwd` query parameter (matching device.secret) and
-// rely on the device tunnel/VPN for transport security. Operators wanting
-// stronger auth should run the on-prem relay (HMAC-signed paths in Phase B).
+// command and POSTs back to /iclock/devicecmd with status.
+//
+// Auth: every ADMS command/ack call MUST present `pwd=<device.secret>`
+// (set on the device's ADMS server config) OR the same secret in the
+// `X-Fitro360-Sig` header. Constant-time compared. Serial alone is NEVER
+// sufficient — leaked URLs must not be able to drain or ack commands.
 function admsAuthOk(device: any, req: Request): boolean {
   const pwd = (req.query.pwd as string | undefined) || (req.headers["x-fitro360-sig"] as string | undefined);
-  // If pwd is provided, compare in constant time against the device secret.
-  if (pwd) {
-    try {
-      const a = Buffer.from(pwd);
-      const b = Buffer.from(device.secret);
-      return a.length === b.length && crypto.timingSafeEqual(a, b);
-    } catch {
-      return false;
-    }
+  if (!pwd || !device?.secret) return false;
+  try {
+    const a = Buffer.from(pwd);
+    const b = Buffer.from(device.secret);
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
   }
-  // No pwd: allow only when the device is configured for cloud_push mode and
-  // the request matches a real registered serial. The serial itself acts as
-  // the bearer token (firmware-typical for ADMS).
-  return device.mode === "cloud_push" || !device.mode;
 }
 
 function admsCommandLine(c: any): string {
