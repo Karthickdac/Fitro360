@@ -462,6 +462,100 @@ export const processedStripeEvents = pgTable("processed_stripe_events", {
   processedAt: timestamp("processed_at").notNull().defaultNow(),
 });
 
+// ─── Biometric Access Control ─────────────────────────────────────────
+// Physical entry devices (face / fingerprint / RFID readers) installed at
+// a branch door. brand selects the adapter at runtime; secret authenticates
+// inbound webhook traffic from the device or relay.
+export const devices = pgTable("devices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  branchId: varchar("branch_id"),
+  brand: text("brand").notNull(), // zkteco | essl | hikvision | suprema | matrix | anviz | realtime | dahua | idemia | virdi | hid
+  model: text("model"),
+  name: text("name").notNull(),
+  serialNumber: text("serial_number").notNull().unique(),
+  ipAddress: text("ip_address"),
+  port: integer("port"),
+  username: text("username"),
+  passwordEnc: text("password_enc"), // device-side login password (encrypted at rest in production deployments)
+  secret: text("secret").notNull(), // shared secret used to HMAC-verify webhook payloads
+  mode: text("mode").notNull().default("cloud_push"), // cloud_push | local_relay
+  capabilities: jsonb("capabilities").$type<{ face?: boolean; fingerprint?: boolean; card?: boolean; door?: boolean }>().default({ face: true, fingerprint: true, card: false, door: true }),
+  doorOpenSeconds: integer("door_open_seconds").default(5),
+  status: text("status").notNull().default("offline"), // online | offline | error
+  lastSeenAt: timestamp("last_seen_at"),
+  lastError: text("last_error"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Biometric enrolment templates per member. deviceId nullable means
+// the template is logically global (Fitro360-side master) and may be
+// pushed to several devices. templateData is the device-native binary
+// blob, opaque to us; we never re-derive face vectors.
+export const biometricTemplates = pgTable("biometric_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  memberId: varchar("member_id").references(() => members.id).notNull(),
+  deviceId: varchar("device_id").references(() => devices.id),
+  templateType: text("template_type").notNull().default("face"), // face | fingerprint | card
+  templateData: text("template_data"), // base64 device-native template (encrypted at rest in prod)
+  externalRef: text("external_ref"), // device-side user id / pin
+  imagePreviewUrl: text("image_preview_url"), // small preview for UI (not used for matching)
+  status: text("status").notNull().default("active"), // active | failed | revoked
+  syncStatus: text("sync_status").notNull().default("pending"), // pending | pushed | failed
+  syncError: text("sync_error"),
+  consentGiven: boolean("consent_given").default(false),
+  consentAt: timestamp("consent_at"),
+  enrolledAt: timestamp("enrolled_at").defaultNow(),
+});
+
+// Every entry attempt — allowed or denied — across every device.
+// memberId may be null for unrecognised faces; rawPayload retains
+// the device's original event for forensics.
+export const accessEvents = pgTable("access_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  branchId: varchar("branch_id"),
+  deviceId: varchar("device_id").references(() => devices.id),
+  memberId: varchar("member_id").references(() => members.id),
+  externalRef: text("external_ref"), // device-reported user id (when memberId not yet linked)
+  eventType: text("event_type").notNull(), // entry | exit | denied | unknown_face | error
+  decision: text("decision").notNull(), // allow | deny | error
+  reason: text("reason"), // human-readable, e.g. "membership expired", "frozen", "wrong branch"
+  capturedAt: timestamp("captured_at").notNull().defaultNow(),
+  photoUrl: text("photo_url"),
+  rawPayload: jsonb("raw_payload"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Outbound commands waiting to be picked up by a device or relay.
+// idempotencyKey collapses repeat triggers within a short window
+// (handled at the route layer) so a button-mashed door open turns
+// into a single physical command.
+export const doorCommands = pgTable("door_commands", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  deviceId: varchar("device_id").references(() => devices.id).notNull(),
+  command: text("command").notNull().default("open"), // open | enroll | delete | sync
+  payload: jsonb("payload"),
+  idempotencyKey: text("idempotency_key").notNull().unique(),
+  status: text("status").notNull().default("pending"), // pending | picked_up | done | failed
+  attempts: integer("attempts").default(0),
+  pickedUpAt: timestamp("picked_up_at"),
+  completedAt: timestamp("completed_at"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Idempotency table for inbound device events — same role as
+// processed_stripe_events but for biometric webhooks.
+export const processedBiometricEvents = pgTable("processed_biometric_events", {
+  id: varchar("id").primaryKey(), // composite: deviceId + native event id
+  deviceId: varchar("device_id"),
+  processedAt: timestamp("processed_at").notNull().defaultNow(),
+});
+
 export const activities = pgTable("activities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
@@ -499,6 +593,10 @@ export const insertVatReturnSchema = createInsertSchema(vatReturns).omit({ id: t
 export const insertCorporateTaxReturnSchema = createInsertSchema(corporateTaxReturns).omit({ id: true, createdAt: true });
 export const insertFixedAssetSchema = createInsertSchema(fixedAssets).omit({ id: true, createdAt: true });
 export const insertMembershipTransferSchema = createInsertSchema(membershipTransfers).omit({ id: true, createdAt: true, approvedAt: true, executedAt: true });
+export const insertDeviceSchema = createInsertSchema(devices).omit({ id: true, createdAt: true, lastSeenAt: true, lastError: true });
+export const insertBiometricTemplateSchema = createInsertSchema(biometricTemplates).omit({ id: true, enrolledAt: true });
+export const insertAccessEventSchema = createInsertSchema(accessEvents).omit({ id: true, createdAt: true });
+export const insertDoorCommandSchema = createInsertSchema(doorCommands).omit({ id: true, createdAt: true, pickedUpAt: true, completedAt: true, attempts: true });
 
 export const loginSchema = z.object({
   username: z.string().min(1),
