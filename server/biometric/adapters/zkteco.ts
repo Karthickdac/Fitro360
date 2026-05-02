@@ -43,14 +43,27 @@ export const zktecoAdapter: DeviceAdapter = {
   brand: "zkteco",
 
   async verifyRequest(req, device) {
+    // ADMS cloud-push devices (the typical ZKTeco/ESSL/Realtime field
+    // deployment) cannot send custom HTTP headers, so we accept either:
+    //   1. X-Fitro360-Sig HMAC of the raw body (preferred — used by the
+    //      on-prem relay agent and by anyone who can sign requests), OR
+    //   2. ?pwd=<device.secret> query parameter, which is the native ADMS
+    //      authentication scheme the firmware itself uses.
+    // Both are constant-time compared against device.secret. No anonymous
+    // webhooks are ever accepted.
+    if (!device.secret) return false;
     const sig = (req.headers["x-fitro360-sig"] as string | undefined) || "";
-    if (!sig) return false; // signature is mandatory — no anonymous webhooks
-    const bodyStr = typeof req.rawBody === "string" ? req.rawBody : (req.rawBody?.toString("utf8") ?? "");
-    const expected = crypto
-      .createHmac("sha256", device.secret)
-      .update(bodyStr)
-      .digest("hex");
-    return timingSafeEq(sig, expected);
+    if (sig) {
+      const bodyStr = typeof req.rawBody === "string" ? req.rawBody : (req.rawBody?.toString("utf8") ?? "");
+      const expected = crypto
+        .createHmac("sha256", device.secret)
+        .update(bodyStr)
+        .digest("hex");
+      if (timingSafeEq(sig, expected)) return true;
+    }
+    const pwd = (req.query?.pwd as string | undefined) || "";
+    if (pwd && timingSafeEq(pwd, device.secret)) return true;
+    return false;
   },
 
   parseEvent(req) {
