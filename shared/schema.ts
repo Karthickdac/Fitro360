@@ -223,6 +223,11 @@ export const attendance = pgTable("attendance", {
   checkInTime: timestamp("check_in_time").defaultNow(),
   checkOutTime: timestamp("check_out_time"),
   method: text("method").default("manual"),
+  // For biometric/RFID check-ins, link the device that recorded the entry
+  // so audit + analytics can join attendance back to the reader. Nullable
+  // because manual check-ins have no device, and we use ON DELETE SET NULL
+  // so retiring a reader preserves attendance history.
+  deviceId: varchar("device_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -497,7 +502,7 @@ export const biometricTemplates = pgTable("biometric_templates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   memberId: varchar("member_id").references(() => members.id).notNull(),
-  deviceId: varchar("device_id").references(() => devices.id),
+  deviceId: varchar("device_id").references(() => devices.id, { onDelete: "set null" }),
   templateType: text("template_type").notNull().default("face"), // face | fingerprint | card
   templateData: text("template_data"), // base64 device-native template (encrypted at rest in prod)
   externalRef: text("external_ref"), // device-side user id / pin
@@ -517,7 +522,7 @@ export const accessEvents = pgTable("access_events", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   branchId: varchar("branch_id"),
-  deviceId: varchar("device_id").references(() => devices.id),
+  deviceId: varchar("device_id").references(() => devices.id, { onDelete: "set null" }),
   memberId: varchar("member_id").references(() => members.id),
   externalRef: text("external_ref"), // device-reported user id (when memberId not yet linked)
   eventType: text("event_type").notNull(), // entry | exit | denied | unknown_face | error

@@ -381,16 +381,43 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
   );
 
   // Relay acks completion of a queued command. Body: { status: "done"|"failed", error? }
-  // We trust this endpoint when accompanied by a valid device-secret HMAC over
-  // the command id (relay knows its devices' secrets).
+  // Authenticated via HMAC of `POST:/api/biometric/commands/:id/ack` signed
+  // with the owning device's secret. This prevents anyone who guesses a
+  // command id from marking commands done/failed. (Global express.json() has
+  // already parsed the body by the time we get here.)
   app.post(
     "/api/biometric/commands/:id/ack",
-    express.json({ limit: "16kb" }),
     async (req: Request, res: Response) => {
       try {
+        const cmdId = String(req.params.id);
+        const sig = (req.headers["x-fitro360-sig"] as string | undefined) || "";
+        if (!sig) return res.status(401).json({ message: "Signature required" });
+
+        // Look up the command to find its device, then verify HMAC against
+        // that device's secret. Without this we'd have no way to know which
+        // secret to check.
+        const cmd = await storage.getDoorCommand(cmdId);
+        if (!cmd) return res.status(404).json({ message: "Command not found" });
+        const device = await storage.getDevice(cmd.deviceId);
+        if (!device) return res.status(404).json({ message: "Device not found" });
+
+        const expected = crypto
+          .createHmac("sha256", device.secret)
+          .update(`POST:/api/biometric/commands/${cmdId}/ack`)
+          .digest("hex");
+        let sigOk = false;
+        try {
+          sigOk =
+            sig.length === expected.length &&
+            crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+        } catch {
+          sigOk = false;
+        }
+        if (!sigOk) return res.status(401).json({ message: "Bad signature" });
+
         const body = (req.body || {}) as { status?: string; error?: string };
         const status: "done" | "failed" = body.status === "failed" ? "failed" : "done";
-        await storage.markDoorCommandComplete(String(req.params.id), status, body.error);
+        await storage.markDoorCommandComplete(cmdId, status, body.error);
         return res.json({ ok: true });
       } catch (e: any) {
         return res.status(400).json({ message: e.message });
@@ -399,14 +426,21 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
   );
 
   // ─── Brand webhooks (push-protocol ingress) ──────────────
-  // ZKTeco / ESSL / Realtime ADMS path: device POSTs to /iclock/cdata?SN=...
+  //
+  // Hikvision sends JSON. The global express.json() in server/index.ts has a
+  // verify hook that stashes the raw bytes on req.rawBody, so we don't need a
+  // route-level raw parser here — and adding one is actively harmful, because
+  // express.json() has already drained the request stream.
+  //
+  // ZKTeco / ESSL / Realtime ADMS firmware sends text/plain attlog payloads
+  // that no global parser touches; rawTextParser fires for those and populates
+  // req.body as a Buffer.
   for (const brand of ["zkteco", "essl", "realtime"]) {
     app.post(
       `/api/biometric/${brand}/webhook`,
       rawTextParser,
       async (req: Request, res: Response) => handleWebhook(brand, req, res),
     );
-    // ADMS-style path some firmware insists on
     app.all(
       `/api/biometric/${brand}/iclock/*path`,
       rawTextParser,
@@ -414,11 +448,8 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
     );
   }
 
-  // Hikvision: ingest as RAW so HMAC signs the exact bytes the device sent;
-  // we parse JSON inside the handler from the same buffer.
   app.post(
     "/api/biometric/hikvision/webhook",
-    rawTextParser,
     async (req: Request, res: Response) => handleWebhook("hikvision", req, res),
   );
 }
@@ -439,20 +470,27 @@ async function handleWebhook(brand: string, req: Request, res: Response) {
     return res.status(400).json({ message: "Brand mismatch" });
   }
 
-  const rawBody: any = (req as any).body;
-  // Always materialise raw bytes so HMAC verification signs exactly what the
-  // device sent. Both ZKTeco and Hikvision routes use the raw parser, so
-  // req.body is a Buffer here.
-  const rawBuf: Buffer = Buffer.isBuffer(rawBody)
-    ? rawBody
-    : Buffer.from(typeof rawBody === "string" ? rawBody : "");
+  // Resolve raw bytes. ZKTeco/ESSL/Realtime use the route-level raw parser
+  // (req.body is a Buffer). Hikvision is JSON-parsed by the global parser
+  // and the same global parser stashes the raw bytes on req.rawBody.
+  const reqBody: any = (req as any).body;
+  let rawBuf: Buffer;
+  if (Buffer.isBuffer(reqBody)) {
+    rawBuf = reqBody;
+  } else if (Buffer.isBuffer((req as any).rawBody)) {
+    rawBuf = (req as any).rawBody as Buffer;
+  } else if (typeof (req as any).rawBody === "string") {
+    rawBuf = Buffer.from((req as any).rawBody as string);
+  } else {
+    rawBuf = Buffer.alloc(0);
+  }
 
   const ok = await adapter.verifyRequest(
     { headers: req.headers as any, rawBody: rawBuf, query: req.query as any },
     device,
   );
   if (!ok) {
-    await storage.updateDevice(device.id, { lastError: "Bad signature" } as any);
+    await storage.updateDevice(device.id, { lastError: "Bad signature" });
     return res.status(401).json({ message: "Bad signature" });
   }
 
@@ -461,14 +499,11 @@ async function handleWebhook(brand: string, req: Request, res: Response) {
     status: "online",
     lastSeenAt: new Date(),
     lastError: null,
-  } as any);
+  });
 
-  // Parse JSON body for brands that send JSON (e.g. Hikvision); plain-text
-  // adapters (ZKTeco/ESSL) parse from rawBody themselves.
-  let parsedBody: any = null;
-  if (brand === "hikvision") {
-    try { parsedBody = JSON.parse(rawBuf.toString("utf8")); } catch { parsedBody = null; }
-  }
+  // For JSON-bearing brands the global parser already produced an object;
+  // pass it straight through. For raw-text brands the adapter parses bytes.
+  const parsedBody = !Buffer.isBuffer(reqBody) ? reqBody : null;
 
   const ev = adapter.parseEvent({
     body: parsedBody,
@@ -515,15 +550,18 @@ async function handleWebhook(brand: string, req: Request, res: Response) {
     rawPayload: ev.raw,
   });
 
-  // If allowed, write attendance and queue door open.
+  // If allowed, write attendance (with the device that recorded the entry)
+  // and queue a door open. We only enqueue one door command per device per
+  // 3-second window (idempotency handled at storage layer).
   if (decision.allow && memberId) {
     await storage.createAttendance({
       tenantId: device.tenantId,
       memberId,
       method: "biometric",
       branchId: device.branchId ?? undefined,
+      deviceId: device.id,
       checkInTime: ev.capturedAt,
-    } as any);
+    });
     await adapter.enqueueOpenDoor(device);
   }
 

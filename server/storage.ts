@@ -237,6 +237,7 @@ export interface IStorage {
   isBiometricEventProcessed(id: string): Promise<boolean>;
   markBiometricEventProcessed(id: string, deviceId: string): Promise<void>;
 
+  getDoorCommand(id: string): Promise<DoorCommand | undefined>;
   getPendingDoorCommands(deviceId: string): Promise<DoorCommand[]>;
   getDoorCommandByIdempotencyKey(key: string): Promise<DoorCommand | undefined>;
   createDoorCommand(cmd: InsertDoorCommand): Promise<DoorCommand>;
@@ -1239,8 +1240,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteDevice(id: string): Promise<void> {
-    // Templates and access events keep their device reference for audit;
-    // we null deviceId by re-pointing rather than cascade-delete history.
+    // Audit-preserving delete: drop in-flight commands (worthless without the
+    // device), null out template + event device references (the schema's
+    // ON DELETE SET NULL FK does this automatically), then remove the device.
+    // Templates remain associated to the member; admins can re-push to a
+    // replacement reader via the enrolment screen. Access events keep their
+    // tenant + member references so the audit trail survives device retirement.
     await db.delete(doorCommands).where(eq(doorCommands.deviceId, id));
     await db.delete(devices).where(eq(devices.id, id));
   }
@@ -1328,6 +1333,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   // ─── Biometric: Door commands ─────────────────────────────
+  async getDoorCommand(id: string): Promise<DoorCommand | undefined> {
+    const [cmd] = await db.select().from(doorCommands).where(eq(doorCommands.id, id));
+    return cmd;
+  }
+
   async getPendingDoorCommands(deviceId: string): Promise<DoorCommand[]> {
     return db.select().from(doorCommands)
       .where(and(eq(doorCommands.deviceId, deviceId), eq(doorCommands.status, "pending")))
