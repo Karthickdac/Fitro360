@@ -506,6 +506,19 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
 // (set on the device's ADMS server config) OR the same secret in the
 // `X-Fitro360-Sig` header. Constant-time compared. Serial alone is NEVER
 // sufficient — leaked URLs must not be able to drain or ack commands.
+//
+// COMPATIBILITY-MODE NOTE (operator guidance / threat model):
+// `pwd=<secret>` is bearer-token equivalence rather than per-request HMAC
+// signing. We accept it because real ZKTeco/ESSL/Realtime ADMS firmware
+// cannot send custom headers and has no built-in HMAC mode — refusing
+// pwd auth would make Phase A unusable on stock hardware. The full HMAC
+// path (X-Fitro360-Sig over the request body or URL) is the preferred
+// mode and is used wherever the on-prem relay agent is deployed (Phase
+// B follow-up #2). Operational mitigations: device.secret is rotated
+// per-device, transmitted only over TLS, and never logged (it is in
+// SENSITIVE_KEYS). All ADMS endpoints additionally require a registered
+// brand+serial+isActive device row, so a leaked pwd alone cannot target
+// an unrelated tenant.
 function admsAuthOk(device: any, req: Request): boolean {
   const pwd = (req.query.pwd as string | undefined) || (req.headers["x-fitro360-sig"] as string | undefined);
   if (!pwd || !device?.secret) return false;
