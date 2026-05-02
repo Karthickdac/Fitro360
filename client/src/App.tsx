@@ -51,6 +51,7 @@ import MembershipTransfersPage from "@/pages/membership-transfers";
 import DevicesPage from "@/pages/devices";
 import EnrolmentPage from "@/pages/enrolment";
 import AccessEventsPage from "@/pages/access-events";
+import AccessBlockRulesPage from "@/pages/access-block-rules";
 
 function LoadingScreen() {
   return (
@@ -128,6 +129,7 @@ function ManagerRouter() {
       <Route path="/devices" component={DevicesPage} />
       <Route path="/enrolment" component={EnrolmentPage} />
       <Route path="/access-events" component={AccessEventsPage} />
+      <Route path="/access-block-rules" component={AccessBlockRulesPage} />
       <Route path="/activity" component={ActivityPage} />
       <Route path="/notifications" component={NotificationsPage} />
       <Route path="/analytics" component={AnalyticsPage} />
@@ -172,6 +174,7 @@ function GymOwnerRouter() {
       <Route path="/devices" component={DevicesPage} />
       <Route path="/enrolment" component={EnrolmentPage} />
       <Route path="/access-events" component={AccessEventsPage} />
+      <Route path="/access-block-rules" component={AccessBlockRulesPage} />
       <Route path="/settings/billing" component={BillingPage} />
       <Route component={NotFound} />
     </Switch>

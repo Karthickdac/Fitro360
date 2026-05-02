@@ -562,6 +562,66 @@ export const processedBiometricEvents = pgTable("processed_biometric_events", {
   processedAt: timestamp("processed_at").notNull().defaultNow(),
 });
 
+// Owner-defined custom rules layered on top of the built-in evaluateAccess
+// gates. Each row is a single rule that DENIES entry when its condition
+// matches. Evaluated after status/expiry/branch/waiver/invoice gates so
+// owners can add tighter policies (e.g. "no entry for trial members on
+// weekends", "no entry between 23:00-05:00 for any plan tagged
+// 'budget'", "no entry for members tagged 'no-show'").
+export const accessBlockRules = pgTable("access_block_rules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  branchId: varchar("branch_id"), // null = applies to every branch
+  name: text("name").notNull(),
+  ruleType: text("rule_type").notNull(), // plan | membership_type | status | nationality | day_of_week | time_window
+  // ruleValue stores the type-specific match data, all serialised as text:
+  //   plan             → comma-separated membership_plan ids
+  //   membership_type  → comma-separated cadences (monthly|quarterly|annual|trial|…)
+  //   status           → comma-separated member.status values
+  //   nationality      → comma-separated ISO codes
+  //   day_of_week      → comma-separated 0-6 (0 = Sunday)
+  //   time_window      → "HH:MM-HH:MM" in server local time
+  ruleValue: text("rule_value").notNull(),
+  reason: text("reason").notNull(), // shown to staff on the deny event
+  isActive: boolean("is_active").notNull().default(true),
+  priority: integer("priority").notNull().default(100), // lower = checked first
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Per-tenant biometric / GDPR settings. One row per tenant, lazily created
+// when an owner first opens the biometric settings page. Defaults are
+// conservative (24-month template retention, 12-month event retention).
+export const tenantBiometricSettings = pgTable("tenant_biometric_settings", {
+  tenantId: varchar("tenant_id").references(() => tenants.id).primaryKey(),
+  templateRetentionMonths: integer("template_retention_months").notNull().default(24),
+  eventRetentionMonths: integer("event_retention_months").notNull().default(12),
+  // Whether to auto-purge templates as soon as a member is "cancelled" /
+  // "transferred" rather than waiting the full retention period. Some
+  // jurisdictions (e.g. EU GDPR) prefer the strictest interpretation.
+  purgeOnCancellation: boolean("purge_on_cancellation").notNull().default(false),
+  // The on-prem relay can subscribe to push notifications instead of polling.
+  // We keep this here so the websocket gateway knows whether to emit.
+  relayWsEnabled: boolean("relay_ws_enabled").notNull().default(true),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Unmatched device-side enrolments surfaced by the periodic sync job. When
+// the device-pull job sees a template the device knows about but Fitro360
+// has no member mapping for, it logs one of these so the front desk can
+// match it to the right member from the inbox.
+export const unmatchedEnrolments = pgTable("unmatched_enrolments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  deviceId: varchar("device_id").references(() => devices.id, { onDelete: "cascade" }).notNull(),
+  externalRef: text("external_ref").notNull(),
+  displayName: text("display_name"),
+  firstSeenAt: timestamp("first_seen_at").defaultNow(),
+  lastSeenAt: timestamp("last_seen_at").defaultNow(),
+  resolvedMemberId: varchar("resolved_member_id").references(() => members.id),
+  resolvedAt: timestamp("resolved_at"),
+});
+
 export const activities = pgTable("activities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
@@ -603,6 +663,9 @@ export const insertDeviceSchema = createInsertSchema(devices).omit({ id: true, c
 export const insertBiometricTemplateSchema = createInsertSchema(biometricTemplates).omit({ id: true, enrolledAt: true });
 export const insertAccessEventSchema = createInsertSchema(accessEvents).omit({ id: true, createdAt: true });
 export const insertDoorCommandSchema = createInsertSchema(doorCommands).omit({ id: true, createdAt: true, pickedUpAt: true, completedAt: true, attempts: true });
+export const insertAccessBlockRuleSchema = createInsertSchema(accessBlockRules).omit({ id: true, createdAt: true });
+export const insertTenantBiometricSettingsSchema = createInsertSchema(tenantBiometricSettings).omit({ updatedAt: true });
+export const insertUnmatchedEnrolmentSchema = createInsertSchema(unmatchedEnrolments).omit({ id: true, firstSeenAt: true, lastSeenAt: true, resolvedAt: true });
 
 export const loginSchema = z.object({
   username: z.string().min(1),
@@ -667,6 +730,12 @@ export type InsertAccessEvent = z.infer<typeof insertAccessEventSchema>;
 export type AccessEvent = typeof accessEvents.$inferSelect;
 export type InsertDoorCommand = z.infer<typeof insertDoorCommandSchema>;
 export type DoorCommand = typeof doorCommands.$inferSelect;
+export type InsertAccessBlockRule = z.infer<typeof insertAccessBlockRuleSchema>;
+export type AccessBlockRule = typeof accessBlockRules.$inferSelect;
+export type InsertTenantBiometricSettings = z.infer<typeof insertTenantBiometricSettingsSchema>;
+export type TenantBiometricSettings = typeof tenantBiometricSettings.$inferSelect;
+export type InsertUnmatchedEnrolment = z.infer<typeof insertUnmatchedEnrolmentSchema>;
+export type UnmatchedEnrolment = typeof unmatchedEnrolments.$inferSelect;
 export type FixedAsset = typeof fixedAssets.$inferSelect;
 export type InsertFixedAsset = z.infer<typeof insertFixedAssetSchema>;
 export type MembershipTransfer = typeof membershipTransfers.$inferSelect;

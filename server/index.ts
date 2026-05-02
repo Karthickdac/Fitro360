@@ -3,6 +3,14 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { handleStripeWebhook, suspendExpiredGraceTenants } from "./stripeWebhook";
+import { setupAccessEventsWs } from "./biometric/ws";
+import { startRetentionSweeper } from "./biometric/retention";
+import { startEnrolmentSync } from "./biometric/enrolment-sync";
+import { storage } from "./storage";
+import session from "express-session";
+// @ts-ignore — cookie-signature ships no types but is a transitive dep
+// of express-session we already depend on for cookie validation.
+import signature from "cookie-signature";
 import {
   getStripeSync,
   setWebhookSecret,
@@ -150,6 +158,48 @@ async function initStripe() {
   }
 
   await registerRoutes(httpServer, app);
+
+  // ─── Biometric live feed (WebSocket) ─────────────────────
+  // Authenticates the upgrade handshake by re-reading the connect.sid
+  // cookie and looking up the corresponding session in the in-memory
+  // session store. Mirrors the cookie/secret config used by express-session.
+  const SESSION_SECRET = process.env.SESSION_SECRET || "fitro360-dev-secret";
+  setupAccessEventsWs(httpServer, async (req) => {
+    try {
+      const cookieHeader = req.headers.cookie || "";
+      const m = cookieHeader.match(/connect\.sid=([^;]+)/);
+      if (!m) return null;
+      // Cookie is URL-encoded "s:<sid>.<sig>". Strip the "s:" prefix and
+      // verify the HMAC before trusting the sid.
+      const raw = decodeURIComponent(m[1]);
+      if (!raw.startsWith("s:")) return null;
+      const unsigned = signature.unsign(raw.slice(2), SESSION_SECRET);
+      if (!unsigned) return null;
+      // Resolve sid → session via the session store callback. We re-use
+      // the same MemoryStore that express-session installed earlier.
+      const store = (session as any).MemoryStore && (app as any)._sessionStore;
+      const sessionData: any = await new Promise((resolve) => {
+        // express-session stores the store on the middleware instance; we
+        // attached our own reference in routes.ts at session() install time.
+        const s = (app as any)._sessionStore || null;
+        if (!s) return resolve(null);
+        s.get(unsigned, (err: any, data: any) => resolve(err ? null : data));
+      });
+      const userId = sessionData?.userId;
+      if (!userId) return null;
+      const user = await storage.getUser(userId);
+      if (!user || !user.tenantId) return null;
+      return { userId: user.id, tenantId: user.tenantId, role: user.role };
+    } catch {
+      return null;
+    }
+  });
+
+  // ─── Background workers ──────────────────────────────────
+  // GDPR sweep runs daily; enrolment sync polls every 60s. Both modules
+  // gate themselves so calling startX twice is harmless.
+  startRetentionSweeper(24 * 60 * 60 * 1000);
+  startEnrolmentSync(60 * 1000);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

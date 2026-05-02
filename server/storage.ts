@@ -1,4 +1,4 @@
-import { eq, and, desc, gte, lte, sql, between } from "drizzle-orm";
+import { eq, and, or, desc, gte, lte, lt, sql, between, inArray } from "drizzle-orm";
 import { db } from "./db";
 import { encryptString, decryptString, encryptJson, decryptJson } from "./biometric/crypto";
 import {
@@ -9,6 +9,7 @@ import {
   trainerCommissions, trainerLeaves, trainerProfiles, membershipPlans,
   supplierBills, vatReturns, corporateTaxReturns, fixedAssets, membershipTransfers,
   devices, biometricTemplates, accessEvents, doorCommands, processedBiometricEvents,
+  accessBlockRules, tenantBiometricSettings, unmatchedEnrolments,
   type Tenant, type InsertTenant,
   type User, type InsertUser,
   type Branch, type InsertBranch,
@@ -40,6 +41,9 @@ import {
   type BiometricTemplate, type InsertBiometricTemplate,
   type AccessEvent, type InsertAccessEvent,
   type DoorCommand, type InsertDoorCommand,
+  type AccessBlockRule, type InsertAccessBlockRule,
+  type TenantBiometricSettings, type InsertTenantBiometricSettings,
+  type UnmatchedEnrolment, type InsertUnmatchedEnrolment,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -113,6 +117,10 @@ export interface IStorage {
   getInvoice(id: string): Promise<Invoice | undefined>;
   createInvoice(invoice: InsertInvoice): Promise<Invoice>;
   updateInvoice(id: string, data: Partial<InsertInvoice>): Promise<Invoice | undefined>;
+  // Indexed query: returns only the unpaid/overdue invoices for a single
+  // member that have aged past `pendingCutoff`. Used by the access engine
+  // hot path so we don't load every tenant invoice into memory per swipe.
+  getUnpaidInvoicesForMember(tenantId: string, memberId: string, pendingCutoff: Date): Promise<Invoice[]>;
 
   getNotificationsByUser(userId: string): Promise<Notification[]>;
   getNotificationsByTenant(tenantId: string): Promise<Notification[]>;
@@ -231,9 +239,30 @@ export interface IStorage {
   deleteTemplate(id: string): Promise<void>;
   deleteTemplatesByMember(memberId: string): Promise<void>;
 
-  getAccessEventsByTenant(tenantId: string, opts?: { branchId?: string; deviceId?: string; memberId?: string; decision?: string; limit?: number }): Promise<AccessEvent[]>;
+  getAccessEventsByTenant(tenantId: string, opts?: { branchId?: string; deviceId?: string; memberId?: string; decision?: string; from?: Date; to?: Date; limit?: number }): Promise<AccessEvent[]>;
   getAccessEventsByMember(memberId: string, limit?: number): Promise<AccessEvent[]>;
   createAccessEvent(event: InsertAccessEvent): Promise<AccessEvent>;
+  deleteAccessEventsOlderThan(tenantId: string, cutoff: Date): Promise<number>;
+
+  // Custom owner-defined access rules + GDPR settings + unmatched device-side enrolments
+  getAccessBlockRulesByTenant(tenantId: string): Promise<AccessBlockRule[]>;
+  getActiveAccessBlockRules(tenantId: string): Promise<AccessBlockRule[]>;
+  getAccessBlockRule(id: string): Promise<AccessBlockRule | undefined>;
+  createAccessBlockRule(rule: InsertAccessBlockRule): Promise<AccessBlockRule>;
+  updateAccessBlockRule(id: string, data: Partial<InsertAccessBlockRule>): Promise<AccessBlockRule | undefined>;
+  deleteAccessBlockRule(id: string): Promise<void>;
+
+  getTenantBiometricSettings(tenantId: string): Promise<TenantBiometricSettings | undefined>;
+  upsertTenantBiometricSettings(tenantId: string, data: Partial<InsertTenantBiometricSettings>): Promise<TenantBiometricSettings>;
+
+  getUnmatchedEnrolmentsByTenant(tenantId: string): Promise<UnmatchedEnrolment[]>;
+  upsertUnmatchedEnrolment(data: InsertUnmatchedEnrolment): Promise<UnmatchedEnrolment>;
+  resolveUnmatchedEnrolment(id: string, memberId: string, tenantId: string): Promise<boolean>;
+  deleteUnmatchedEnrolmentsOlderThan(tenantId: string, cutoff: Date): Promise<number>;
+
+  // Brand-aware lookup used by the device-side enrolment sync job to copy a
+  // template registered on one device to a sibling device of the same brand.
+  findTemplateByExternalRefAndTenant(tenantId: string, externalRef: string): Promise<BiometricTemplate | undefined>;
 
   isBiometricEventProcessed(id: string): Promise<boolean>;
   markBiometricEventProcessed(id: string, deviceId: string): Promise<void>;
@@ -617,6 +646,22 @@ export class DatabaseStorage implements IStorage {
 
   async getInvoicesByTenant(tenantId: string): Promise<Invoice[]> {
     return db.select().from(invoices).where(eq(invoices.tenantId, tenantId)).orderBy(desc(invoices.createdAt));
+  }
+
+  async getUnpaidInvoicesForMember(tenantId: string, memberId: string, pendingCutoff: Date): Promise<Invoice[]> {
+    // Returns rows that should block entry: status='overdue' OR
+    // (status='pending' AND createdAt < pendingCutoff). Tenant + customer
+    // are filtered server-side so we never pull the whole table into memory.
+    return db.select().from(invoices).where(
+      and(
+        eq(invoices.tenantId, tenantId),
+        eq(invoices.customerId, memberId),
+        or(
+          eq(invoices.status, "overdue"),
+          and(eq(invoices.status, "pending"), lt(invoices.createdAt, pendingCutoff)),
+        ),
+      ),
+    );
   }
 
   async getInvoice(id: string): Promise<Invoice | undefined> {
@@ -1337,17 +1382,145 @@ export class DatabaseStorage implements IStorage {
   }
 
   // ─── Biometric: Access events ─────────────────────────────
-  async getAccessEventsByTenant(tenantId: string, opts: { branchId?: string; deviceId?: string; memberId?: string; decision?: string; limit?: number } = {}): Promise<AccessEvent[]> {
+  async getAccessEventsByTenant(tenantId: string, opts: { branchId?: string; deviceId?: string; memberId?: string; decision?: string; from?: Date; to?: Date; limit?: number } = {}): Promise<AccessEvent[]> {
     const conditions = [eq(accessEvents.tenantId, tenantId)];
     if (opts.branchId) conditions.push(eq(accessEvents.branchId, opts.branchId));
     if (opts.deviceId) conditions.push(eq(accessEvents.deviceId, opts.deviceId));
     if (opts.memberId) conditions.push(eq(accessEvents.memberId, opts.memberId));
     if (opts.decision) conditions.push(eq(accessEvents.decision, opts.decision));
+    if (opts.from) conditions.push(gte(accessEvents.capturedAt, opts.from));
+    if (opts.to) conditions.push(lte(accessEvents.capturedAt, opts.to));
     const rows = await db.select().from(accessEvents)
       .where(and(...conditions))
       .orderBy(desc(accessEvents.capturedAt))
       .limit(opts.limit ?? 200);
     return rows.map((r) => this.decryptAccessEventRow(r));
+  }
+
+  async deleteAccessEventsOlderThan(tenantId: string, cutoff: Date): Promise<number> {
+    const deleted = await db.delete(accessEvents)
+      .where(and(eq(accessEvents.tenantId, tenantId), lt(accessEvents.capturedAt, cutoff)))
+      .returning({ id: accessEvents.id });
+    return deleted.length;
+  }
+
+  // ─── Biometric: Custom block rules ────────────────────────
+  async getAccessBlockRulesByTenant(tenantId: string): Promise<AccessBlockRule[]> {
+    return db.select().from(accessBlockRules)
+      .where(eq(accessBlockRules.tenantId, tenantId))
+      .orderBy(accessBlockRules.priority, desc(accessBlockRules.createdAt));
+  }
+
+  async getActiveAccessBlockRules(tenantId: string): Promise<AccessBlockRule[]> {
+    return db.select().from(accessBlockRules)
+      .where(and(eq(accessBlockRules.tenantId, tenantId), eq(accessBlockRules.isActive, true)))
+      .orderBy(accessBlockRules.priority);
+  }
+
+  async getAccessBlockRule(id: string): Promise<AccessBlockRule | undefined> {
+    const [row] = await db.select().from(accessBlockRules).where(eq(accessBlockRules.id, id));
+    return row;
+  }
+
+  async createAccessBlockRule(rule: InsertAccessBlockRule): Promise<AccessBlockRule> {
+    const [created] = await db.insert(accessBlockRules).values(rule).returning();
+    return created;
+  }
+
+  async updateAccessBlockRule(id: string, data: Partial<InsertAccessBlockRule>): Promise<AccessBlockRule | undefined> {
+    if (!data || Object.keys(data).length === 0) return this.getAccessBlockRule(id);
+    const [updated] = await db.update(accessBlockRules).set(data).where(eq(accessBlockRules.id, id)).returning();
+    return updated;
+  }
+
+  async deleteAccessBlockRule(id: string): Promise<void> {
+    await db.delete(accessBlockRules).where(eq(accessBlockRules.id, id));
+  }
+
+  // ─── Biometric: Tenant settings (GDPR + retention) ────────
+  async getTenantBiometricSettings(tenantId: string): Promise<TenantBiometricSettings | undefined> {
+    const [row] = await db.select().from(tenantBiometricSettings).where(eq(tenantBiometricSettings.tenantId, tenantId));
+    return row;
+  }
+
+  async upsertTenantBiometricSettings(tenantId: string, data: Partial<InsertTenantBiometricSettings>): Promise<TenantBiometricSettings> {
+    // Strip tenantId from incoming data so a stale/malicious caller can
+    // never overwrite the authenticated tenant. The argument-position
+    // tenantId is the source of truth.
+    const { tenantId: _ignore, ...safe } = data as any;
+    const existing = await this.getTenantBiometricSettings(tenantId);
+    if (existing) {
+      const [updated] = await db.update(tenantBiometricSettings)
+        .set({ ...safe, updatedAt: new Date() })
+        .where(eq(tenantBiometricSettings.tenantId, tenantId))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(tenantBiometricSettings)
+      .values({ ...safe, tenantId } as InsertTenantBiometricSettings)
+      .returning();
+    return created;
+  }
+
+  // ─── Biometric: Unmatched enrolments inbox ────────────────
+  async getUnmatchedEnrolmentsByTenant(tenantId: string): Promise<UnmatchedEnrolment[]> {
+    return db.select().from(unmatchedEnrolments)
+      .where(eq(unmatchedEnrolments.tenantId, tenantId))
+      .orderBy(desc(unmatchedEnrolments.lastSeenAt));
+  }
+
+  async upsertUnmatchedEnrolment(data: InsertUnmatchedEnrolment): Promise<UnmatchedEnrolment> {
+    // Composite uniqueness is logical (tenantId+deviceId+externalRef). We
+    // don't add a DB-level constraint so we keep the migration risk low; the
+    // query below is cheap because deviceId is already indexed.
+    const [existing] = await db.select().from(unmatchedEnrolments).where(
+      and(
+        eq(unmatchedEnrolments.tenantId, data.tenantId),
+        eq(unmatchedEnrolments.deviceId, data.deviceId),
+        eq(unmatchedEnrolments.externalRef, data.externalRef),
+      ),
+    );
+    if (existing) {
+      const [updated] = await db.update(unmatchedEnrolments)
+        .set({ lastSeenAt: new Date(), displayName: data.displayName ?? existing.displayName })
+        .where(eq(unmatchedEnrolments.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(unmatchedEnrolments).values(data).returning();
+    return created;
+  }
+
+  async resolveUnmatchedEnrolment(id: string, memberId: string, tenantId: string): Promise<boolean> {
+    // Tenant predicate is mandatory — the caller is the routes layer which
+    // already authenticated the session, but adding tenantId to the WHERE
+    // makes a leaked unmatched-row UUID useless across tenants (defence in
+    // depth against IDOR in the route).
+    const result = await db.update(unmatchedEnrolments)
+      .set({ resolvedMemberId: memberId, resolvedAt: new Date() })
+      .where(and(eq(unmatchedEnrolments.id, id), eq(unmatchedEnrolments.tenantId, tenantId)))
+      .returning({ id: unmatchedEnrolments.id });
+    return result.length > 0;
+  }
+
+  async deleteUnmatchedEnrolmentsOlderThan(tenantId: string, cutoff: Date): Promise<number> {
+    const deleted = await db.delete(unmatchedEnrolments)
+      .where(and(eq(unmatchedEnrolments.tenantId, tenantId), lt(unmatchedEnrolments.lastSeenAt, cutoff)))
+      .returning({ id: unmatchedEnrolments.id });
+    return deleted.length;
+  }
+
+  // Tenant+ref lookup used by the enrolment-sync job. Returns the first
+  // active template for that ref so we can fan it out to a sibling device.
+  async findTemplateByExternalRefAndTenant(tenantId: string, externalRef: string): Promise<BiometricTemplate | undefined> {
+    const [row] = await db.select().from(biometricTemplates).where(
+      and(
+        eq(biometricTemplates.tenantId, tenantId),
+        eq(biometricTemplates.externalRef, externalRef),
+        eq(biometricTemplates.status, "active"),
+      ),
+    ).limit(1);
+    return row ? this.decryptTemplateRow(row) : row;
   }
 
   async getAccessEventsByMember(memberId: string, limit = 50): Promise<AccessEvent[]> {

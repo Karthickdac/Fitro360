@@ -35,6 +35,7 @@ import {
   Boxes,
   Fingerprint,
   ScanFace,
+  ShieldOff,
   History,
   ChevronDown,
 } from "lucide-react";
@@ -111,6 +112,7 @@ const managerSystemItems: NavItem[] = [
   { title: "Devices", url: "/devices", icon: Fingerprint },
   { title: "Enrol Member", url: "/enrolment", icon: ScanFace },
   { title: "Access Log", url: "/access-events", icon: History },
+  { title: "Block Rules", url: "/access-block-rules", icon: ShieldOff },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Reports", url: "/reports", icon: FileBarChart },
   { title: "Activity", url: "/activity", icon: Activity },
@@ -147,6 +149,7 @@ const gymAccessControlItems: NavItem[] = [
   { title: "Devices", url: "/devices", icon: Fingerprint },
   { title: "Enrol Member", url: "/enrolment", icon: ScanFace },
   { title: "Access Log", url: "/access-events", icon: History },
+  { title: "Block Rules", url: "/access-block-rules", icon: ShieldOff },
 ];
 
 const gymProcurementItems: NavItem[] = [

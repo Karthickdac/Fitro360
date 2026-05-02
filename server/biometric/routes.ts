@@ -5,8 +5,16 @@ import { z } from "zod";
 import { storage } from "../storage";
 import { getAdapter, SUPPORTED_BRANDS, PLANNED_BRANDS } from "./registry";
 import { evaluateAccess, resolveMemberFromExternalRef } from "./access-engine";
-import { insertDeviceSchema, insertBiometricTemplateSchema } from "@shared/schema";
+import {
+  insertDeviceSchema,
+  insertBiometricTemplateSchema,
+  insertAccessBlockRuleSchema,
+  insertTenantBiometricSettingsSchema,
+} from "@shared/schema";
 import type { AccessDecision } from "./types";
+import { broadcastAccessEvent, broadcastDeviceStatus } from "./ws";
+import { runRetentionSweep } from "./retention";
+import { runEnrolmentSync } from "./enrolment-sync";
 
 // ─── Helpers shared with main routes ────────────────────────────────────────
 type AuthUser = { id: string; role: string; tenantId?: string; firstName?: string; lastName?: string };
@@ -332,11 +340,20 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
         return typeof v === "string" ? v : undefined;
       };
       const limitStr = qStr("limit");
+      const fromStr = qStr("from");
+      const toStr = qStr("to");
+      const parseDate = (s: string | undefined): Date | undefined => {
+        if (!s) return undefined;
+        const d = new Date(s);
+        return isNaN(d.getTime()) ? undefined : d;
+      };
       const opts = {
         branchId: qStr("branchId"),
         deviceId: qStr("deviceId"),
         memberId: qStr("memberId"),
         decision: qStr("decision"),
+        from: parseDate(fromStr),
+        to: parseDate(toStr),
         limit: limitStr ? Math.min(500, parseInt(limitStr, 10)) : 200,
       };
       const list = await storage.getAccessEventsByTenant(user.tenantId, opts);
@@ -491,7 +508,226 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
 
   app.post(
     "/api/biometric/hikvision/webhook",
+    // Hikvision can send either application/json (handled by global parser)
+    // or multipart/form-data. The route-level rawTextParser drains the body
+    // for multipart so the adapter can split it; the JSON path uses the
+    // global express.json() output.
+    rawTextParser,
     async (req: Request, res: Response) => handleWebhook("hikvision", req, res),
+  );
+
+  // ─── Custom block rules CRUD ─────────────────────────────
+  app.get(
+    "/api/biometric/block-rules",
+    authMiddleware,
+    requireRole("gym_owner", "manager"),
+    async (req: Request, res: Response) => {
+      const user = getUser(req)!;
+      if (!user.tenantId) return res.json([]);
+      return res.json(await storage.getAccessBlockRulesByTenant(user.tenantId));
+    },
+  );
+
+  app.post(
+    "/api/biometric/block-rules",
+    authMiddleware,
+    requireRole("gym_owner", "manager"),
+    async (req: Request, res: Response) => {
+      try {
+        const user = getUser(req)!;
+        if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+        const body = insertAccessBlockRuleSchema.parse({
+          ...req.body,
+          tenantId: user.tenantId,
+          createdBy: user.id,
+        });
+        const created = await storage.createAccessBlockRule(body);
+        await storage.createActivity({
+          tenantId: user.tenantId,
+          userId: user.id,
+          type: "block_rule_created",
+          description: `Block rule "${created.name}" created (${created.ruleType})`,
+        });
+        return res.json(created);
+      } catch (e: any) {
+        return res.status(400).json({ message: e.message });
+      }
+    },
+  );
+
+  app.patch(
+    "/api/biometric/block-rules/:id",
+    authMiddleware,
+    requireRole("gym_owner", "manager"),
+    async (req: Request, res: Response) => {
+      try {
+        const user = getUser(req)!;
+        const existing = await storage.getAccessBlockRule(paramId(req));
+        if (!existing || existing.tenantId !== user.tenantId) {
+          return res.status(404).json({ message: "Rule not found" });
+        }
+        // Strict allowlist — never let the client overwrite tenantId or
+        // createdBy via mass-assignment. Zod default-strips unknown keys
+        // when not in strict mode; we additionally hand-pick the
+        // permitted fields below so a future schema change can't widen
+        // the writable surface by accident.
+        const b = (req.body ?? {}) as any;
+        const patchInput = {
+          name: b.name,
+          ruleType: b.ruleType,
+          ruleValue: b.ruleValue,
+          reason: b.reason,
+          isActive: b.isActive,
+          priority: b.priority,
+          branchId: b.branchId,
+        };
+        const patch = z
+          .object({
+            name: z.string().min(1).optional(),
+            ruleType: z.enum(["plan", "membership_type", "status", "nationality", "day_of_week", "time_window"]).optional(),
+            ruleValue: z.string().optional(),
+            reason: z.string().min(1).optional(),
+            isActive: z.boolean().optional(),
+            priority: z.number().int().optional(),
+            branchId: z.string().nullable().optional(),
+          })
+          .parse(
+            // Drop undefined keys so partial PATCH semantics are preserved.
+            Object.fromEntries(Object.entries(patchInput).filter(([, v]) => v !== undefined)),
+          );
+        const updated = await storage.updateAccessBlockRule(existing.id, patch);
+        return res.json(updated);
+      } catch (e: any) {
+        return res.status(400).json({ message: e.message });
+      }
+    },
+  );
+
+  app.delete(
+    "/api/biometric/block-rules/:id",
+    authMiddleware,
+    requireRole("gym_owner", "manager"),
+    async (req: Request, res: Response) => {
+      const user = getUser(req)!;
+      const existing = await storage.getAccessBlockRule(paramId(req));
+      if (!existing || existing.tenantId !== user.tenantId) {
+        return res.status(404).json({ message: "Rule not found" });
+      }
+      await storage.deleteAccessBlockRule(existing.id);
+      return res.json({ ok: true });
+    },
+  );
+
+  // ─── Tenant biometric / GDPR settings ────────────────────
+  app.get(
+    "/api/biometric/settings",
+    authMiddleware,
+    requireRole("gym_owner", "manager"),
+    async (req: Request, res: Response) => {
+      const user = getUser(req)!;
+      if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+      const settings = await storage.getTenantBiometricSettings(user.tenantId);
+      return res.json(
+        settings ?? {
+          tenantId: user.tenantId,
+          templateRetentionMonths: 24,
+          eventRetentionMonths: 12,
+          purgeOnCancellation: false,
+          relayWsEnabled: true,
+        },
+      );
+    },
+  );
+
+  app.put(
+    "/api/biometric/settings",
+    authMiddleware,
+    requireRole("gym_owner"),
+    async (req: Request, res: Response) => {
+      try {
+        const user = getUser(req)!;
+        if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+        // Belt-and-braces: explicitly strip tenantId from the body BEFORE
+        // Zod sees it. (Zod's chain of .omit().partial() can quietly let
+        // through omitted keys depending on version.) The authenticated
+        // session is the only acceptable source of truth for tenantId on
+        // a write — never the request body.
+        const { tenantId: _drop, ...rest } = (req.body ?? {}) as any;
+        const body = insertTenantBiometricSettingsSchema
+          .omit({ tenantId: true })
+          .partial()
+          .parse(rest);
+        const saved = await storage.upsertTenantBiometricSettings(user.tenantId, body);
+        return res.json(saved);
+      } catch (e: any) {
+        return res.status(400).json({ message: e.message });
+      }
+    },
+  );
+
+  // ─── Unmatched device-side enrolments inbox ──────────────
+  // Owner+manager only — sales_executive does not see device-side biometric
+  // material, consistent with the rest of the biometric admin surface.
+  app.get(
+    "/api/biometric/unmatched",
+    authMiddleware,
+    requireRole("gym_owner", "manager"),
+    async (req: Request, res: Response) => {
+      const user = getUser(req)!;
+      if (!user.tenantId) return res.json([]);
+      return res.json(await storage.getUnmatchedEnrolmentsByTenant(user.tenantId));
+    },
+  );
+
+  app.post(
+    "/api/biometric/unmatched/:id/resolve",
+    authMiddleware,
+    requireRole("gym_owner", "manager"),
+    async (req: Request, res: Response) => {
+      try {
+        const user = getUser(req)!;
+        if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
+        const memberId = z.object({ memberId: z.string().min(1) }).parse(req.body).memberId;
+        // Verify both the member AND the unmatched row belong to the
+        // caller's tenant. The previous version only checked the member,
+        // which let an authenticated owner of tenant A resolve any
+        // unmatched row in the database by guessing its UUID.
+        const member = await storage.getMember(memberId);
+        if (!member || member.tenantId !== user.tenantId) {
+          return res.status(404).json({ message: "Member not found" });
+        }
+        const ok = await storage.resolveUnmatchedEnrolment(paramId(req), memberId, user.tenantId);
+        if (!ok) return res.status(404).json({ message: "Unmatched enrolment not found" });
+        return res.json({ ok: true });
+      } catch (e: any) {
+        return res.status(400).json({ message: e.message });
+      }
+    },
+  );
+
+  // ─── Manual ops triggers (owner-only) ────────────────────
+  // Surfaces the GDPR sweeper + enrolment-sync jobs as on-demand actions
+  // so owners don't have to wait for the daily/minutely interval to see
+  // results. Still rate-limited at the worker level so cycles can't
+  // overlap (the interval flag in retention.ts/enrolment-sync.ts).
+  app.post(
+    "/api/biometric/retention/run",
+    authMiddleware,
+    requireRole("gym_owner"),
+    async (_req: Request, res: Response) => {
+      const result = await runRetentionSweep();
+      return res.json(result);
+    },
+  );
+
+  app.post(
+    "/api/biometric/enrolment-sync/run",
+    authMiddleware,
+    requireRole("gym_owner"),
+    async (_req: Request, res: Response) => {
+      const result = await runEnrolmentSync();
+      return res.json(result);
+    },
   );
 }
 
@@ -698,7 +934,7 @@ async function handleWebhook(brand: string, req: Request, res: Response) {
   }
 
   // Record the event regardless of outcome.
-  await storage.createAccessEvent({
+  const persisted = await storage.createAccessEvent({
     tenantId: device.tenantId,
     branchId: device.branchId,
     deviceId: device.id,
@@ -711,6 +947,16 @@ async function handleWebhook(brand: string, req: Request, res: Response) {
     photoUrl: ev.photoUrl,
     rawPayload: ev.raw,
   });
+
+  // Broadcast to live-feed subscribers (front-desk dashboards). Best-effort:
+  // if no one is subscribed this is a no-op. Always fire AFTER the DB write
+  // so refresh + websocket views agree.
+  try {
+    broadcastAccessEvent(persisted);
+    broadcastDeviceStatus(device.tenantId, device.id, "online");
+  } catch {
+    // never let a broken socket take down a webhook handler
+  }
 
   // If allowed, write attendance (with the device that recorded the entry)
   // and queue a door open. We only enqueue one door command per device per

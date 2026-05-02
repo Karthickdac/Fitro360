@@ -21,6 +21,32 @@ function timingSafeEq(a: string, b: string): boolean {
   return crypto.timingSafeEqual(ab, bb);
 }
 
+// Minimal multipart splitter — Hikvision's JSON+image envelope only needs
+// us to find the boundary markers, no streaming/IO. We deliberately do
+// NOT pull in busboy: the JSON part is tiny, the image parts get
+// discarded, and avoiding a dep keeps the on-prem relay agent lean too.
+function splitMultipart(buf: Buffer, boundary: string): Buffer[] {
+  const sep = Buffer.from(`--${boundary}`);
+  const parts: Buffer[] = [];
+  let idx = 0;
+  while (idx < buf.length) {
+    const start = buf.indexOf(sep, idx);
+    if (start < 0) break;
+    const partStart = start + sep.length;
+    // Skip optional CRLF after the boundary
+    let chunkStart = partStart;
+    if (buf[chunkStart] === 0x0d && buf[chunkStart + 1] === 0x0a) chunkStart += 2;
+    const next = buf.indexOf(sep, chunkStart);
+    if (next < 0) break;
+    // Trim trailing CRLF that precedes the next boundary
+    let chunkEnd = next;
+    if (chunkEnd >= 2 && buf[chunkEnd - 2] === 0x0d && buf[chunkEnd - 1] === 0x0a) chunkEnd -= 2;
+    if (chunkEnd > chunkStart) parts.push(buf.subarray(chunkStart, chunkEnd));
+    idx = next;
+  }
+  return parts;
+}
+
 export const hikvisionAdapter: DeviceAdapter = {
   brand: "hikvision",
 
@@ -36,7 +62,39 @@ export const hikvisionAdapter: DeviceAdapter = {
   },
 
   parseEvent(req) {
-    const body = req.body;
+    let body: any = req.body;
+
+    // ── Multipart variant ────────────────────────────────────────────
+    // Many Hikvision firmwares POST as multipart/form-data with a
+    // JSON "event_log" part and one or more image parts (face crop,
+    // background scene). The global JSON parser leaves req.body empty
+    // for these requests, so we parse the boundary ourselves rather
+    // than pulling in busboy. We only need the JSON part — image
+    // parts are dropped (they're biometric data we don't keep).
+    const ct = (req as any).headers?.["content-type"] as string | undefined;
+    if ((!body || typeof body !== "object" || Array.isArray(body)) && ct && ct.includes("multipart/form-data")) {
+      const m = ct.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+      const boundary = m ? (m[1] ?? m[2]) : null;
+      if (boundary && req.rawBody) {
+        const buf = Buffer.isBuffer(req.rawBody) ? req.rawBody : Buffer.from(req.rawBody);
+        const parts = splitMultipart(buf, boundary);
+        for (const p of parts) {
+          const headerEnd = p.indexOf("\r\n\r\n");
+          if (headerEnd < 0) continue;
+          const headers = p.subarray(0, headerEnd).toString("utf8").toLowerCase();
+          const data = p.subarray(headerEnd + 4);
+          if (headers.includes("application/json") || headers.includes('name="event_log"')) {
+            try {
+              body = JSON.parse(data.toString("utf8").replace(/\r\n$/, ""));
+              break;
+            } catch {
+              // try the next part
+            }
+          }
+        }
+      }
+    }
+
     if (!body) return null;
     const ev = body.AccessControllerEvent || body.accessControllerEvent || body;
     if (!ev) return null;

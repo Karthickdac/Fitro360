@@ -142,8 +142,14 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Use a single MemoryStore instance and stash it on the app so the
+  // websocket gateway in server/index.ts can re-read sessions when
+  // authenticating the upgrade handshake (no second store, no race).
+  const sessionStore = new session.MemoryStore();
+  (app as any)._sessionStore = sessionStore;
   app.use(
     session({
+      store: sessionStore,
       secret: SESSION_SECRET,
       resave: false,
       saveUninitialized: false,
