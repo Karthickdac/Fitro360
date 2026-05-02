@@ -2,9 +2,10 @@ import { storage } from "../storage";
 import type { AccessDecision } from "./types";
 import type { Device } from "@shared/schema";
 
-// How many days past membership end the door still opens (logged as "grace").
-// Configurable per tenant in the future; sensible default for Phase A.
-const GRACE_PERIOD_DAYS = 7;
+// Window after invoice creation before "pending" counts as overdue for the
+// purpose of blocking entry. Anything past this window or already marked
+// "overdue" denies access until paid.
+const INVOICE_GRACE_DAYS = 7;
 
 // Single source of truth: should this member be allowed through this device right now?
 // Reads only the local DB so a Stripe outage cannot lock members out of their own gym.
@@ -13,7 +14,7 @@ const GRACE_PERIOD_DAYS = 7;
 //   1. Cross-tenant defence (device + member must share tenant)
 //   2. Tenant-level suspension (whole gym account turned off)
 //   3. Status gates: frozen / cancelled / inactive / expired / transferred
-//   4. Membership end + grace period
+//   4. Membership end (hard cutoff — staff must renew before re-entry)
 //   5. Branch restriction: device.branchId must match member.branchId when both set
 //   6. Plan-level branch restriction: if the member's plan locks them to specific
 //      branches (features.branchIds[]) the device branch must be in that list
@@ -48,21 +49,18 @@ export async function evaluateAccess(memberId: string, device: Device): Promise<
     return { allow: false, reason: "Membership inactive", memberId: member.id };
   }
 
-  // 4. Expiry + grace period
-  let inGracePeriod = false;
+  // 4. Expiry — once the membership end date has passed, deny entry. The
+  // member must renew at the front desk (or via the member portal) before
+  // they can come back in. Front-desk staff can still see the deny reason
+  // on the access events screen so they can action a renewal on the spot.
+  if (member.status === "expired") {
+    return { allow: false, reason: "Membership expired", memberId: member.id };
+  }
   if (member.membershipEnd) {
     const end = new Date(member.membershipEnd).getTime();
-    const now = Date.now();
-    const graceCutoff = end + GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000;
-    if (now > graceCutoff) {
+    if (end < Date.now()) {
       return { allow: false, reason: "Membership expired", memberId: member.id };
     }
-    if (now > end) {
-      inGracePeriod = true;
-    }
-  }
-  if (member.status === "expired" && !inGracePeriod) {
-    return { allow: false, reason: "Membership expired", memberId: member.id };
   }
 
   // 5. Branch restriction — device locked to a specific branch
@@ -99,7 +97,7 @@ export async function evaluateAccess(memberId: string, device: Device): Promise<
       (inv) =>
         inv.customerId === member.id &&
         (inv.status === "overdue" ||
-          (inv.status === "pending" && inv.createdAt && Date.now() - new Date(inv.createdAt).getTime() > GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000)),
+          (inv.status === "pending" && inv.createdAt && Date.now() - new Date(inv.createdAt).getTime() > INVOICE_GRACE_DAYS * 24 * 60 * 60 * 1000)),
     );
     if (unpaid.length > 0) {
       return { allow: false, reason: "Unpaid invoice on file", memberId: member.id };
@@ -109,11 +107,7 @@ export async function evaluateAccess(memberId: string, device: Device): Promise<
     // since payment status is informational; status/expiry already gated above.
   }
 
-  return {
-    allow: true,
-    reason: inGracePeriod ? "OK (grace period)" : "OK",
-    memberId: member.id,
-  };
+  return { allow: true, reason: "OK", memberId: member.id };
 }
 
 // Resolve a device-side externalRef back to a Fitro360 member, or null if

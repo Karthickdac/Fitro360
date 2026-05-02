@@ -89,6 +89,7 @@ function MemberRouter() {
       <Route path="/portal/schedule" component={() => <MemberPortalPage initialTab="sessions" />} />
       <Route path="/portal/progress" component={() => <MemberPortalPage initialTab="progress" />} />
       <Route path="/portal/profile" component={() => <MemberPortalPage initialTab="profile" />} />
+      <Route path="/portal/entries" component={() => <MemberPortalPage initialTab="entries" />} />
       <Route path="/notifications" component={NotificationsPage} />
       <Route path="/settings" component={SettingsPage} />
       <Route component={NotFound} />

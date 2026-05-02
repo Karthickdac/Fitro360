@@ -46,6 +46,29 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
+// Recursively scrub sensitive keys before they hit logs. Keep this list in
+// sync with any new high-value fields (device.secret, biometric template data,
+// encrypted device passwords, etc.).
+const SENSITIVE_KEYS = new Set([
+  "secret",
+  "passwordEnc",
+  "password",
+  "templateData",
+  "rawPayload",
+  "signatureDataUrl",
+]);
+function redactSensitive(value: any): any {
+  if (Array.isArray(value)) return value.map(redactSensitive);
+  if (value && typeof value === "object") {
+    const out: Record<string, any> = {};
+    for (const [k, v] of Object.entries(value)) {
+      out[k] = SENSITIVE_KEYS.has(k) ? "[REDACTED]" : redactSensitive(v);
+    }
+    return out;
+  }
+  return value;
+}
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -62,7 +85,11 @@ app.use((req, res, next) => {
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        // Redact sensitive fields (device shared secrets, biometric template
+        // bytes, encrypted device passwords, raw event payloads) so they
+        // never land in plaintext server logs.
+        const redacted = redactSensitive(capturedJsonResponse);
+        logLine += ` :: ${JSON.stringify(redacted)}`;
       }
 
       log(logLine);
