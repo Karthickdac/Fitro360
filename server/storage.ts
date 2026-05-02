@@ -1,5 +1,6 @@
 import { eq, and, desc, gte, lte, sql, between } from "drizzle-orm";
 import { db } from "./db";
+import { encryptString, decryptString, encryptJson, decryptJson } from "./biometric/crypto";
 import {
   tenants, users, members, subscriptionPlans, processedStripeEvents, activities,
   branches, attendance, trainerSessions, sessionBookings,
@@ -1252,37 +1253,57 @@ export class DatabaseStorage implements IStorage {
 
   // ─── Biometric: Templates ─────────────────────────────────
   async getTemplatesByMember(memberId: string): Promise<BiometricTemplate[]> {
-    return db.select().from(biometricTemplates)
+    const rows = await db.select().from(biometricTemplates)
       .where(eq(biometricTemplates.memberId, memberId))
       .orderBy(desc(biometricTemplates.enrolledAt));
+    return rows.map((r) => this.decryptTemplateRow(r));
   }
 
   async getTemplatesByTenant(tenantId: string): Promise<BiometricTemplate[]> {
-    return db.select().from(biometricTemplates)
+    const rows = await db.select().from(biometricTemplates)
       .where(eq(biometricTemplates.tenantId, tenantId))
       .orderBy(desc(biometricTemplates.enrolledAt));
+    return rows.map((r) => this.decryptTemplateRow(r));
   }
 
   async getTemplate(id: string): Promise<BiometricTemplate | undefined> {
     const [t] = await db.select().from(biometricTemplates).where(eq(biometricTemplates.id, id));
-    return t;
+    return t ? this.decryptTemplateRow(t) : t;
   }
 
   async getTemplateByExternalRef(deviceId: string, externalRef: string): Promise<BiometricTemplate | undefined> {
     const [t] = await db.select().from(biometricTemplates)
       .where(and(eq(biometricTemplates.deviceId, deviceId), eq(biometricTemplates.externalRef, externalRef)));
-    return t;
+    return t ? this.decryptTemplateRow(t) : t;
   }
 
   async createTemplate(template: InsertBiometricTemplate): Promise<BiometricTemplate> {
-    const [created] = await db.insert(biometricTemplates).values(template as any).returning();
-    return created;
+    // Encrypt the raw template bytes at rest. Reads through this storage layer
+    // transparently decrypt; logs/admin queries will never see plaintext.
+    const payload: any = { ...template };
+    if (typeof payload.templateData === "string") {
+      payload.templateData = encryptString(payload.templateData);
+    }
+    const [created] = await db.insert(biometricTemplates).values(payload).returning();
+    return this.decryptTemplateRow(created);
   }
 
   async updateTemplate(id: string, data: Partial<InsertBiometricTemplate>): Promise<BiometricTemplate | undefined> {
     if (!data || Object.keys(data).length === 0) return this.getTemplate(id);
-    const [updated] = await db.update(biometricTemplates).set(data as any).where(eq(biometricTemplates.id, id)).returning();
-    return updated;
+    const payload: any = { ...data };
+    if (typeof payload.templateData === "string") {
+      payload.templateData = encryptString(payload.templateData);
+    }
+    const [updated] = await db.update(biometricTemplates).set(payload).where(eq(biometricTemplates.id, id)).returning();
+    return updated ? this.decryptTemplateRow(updated) : updated;
+  }
+
+  private decryptTemplateRow(t: BiometricTemplate): BiometricTemplate {
+    if (t && typeof (t as any).templateData === "string") {
+      const dec = decryptString((t as any).templateData);
+      if (dec != null) (t as any).templateData = dec;
+    }
+    return t;
   }
 
   async deleteTemplate(id: string): Promise<void> {
@@ -1300,22 +1321,38 @@ export class DatabaseStorage implements IStorage {
     if (opts.deviceId) conditions.push(eq(accessEvents.deviceId, opts.deviceId));
     if (opts.memberId) conditions.push(eq(accessEvents.memberId, opts.memberId));
     if (opts.decision) conditions.push(eq(accessEvents.decision, opts.decision));
-    return db.select().from(accessEvents)
+    const rows = await db.select().from(accessEvents)
       .where(and(...conditions))
       .orderBy(desc(accessEvents.capturedAt))
       .limit(opts.limit ?? 200);
+    return rows.map((r) => this.decryptAccessEventRow(r));
   }
 
   async getAccessEventsByMember(memberId: string, limit = 50): Promise<AccessEvent[]> {
-    return db.select().from(accessEvents)
+    const rows = await db.select().from(accessEvents)
       .where(eq(accessEvents.memberId, memberId))
       .orderBy(desc(accessEvents.capturedAt))
       .limit(limit);
+    return rows.map((r) => this.decryptAccessEventRow(r));
   }
 
   async createAccessEvent(event: InsertAccessEvent): Promise<AccessEvent> {
-    const [created] = await db.insert(accessEvents).values(event as any).returning();
-    return created;
+    // Raw payloads can include face crops, fingerprint vendor blobs, and other
+    // PII the device echoes back. Encrypt at rest.
+    const payload: any = { ...event };
+    if (payload.rawPayload != null) {
+      payload.rawPayload = encryptJson(payload.rawPayload);
+    }
+    const [created] = await db.insert(accessEvents).values(payload).returning();
+    return this.decryptAccessEventRow(created);
+  }
+
+  private decryptAccessEventRow(e: AccessEvent): AccessEvent {
+    if (e && typeof (e as any).rawPayload === "string") {
+      const dec = decryptJson((e as any).rawPayload);
+      if (dec != null) (e as any).rawPayload = dec;
+    }
+    return e;
   }
 
   // ─── Biometric: Idempotency ───────────────────────────────

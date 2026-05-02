@@ -125,7 +125,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
   app.delete(
     "/api/devices/:id",
     authMiddleware,
-    requireRole("gym_owner"),
+    requireRole("gym_owner", "manager"),
     async (req: Request, res: Response) => {
       const user = (req as any).user;
       const device = await storage.getDevice(paramId(req));
@@ -435,12 +435,33 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
   // ZKTeco / ESSL / Realtime ADMS firmware sends text/plain attlog payloads
   // that no global parser touches; rawTextParser fires for those and populates
   // req.body as a Buffer.
+  //
+  // ADMS protocol uses three distinct endpoints, each registered explicitly
+  // BEFORE the catch-all so they don't all funnel into the event handler:
+  //   POST /iclock/cdata        — event upload (HMAC-verified webhook)
+  //   GET  /iclock/getrequest   — device polls for queued commands
+  //   POST /iclock/devicecmd    — device acks command completion
   for (const brand of ["zkteco", "essl", "realtime"]) {
     app.post(
       `/api/biometric/${brand}/webhook`,
       rawTextParser,
       async (req: Request, res: Response) => handleWebhook(brand, req, res),
     );
+    app.post(
+      `/api/biometric/${brand}/iclock/cdata`,
+      rawTextParser,
+      async (req: Request, res: Response) => handleWebhook(brand, req, res),
+    );
+    app.get(
+      `/api/biometric/${brand}/iclock/getrequest`,
+      async (req: Request, res: Response) => handleAdmsGetRequest(brand, req, res),
+    );
+    app.post(
+      `/api/biometric/${brand}/iclock/devicecmd`,
+      rawTextParser,
+      async (req: Request, res: Response) => handleAdmsDeviceCmd(brand, req, res),
+    );
+    // Catch-all for liveness pings (/iclock/registry, /iclock/ping, etc.)
     app.all(
       `/api/biometric/${brand}/iclock/*path`,
       rawTextParser,
@@ -452,6 +473,114 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
     "/api/biometric/hikvision/webhook",
     async (req: Request, res: Response) => handleWebhook("hikvision", req, res),
   );
+}
+
+// ─── ADMS protocol command dispatch ─────────────────────────
+// ZKTeco/ESSL/Realtime devices in cloud-push mode poll
+// /iclock/getrequest with their SerialNumber. We respond with any pending
+// queued commands in ADMS line-protocol format ("C:<id>:<CMD>\n") and mark
+// them as picked-up so they aren't redelivered. The device then runs the
+// command and POSTs back to /iclock/devicecmd with status. Device firmware
+// does not support HMAC headers on these endpoints; we authenticate with the
+// SerialNumber + optional `pwd` query parameter (matching device.secret) and
+// rely on the device tunnel/VPN for transport security. Operators wanting
+// stronger auth should run the on-prem relay (HMAC-signed paths in Phase B).
+function admsAuthOk(device: any, req: Request): boolean {
+  const pwd = (req.query.pwd as string | undefined) || (req.headers["x-fitro360-sig"] as string | undefined);
+  // If pwd is provided, compare in constant time against the device secret.
+  if (pwd) {
+    try {
+      const a = Buffer.from(pwd);
+      const b = Buffer.from(device.secret);
+      return a.length === b.length && crypto.timingSafeEqual(a, b);
+    } catch {
+      return false;
+    }
+  }
+  // No pwd: allow only when the device is configured for cloud_push mode and
+  // the request matches a real registered serial. The serial itself acts as
+  // the bearer token (firmware-typical for ADMS).
+  return device.mode === "cloud_push" || !device.mode;
+}
+
+function admsCommandLine(c: any): string {
+  // ADMS command syntax used by ZKTeco-family firmware. Keep payload short;
+  // long enrol payloads can be issued as multi-line DATA UPDATE commands.
+  if (c.command === "open") {
+    const seconds = Number(c.payload?.seconds ?? 5);
+    return `C:${c.id}:AC_UNLOCK\tDoor=1\tHoldTime=${seconds}`;
+  }
+  if (c.command === "enroll") {
+    const p = c.payload || {};
+    return `C:${c.id}:DATA UPDATE FINGERTMP\tPIN=${p.externalRef}\tFID=0\tValid=1\tTMP=${p.templateData}`;
+  }
+  if (c.command === "delete") {
+    const p = c.payload || {};
+    return `C:${c.id}:DATA DELETE USER\tPIN=${p.externalRef}`;
+  }
+  return `C:${c.id}:LOG`;
+}
+
+async function handleAdmsGetRequest(brand: string, req: Request, res: Response) {
+  const serial = (req.query.SN as string) || "";
+  if (!serial) return res.status(400).type("text/plain").send("ERROR");
+  const device = await storage.getDeviceBySerial(serial);
+  if (!device || !device.isActive || device.brand !== brand) {
+    return res.status(404).type("text/plain").send("ERROR");
+  }
+  if (!admsAuthOk(device, req)) {
+    return res.status(401).type("text/plain").send("ERROR");
+  }
+  const cmds = await storage.getPendingDoorCommands(device.id);
+  await storage.updateDevice(device.id, {
+    status: "online",
+    lastSeenAt: new Date(),
+    lastError: null,
+  } as any);
+  if (cmds.length === 0) {
+    return res.type("text/plain").send("OK\n");
+  }
+  const lines: string[] = [];
+  for (const c of cmds) {
+    lines.push(admsCommandLine(c));
+    await storage.markDoorCommandPickedUp(c.id);
+  }
+  return res.type("text/plain").send(lines.join("\n") + "\n");
+}
+
+async function handleAdmsDeviceCmd(brand: string, req: Request, res: Response) {
+  const serial = (req.query.SN as string) || "";
+  if (!serial) return res.status(400).type("text/plain").send("ERROR");
+  const device = await storage.getDeviceBySerial(serial);
+  if (!device || !device.isActive || device.brand !== brand) {
+    return res.status(404).type("text/plain").send("ERROR");
+  }
+  if (!admsAuthOk(device, req)) {
+    return res.status(401).type("text/plain").send("ERROR");
+  }
+  const reqBody: any = (req as any).body;
+  const bodyStr = Buffer.isBuffer(reqBody) ? reqBody.toString("utf8") : String(reqBody || "");
+  const lines = bodyStr.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  for (const ln of lines) {
+    const params: Record<string, string> = {};
+    for (const kv of ln.split(/[&\t]/)) {
+      const idx = kv.indexOf("=");
+      if (idx > 0) params[kv.slice(0, idx)] = decodeURIComponent(kv.slice(idx + 1));
+    }
+    const id = params.ID || params.Id || params.id;
+    if (!id) continue;
+    const owned = await storage.getDoorCommand(id);
+    if (!owned || owned.deviceId !== device.id) continue;
+    const rc = params.Return ?? params.RC ?? "0";
+    const status: "done" | "failed" = rc === "0" ? "done" : "failed";
+    await storage.markDoorCommandComplete(id, status, status === "failed" ? `rc=${rc}` : undefined);
+  }
+  await storage.updateDevice(device.id, {
+    status: "online",
+    lastSeenAt: new Date(),
+    lastError: null,
+  } as any);
+  return res.type("text/plain").send("OK\n");
 }
 
 async function handleWebhook(brand: string, req: Request, res: Response) {
