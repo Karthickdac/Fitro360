@@ -377,7 +377,14 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
         .createHmac("sha256", device.secret)
         .update(`GET:/api/biometric/commands/${req.params.serial}`)
         .digest("hex");
-      if (!sig || sig !== expected) {
+      // Constant-time compare to prevent signature-recovery via response timing.
+      const sigBuf = Buffer.from(sig);
+      const expBuf = Buffer.from(expected);
+      const sigOk =
+        sig.length > 0 &&
+        sigBuf.length === expBuf.length &&
+        crypto.timingSafeEqual(sigBuf, expBuf);
+      if (!sigOk) {
         return res.status(401).json({ message: "Bad signature" });
       }
       const cmds = await storage.getPendingDoorCommands(device.id);
@@ -656,9 +663,13 @@ async function handleWebhook(brand: string, req: Request, res: Response) {
     return res.send(reply.body);
   }
 
-  // Idempotency (per-device event id)
+  // Idempotency (per-device event id). Atomic claim — concurrent duplicate
+  // deliveries race to insert the same primary key; only one wins, the rest
+  // see claimed=false and short-circuit so we never double-write attendance
+  // or fire two door commands for one swipe.
   const dedupeKey = `${device.id}:${ev.nativeEventId}`;
-  if (await storage.isBiometricEventProcessed(dedupeKey)) {
+  const claimed = await storage.claimBiometricEvent(dedupeKey, device.id);
+  if (!claimed) {
     const reply = adapter.buildReply({ allow: true, reason: "duplicate" }, {});
     res.set("Content-Type", reply.contentType);
     return res.send(reply.body);
@@ -703,7 +714,7 @@ async function handleWebhook(brand: string, req: Request, res: Response) {
     await adapter.enqueueOpenDoor(device);
   }
 
-  await storage.markBiometricEventProcessed(dedupeKey, device.id);
+  // dedupe row already inserted above by claimBiometricEvent — no second write needed.
 
   const reply = adapter.buildReply(decision, {
     openDoor: decision.allow,

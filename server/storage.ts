@@ -237,6 +237,7 @@ export interface IStorage {
 
   isBiometricEventProcessed(id: string): Promise<boolean>;
   markBiometricEventProcessed(id: string, deviceId: string): Promise<void>;
+  claimBiometricEvent(id: string, deviceId: string): Promise<boolean>;
 
   getDoorCommand(id: string): Promise<DoorCommand | undefined>;
   getPendingDoorCommands(deviceId: string): Promise<DoorCommand[]>;
@@ -1396,6 +1397,17 @@ export class DatabaseStorage implements IStorage {
     await db.insert(processedBiometricEvents)
       .values({ id, deviceId })
       .onConflictDoNothing();
+  }
+
+  // Atomic claim: returns true iff this caller is the first to insert the
+  // dedupe row. Concurrent duplicate webhook deliveries lose the race and get
+  // false back, so they skip the access-event/attendance/door side effects.
+  async claimBiometricEvent(id: string, deviceId: string): Promise<boolean> {
+    const inserted = await db.insert(processedBiometricEvents)
+      .values({ id, deviceId })
+      .onConflictDoNothing()
+      .returning({ id: processedBiometricEvents.id });
+    return inserted.length > 0;
   }
 
   // ─── Biometric: Door commands ─────────────────────────────
