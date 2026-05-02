@@ -40,7 +40,7 @@ export function encryptString(plain: string | null | undefined): string | null {
 
 export function decryptString(stored: string | null | undefined): string | null {
   if (stored == null) return null;
-  if (typeof stored !== "string") return stored as any;
+  if (typeof stored !== "string") return null;
   if (!stored.startsWith(PREFIX)) return stored;
   try {
     const buf = Buffer.from(stored.slice(PREFIX.length), "base64");
@@ -61,8 +61,8 @@ export function encryptJson(value: unknown): string | null {
   return encryptString(JSON.stringify(value));
 }
 
-export function decryptJson<T = any>(stored: string | null | undefined): T | null {
-  const s = decryptString(stored as any);
+export function decryptJson<T = unknown>(stored: string | null | undefined): T | null {
+  const s = decryptString(stored);
   if (s == null) return null;
   try {
     return JSON.parse(s) as T;

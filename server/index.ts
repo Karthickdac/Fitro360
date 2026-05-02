@@ -56,6 +56,8 @@ const SENSITIVE_KEYS = new Set([
   "templateData",
   "rawPayload",
   "signatureDataUrl",
+  "imagePreviewUrl",
+  "photoUrl",
 ]);
 function redactSensitive(value: any): any {
   if (Array.isArray(value)) return value.map(redactSensitive);

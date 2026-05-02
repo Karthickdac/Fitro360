@@ -1230,13 +1230,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createDevice(device: InsertDevice): Promise<Device> {
-    const [created] = await db.insert(devices).values(device as any).returning();
+    // drizzle-zod can't perfectly mirror jsonb columns with $type<> annotations
+    // (capabilities here), so cast structurally to the table's inferred insert
+    // type at the call site. This is a typed cast, not `any`.
+    const [created] = await db
+      .insert(devices)
+      .values(device as typeof devices.$inferInsert)
+      .returning();
     return created;
   }
 
-  async updateDevice(id: string, data: any): Promise<Device | undefined> {
+  async updateDevice(
+    id: string,
+    data: Partial<typeof devices.$inferInsert>,
+  ): Promise<Device | undefined> {
     if (!data || Object.keys(data).length === 0) return this.getDevice(id);
-    const [updated] = await db.update(devices).set(data as any).where(eq(devices.id, id)).returning();
+    const [updated] = await db.update(devices).set(data).where(eq(devices.id, id)).returning();
     return updated;
   }
 
@@ -1278,30 +1287,42 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTemplate(template: InsertBiometricTemplate): Promise<BiometricTemplate> {
-    // Encrypt the raw template bytes at rest. Reads through this storage layer
-    // transparently decrypt; logs/admin queries will never see plaintext.
-    const payload: any = { ...template };
+    // Encrypt the raw template bytes AND any face/photo preview bytes at rest.
+    // Reads through this storage layer transparently decrypt; logs/admin
+    // queries will never see plaintext biometric data.
+    const payload: Partial<InsertBiometricTemplate> & { templateData?: string | null; imagePreviewUrl?: string | null } = { ...template };
     if (typeof payload.templateData === "string") {
-      payload.templateData = encryptString(payload.templateData);
+      payload.templateData = encryptString(payload.templateData) ?? undefined;
     }
-    const [created] = await db.insert(biometricTemplates).values(payload).returning();
+    if (typeof payload.imagePreviewUrl === "string") {
+      payload.imagePreviewUrl = encryptString(payload.imagePreviewUrl) ?? undefined;
+    }
+    const [created] = await db.insert(biometricTemplates).values(payload as InsertBiometricTemplate).returning();
     return this.decryptTemplateRow(created);
   }
 
   async updateTemplate(id: string, data: Partial<InsertBiometricTemplate>): Promise<BiometricTemplate | undefined> {
     if (!data || Object.keys(data).length === 0) return this.getTemplate(id);
-    const payload: any = { ...data };
+    const payload: Partial<InsertBiometricTemplate> & { templateData?: string | null; imagePreviewUrl?: string | null } = { ...data };
     if (typeof payload.templateData === "string") {
-      payload.templateData = encryptString(payload.templateData);
+      payload.templateData = encryptString(payload.templateData) ?? undefined;
+    }
+    if (typeof payload.imagePreviewUrl === "string") {
+      payload.imagePreviewUrl = encryptString(payload.imagePreviewUrl) ?? undefined;
     }
     const [updated] = await db.update(biometricTemplates).set(payload).where(eq(biometricTemplates.id, id)).returning();
     return updated ? this.decryptTemplateRow(updated) : updated;
   }
 
   private decryptTemplateRow(t: BiometricTemplate): BiometricTemplate {
-    if (t && typeof (t as any).templateData === "string") {
-      const dec = decryptString((t as any).templateData);
-      if (dec != null) (t as any).templateData = dec;
+    if (!t) return t;
+    if (typeof t.templateData === "string") {
+      const dec = decryptString(t.templateData);
+      if (dec != null) t.templateData = dec;
+    }
+    if (typeof t.imagePreviewUrl === "string") {
+      const dec = decryptString(t.imagePreviewUrl);
+      if (dec != null) t.imagePreviewUrl = dec;
     }
     return t;
   }
@@ -1338,19 +1359,27 @@ export class DatabaseStorage implements IStorage {
 
   async createAccessEvent(event: InsertAccessEvent): Promise<AccessEvent> {
     // Raw payloads can include face crops, fingerprint vendor blobs, and other
-    // PII the device echoes back. Encrypt at rest.
-    const payload: any = { ...event };
-    if (payload.rawPayload != null) {
-      payload.rawPayload = encryptJson(payload.rawPayload);
-    }
-    const [created] = await db.insert(accessEvents).values(payload).returning();
+    // PII the device echoes back. Photo URLs from device callbacks may also
+    // contain biometric data. Encrypt at rest. The encrypted blob is stored as
+    // a JSON string inside the jsonb column (jsonb accepts any JSON value).
+    const values: typeof accessEvents.$inferInsert = {
+      ...event,
+      rawPayload: event.rawPayload != null ? encryptJson(event.rawPayload) : event.rawPayload,
+      photoUrl: typeof event.photoUrl === "string" ? (encryptString(event.photoUrl) ?? event.photoUrl) : event.photoUrl,
+    };
+    const [created] = await db.insert(accessEvents).values(values).returning();
     return this.decryptAccessEventRow(created);
   }
 
   private decryptAccessEventRow(e: AccessEvent): AccessEvent {
-    if (e && typeof (e as any).rawPayload === "string") {
-      const dec = decryptJson((e as any).rawPayload);
-      if (dec != null) (e as any).rawPayload = dec;
+    if (!e) return e;
+    if (typeof e.rawPayload === "string") {
+      const dec = decryptJson(e.rawPayload);
+      if (dec != null) e.rawPayload = dec;
+    }
+    if (typeof e.photoUrl === "string") {
+      const dec = decryptString(e.photoUrl);
+      if (dec != null) e.photoUrl = dec;
     }
     return e;
   }
@@ -1388,7 +1417,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createDoorCommand(cmd: InsertDoorCommand): Promise<DoorCommand> {
-    const [created] = await db.insert(doorCommands).values(cmd as any).returning();
+    const [created] = await db.insert(doorCommands).values(cmd).returning();
     return created;
   }
 
@@ -1397,7 +1426,7 @@ export class DatabaseStorage implements IStorage {
       status: "picked_up",
       pickedUpAt: new Date(),
       attempts: sql`${doorCommands.attempts} + 1`,
-    } as any).where(eq(doorCommands.id, id));
+    }).where(eq(doorCommands.id, id));
   }
 
   async markDoorCommandComplete(id: string, status: "done" | "failed", error?: string): Promise<void> {
@@ -1405,7 +1434,7 @@ export class DatabaseStorage implements IStorage {
       status,
       completedAt: new Date(),
       errorMessage: error ?? null,
-    } as any).where(eq(doorCommands.id, id));
+    }).where(eq(doorCommands.id, id));
   }
 }
 

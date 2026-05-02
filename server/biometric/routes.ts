@@ -6,20 +6,26 @@ import { storage } from "../storage";
 import { getAdapter, SUPPORTED_BRANDS, PLANNED_BRANDS } from "./registry";
 import { evaluateAccess, resolveMemberFromExternalRef } from "./access-engine";
 import { insertDeviceSchema, insertBiometricTemplateSchema } from "@shared/schema";
+import type { AccessDecision } from "./types";
 
 // ─── Helpers shared with main routes ────────────────────────────────────────
+type AuthUser = { id: string; role: string; tenantId?: string; firstName?: string; lastName?: string };
+type AuthedRequest = Request & { user?: AuthUser; rawBody?: Buffer | string };
 function paramId(req: Request): string {
   return String(req.params.id);
 }
+function getUser(req: Request): AuthUser | undefined {
+  return (req as AuthedRequest).user;
+}
 
 function requireAuth(req: Request, res: Response, next: NextFunction) {
-  if (!(req as any).user) return res.status(401).json({ message: "Unauthorized" });
+  if (!getUser(req)) return res.status(401).json({ message: "Unauthorized" });
   next();
 }
 
 function requireRole(...roles: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const user = (req as any).user;
+    const user = getUser(req);
     if (!user || !roles.includes(user.role)) {
       return res.status(403).json({ message: "Forbidden" });
     }
@@ -46,7 +52,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
     authMiddleware,
     requireRole("gym_owner", "manager", "sales_executive"),
     async (req: Request, res: Response) => {
-      const user = (req as any).user;
+      const user = getUser(req)!;
       if (!user.tenantId) return res.json([]);
       const list = await storage.getDevicesByTenant(user.tenantId);
       // Never leak the device secret over the wire.
@@ -60,7 +66,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
     requireRole("gym_owner", "manager"),
     async (req: Request, res: Response) => {
       try {
-        const user = (req as any).user;
+        const user = getUser(req)!;
         if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
         const body = insertDeviceSchema
           .omit({ secret: true, tenantId: true, status: true })
@@ -76,7 +82,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
           tenantId: user.tenantId,
           secret,
           status: "offline",
-        } as any);
+        });
         await storage.createActivity({
           tenantId: user.tenantId,
           userId: user.id,
@@ -85,7 +91,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
         });
         // Return secret on creation only so the owner can configure it on the
         // device, but always strip passwordEnc from any response payload.
-        const { passwordEnc: _pw, ...safeCreated } = created as any;
+        const { passwordEnc: _pw, secret: _s, ...safeCreated } = created;
         return res.json({ ...safeCreated, secret });
       } catch (error: any) {
         return res.status(400).json({ message: error.message });
@@ -98,7 +104,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
     authMiddleware,
     requireRole("gym_owner", "manager"),
     async (req: Request, res: Response) => {
-      const user = (req as any).user;
+      const user = getUser(req)!;
       const device = await storage.getDevice(paramId(req));
       if (!device || device.tenantId !== user.tenantId) {
         return res.status(404).json({ message: "Device not found" });
@@ -116,7 +122,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
           isActive: z.boolean().optional(),
         })
         .parse(req.body);
-      const updated = await storage.updateDevice(device.id, allowed as any);
+      const updated = await storage.updateDevice(device.id, allowed);
       const safe = updated ? { ...updated, secret: undefined, passwordEnc: undefined } : null;
       return res.json(safe);
     },
@@ -127,7 +133,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
     authMiddleware,
     requireRole("gym_owner", "manager"),
     async (req: Request, res: Response) => {
-      const user = (req as any).user;
+      const user = getUser(req)!;
       const device = await storage.getDevice(paramId(req));
       if (!device || device.tenantId !== user.tenantId) {
         return res.status(404).json({ message: "Device not found" });
@@ -150,7 +156,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
     authMiddleware,
     requireRole("gym_owner", "manager"),
     async (req: Request, res: Response) => {
-      const user = (req as any).user;
+      const user = getUser(req)!;
       const device = await storage.getDevice(paramId(req));
       if (!device || device.tenantId !== user.tenantId) {
         return res.status(404).json({ message: "Device not found" });
@@ -165,7 +171,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
         memberId: null,
         eventType: "entry",
         decision: "allow",
-        reason: `Manual unlock by ${user.firstName} ${user.lastName}`,
+        reason: `Manual unlock by ${user.firstName ?? ""} ${user.lastName ?? ""}`.trim(),
         capturedAt: new Date(),
       });
       return res.json({ ok: true });
@@ -178,11 +184,13 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
     authMiddleware,
     requireRole("gym_owner", "manager", "sales_executive"),
     async (req: Request, res: Response) => {
-      const user = (req as any).user;
+      const user = getUser(req)!;
       if (!user.tenantId) return res.json([]);
       const list = await storage.getTemplatesByTenant(user.tenantId);
-      // Strip the raw template blob from list views; only fetch by id when needed.
-      return res.json(list.map(({ templateData, ...t }) => t));
+      // Strip the raw template blob AND the face image preview from list
+      // views; both are biometric data and only the by-id read should expose
+      // them to authorised callers.
+      return res.json(list.map(({ templateData, imagePreviewUrl, ...t }) => t));
     },
   );
 
@@ -190,7 +198,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
     "/api/biometric/templates/by-member/:memberId",
     authMiddleware,
     async (req: Request, res: Response) => {
-      const user = (req as any).user;
+      const user = getUser(req)!;
       const member = await storage.getMember(String(req.params.memberId));
       if (!member) return res.status(404).json({ message: "Member not found" });
       const isSelf = member.userId && member.userId === user.id;
@@ -199,7 +207,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
         return res.status(403).json({ message: "Forbidden" });
       }
       const list = await storage.getTemplatesByMember(member.id);
-      return res.json(list.map(({ templateData, ...t }) => t));
+      return res.json(list.map(({ templateData, imagePreviewUrl, ...t }) => t));
     },
   );
 
@@ -209,7 +217,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
     requireRole("gym_owner", "manager", "sales_executive"),
     async (req: Request, res: Response) => {
       try {
-        const user = (req as any).user;
+        const user = getUser(req)!;
         if (!user.tenantId) return res.status(400).json({ message: "No tenant" });
         const body = z
           .object({
@@ -251,7 +259,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
             syncStatus: "pending",
             consentGiven: body.consentGiven,
             consentAt: body.consentGiven ? new Date() : null,
-          } as any);
+          });
 
           if (adapter.pushTemplate) {
             const result = await adapter.pushTemplate(
@@ -262,9 +270,11 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
             await storage.updateTemplate(tpl.id, {
               syncStatus: result.ok ? "pushed" : "failed",
               syncError: result.error,
-            } as any);
+            });
           }
-          created.push({ ...tpl, templateData: undefined });
+          // Strip biometric payloads before echoing back to the API caller.
+          const { templateData: _td, imagePreviewUrl: _ip, ...safeTpl } = tpl;
+          created.push(safeTpl);
         }
 
         await storage.createActivity({
@@ -285,7 +295,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
     "/api/biometric/templates/:id",
     authMiddleware,
     async (req: Request, res: Response) => {
-      const user = (req as any).user;
+      const user = getUser(req)!;
       const tpl = await storage.getTemplate(paramId(req));
       if (!tpl) return res.status(404).json({ message: "Template not found" });
       const member = await storage.getMember(tpl.memberId);
@@ -315,21 +325,23 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
     authMiddleware,
     requireRole("gym_owner", "manager", "sales_executive", "trainer"),
     async (req: Request, res: Response) => {
-      const user = (req as any).user;
+      const user = getUser(req)!;
       if (!user.tenantId) return res.json([]);
-      const qStr = (k: string) => {
-        const v = (req.query as any)[k];
+      const qStr = (k: string): string | undefined => {
+        const v = req.query[k];
         return typeof v === "string" ? v : undefined;
       };
-      const opts: any = {
+      const limitStr = qStr("limit");
+      const opts = {
         branchId: qStr("branchId"),
         deviceId: qStr("deviceId"),
         memberId: qStr("memberId"),
         decision: qStr("decision"),
-        limit: qStr("limit") ? Math.min(500, parseInt(qStr("limit") as string)) : 200,
+        limit: limitStr ? Math.min(500, parseInt(limitStr, 10)) : 200,
       };
       const list = await storage.getAccessEventsByTenant(user.tenantId, opts);
-      return res.json(list);
+      // Strip per-event raw payload + photo preview from list views.
+      return res.json(list.map(({ rawPayload, photoUrl, ...e }) => e));
     },
   );
 
@@ -337,7 +349,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
     "/api/access-events/by-member/:memberId",
     authMiddleware,
     async (req: Request, res: Response) => {
-      const user = (req as any).user;
+      const user = getUser(req)!;
       const member = await storage.getMember(String(req.params.memberId));
       if (!member) return res.status(404).json({ message: "Member not found" });
       const isSelf = member.userId && member.userId === user.id;
@@ -346,7 +358,8 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
         return res.status(403).json({ message: "Forbidden" });
       }
       const list = await storage.getAccessEventsByMember(member.id, 100);
-      return res.json(list);
+      // Strip raw payload + photo preview before returning to clients.
+      return res.json(list.map(({ rawPayload, photoUrl, ...e }) => e));
     },
   );
 
@@ -375,7 +388,7 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
         status: "online",
         lastSeenAt: new Date(),
         lastError: null,
-      } as any);
+      });
       return res.json({ commands: cmds });
     },
   );
@@ -531,7 +544,7 @@ async function handleAdmsGetRequest(brand: string, req: Request, res: Response) 
     status: "online",
     lastSeenAt: new Date(),
     lastError: null,
-  } as any);
+  });
   if (cmds.length === 0) {
     return res.type("text/plain").send("OK\n");
   }
@@ -553,8 +566,8 @@ async function handleAdmsDeviceCmd(brand: string, req: Request, res: Response) {
   if (!admsAuthOk(device, req)) {
     return res.status(401).type("text/plain").send("ERROR");
   }
-  const reqBody: any = (req as any).body;
-  const bodyStr = Buffer.isBuffer(reqBody) ? reqBody.toString("utf8") : String(reqBody || "");
+  const reqBody = (req as AuthedRequest).body;
+  const bodyStr = Buffer.isBuffer(reqBody) ? reqBody.toString("utf8") : String(reqBody ?? "");
   const lines = bodyStr.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   for (const ln of lines) {
     const params: Record<string, string> = {};
@@ -574,7 +587,7 @@ async function handleAdmsDeviceCmd(brand: string, req: Request, res: Response) {
     status: "online",
     lastSeenAt: new Date(),
     lastError: null,
-  } as any);
+  });
   return res.type("text/plain").send("OK\n");
 }
 
@@ -597,20 +610,21 @@ async function handleWebhook(brand: string, req: Request, res: Response) {
   // Resolve raw bytes. ZKTeco/ESSL/Realtime use the route-level raw parser
   // (req.body is a Buffer). Hikvision is JSON-parsed by the global parser
   // and the same global parser stashes the raw bytes on req.rawBody.
-  const reqBody: any = (req as any).body;
+  const reqBody = (req as AuthedRequest).body;
+  const rawBodyHook = (req as AuthedRequest).rawBody;
   let rawBuf: Buffer;
   if (Buffer.isBuffer(reqBody)) {
     rawBuf = reqBody;
-  } else if (Buffer.isBuffer((req as any).rawBody)) {
-    rawBuf = (req as any).rawBody as Buffer;
-  } else if (typeof (req as any).rawBody === "string") {
-    rawBuf = Buffer.from((req as any).rawBody as string);
+  } else if (Buffer.isBuffer(rawBodyHook)) {
+    rawBuf = rawBodyHook;
+  } else if (typeof rawBodyHook === "string") {
+    rawBuf = Buffer.from(rawBodyHook);
   } else {
     rawBuf = Buffer.alloc(0);
   }
 
   const ok = await adapter.verifyRequest(
-    { headers: req.headers as any, rawBody: rawBuf, query: req.query as any },
+    { headers: req.headers, rawBody: rawBuf, query: req.query as Record<string, string | string[] | undefined> },
     device,
   );
   if (!ok) {
@@ -632,7 +646,7 @@ async function handleWebhook(brand: string, req: Request, res: Response) {
   const ev = adapter.parseEvent({
     body: parsedBody,
     rawBody: rawBuf,
-    query: req.query as any,
+    query: req.query as Record<string, unknown>,
   });
 
   if (!ev) {
@@ -650,7 +664,7 @@ async function handleWebhook(brand: string, req: Request, res: Response) {
     return res.send(reply.body);
   }
 
-  let decision = { allow: false, reason: "Unknown member" } as any;
+  let decision: AccessDecision = { allow: false, reason: "Unknown member" };
   let memberId: string | null = null;
   if (ev.externalRef) {
     memberId = await resolveMemberFromExternalRef(device.id, ev.externalRef);

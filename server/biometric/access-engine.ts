@@ -113,20 +113,29 @@ export async function evaluateAccess(memberId: string, device: Device): Promise<
 // Resolve a device-side externalRef back to a Fitro360 member, or null if
 // the device knows a face we haven't linked yet (we still log the event).
 export async function resolveMemberFromExternalRef(deviceId: string, externalRef: string): Promise<string | null> {
-  // Templates may be device-scoped or global. Prefer a device-specific match,
-  // then fall back to any active template for the same externalRef in the
-  // tenant — but only if it was enrolled for the same device's brand.
+  // Templates may be device-scoped or shared across same-brand readers. Prefer
+  // a device-specific match. Fall back ONLY when the candidate template was
+  // enrolled on a device of the same brand (and same tenant) — otherwise an
+  // externalRef collision (e.g. PIN "1234") between, say, a Hikvision face
+  // template and a ZKTeco fingerprint template would mis-associate members.
+  // If multiple brand-safe candidates exist we refuse to guess and return null.
   const tDeviceSpecific = await storage.getTemplateByExternalRef(deviceId, externalRef);
   if (tDeviceSpecific && tDeviceSpecific.status === "active") {
     return tDeviceSpecific.memberId;
   }
-  // Fallback: any template with this externalRef for the same tenant.
-  // (Useful when admins re-use a stable PIN across devices.)
   const device = await storage.getDevice(deviceId);
   if (!device) return null;
+
   const tenantTemplates = await storage.getTemplatesByTenant(device.tenantId);
-  const match = tenantTemplates.find(
-    (t) => t.externalRef === externalRef && t.status === "active",
-  );
-  return match?.memberId ?? null;
+  const candidates: { memberId: string }[] = [];
+  for (const t of tenantTemplates) {
+    if (t.externalRef !== externalRef || t.status !== "active") continue;
+    if (!t.deviceId) continue;
+    const tDev = await storage.getDevice(t.deviceId);
+    if (tDev?.brand === device.brand) {
+      candidates.push({ memberId: t.memberId });
+    }
+  }
+  if (candidates.length !== 1) return null; // ambiguous → refuse to map
+  return candidates[0].memberId;
 }
