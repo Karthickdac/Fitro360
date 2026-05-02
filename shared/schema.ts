@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp, jsonb, decimal, date } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, jsonb, decimal, date, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -225,9 +225,10 @@ export const attendance = pgTable("attendance", {
   method: text("method").default("manual"),
   // For biometric/RFID check-ins, link the device that recorded the entry
   // so audit + analytics can join attendance back to the reader. Nullable
-  // because manual check-ins have no device, and we use ON DELETE SET NULL
-  // so retiring a reader preserves attendance history.
-  deviceId: varchar("device_id"),
+  // because manual check-ins have no device, and ON DELETE SET NULL
+  // preserves attendance history when a reader is retired. The () => arrow
+  // defers resolution past the devices table declaration further down.
+  deviceId: varchar("device_id").references((): AnyPgColumn => devices.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
