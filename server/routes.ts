@@ -123,7 +123,18 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   }
   (req as any).user = user;
   if (user.tenantId) {
-    (req as any).tenant = await storage.getTenant(user.tenantId);
+    const tenant = await storage.getTenant(user.tenantId);
+    // Block all access for users whose tenant has been deactivated
+    // by a platform admin. Destroy their session so the cookie can't
+    // be re-used and the SPA falls back to the login page.
+    if (tenant && tenant.isActive === false) {
+      req.session?.destroy(() => {});
+      return res.status(403).json({
+        message: "This gym account has been deactivated. Please contact your administrator.",
+        code: "TENANT_DEACTIVATED",
+      });
+    }
+    (req as any).tenant = tenant;
   }
   next();
 }
@@ -169,10 +180,18 @@ export async function registerRoutes(
       if (!user) return res.status(401).json({ message: "Invalid credentials" });
       const valid = await bcrypt.compare(password, user.password);
       if (!valid) return res.status(401).json({ message: "Invalid credentials" });
+      let tenant = null;
+      if (user.tenantId) {
+        tenant = await storage.getTenant(user.tenantId);
+        if (tenant && tenant.isActive === false) {
+          return res.status(403).json({
+            message: "This gym account has been deactivated. Please contact your administrator.",
+            code: "TENANT_DEACTIVATED",
+          });
+        }
+      }
       req.session.userId = user.id;
       const { password: _, ...safeUser } = user;
-      let tenant = null;
-      if (user.tenantId) tenant = await storage.getTenant(user.tenantId);
       return res.json({ user: safeUser, tenant });
     } catch (error: any) {
       return res.status(400).json({ message: error.message });
@@ -183,9 +202,18 @@ export async function registerRoutes(
     if (!req.session?.userId) return res.status(401).json({ message: "Not authenticated" });
     const user = await storage.getUser(req.session.userId);
     if (!user) return res.status(401).json({ message: "User not found" });
-    const { password: _, ...safeUser } = user;
     let tenant = null;
-    if (user.tenantId) tenant = await storage.getTenant(user.tenantId);
+    if (user.tenantId) {
+      tenant = await storage.getTenant(user.tenantId);
+      if (tenant && tenant.isActive === false) {
+        req.session?.destroy(() => {});
+        return res.status(403).json({
+          message: "This gym account has been deactivated. Please contact your administrator.",
+          code: "TENANT_DEACTIVATED",
+        });
+      }
+    }
+    const { password: _, ...safeUser } = user;
     return res.json({ user: safeUser, tenant });
   });
 
