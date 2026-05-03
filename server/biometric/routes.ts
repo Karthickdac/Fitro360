@@ -19,18 +19,39 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Resolve the relay-agent dist directory at startup. The server is
-// bundled as ESM so `__dirname` does not exist — derive it from
-// import.meta.url. We look in a few candidate locations so this works
-// both in `npm run dev` (running from project root) and from the
-// production bundle (server bundled into dist/).
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Resolve the relay-agent dist directory at startup. Works in three
+// modes: dev via tsx (ESM, import.meta.url available), production
+// CJS bundle (dist/index.cjs — __dirname is available, import.meta
+// is undefined), and ESM bundle (import.meta.url available, no
+// __dirname). Each lookup is defensive so a missing one cannot crash
+// startup with "fileURLToPath received undefined".
+function safeDirname(): string {
+  // CJS bundle: __dirname exists as a real binding.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cjsDirname = (typeof (globalThis as any).__dirname !== "undefined")
+    ? (globalThis as any).__dirname as string
+    : null;
+  if (cjsDirname) return cjsDirname;
+  // ESM / tsx: derive from import.meta.url. Wrapped in try/catch so a
+  // bundler that rewrites import.meta.url to undefined cannot crash us.
+  try {
+    // @ts-ignore - import.meta is valid in ESM source even if the
+    // emitted CJS bundle replaces it with undefined.
+    const u = import.meta?.url;
+    if (typeof u === "string" && u.length > 0) {
+      return path.dirname(fileURLToPath(u));
+    }
+  } catch {
+    /* fall through */
+  }
+  return process.cwd();
+}
+const __dirname_compat = safeDirname();
 function findRelayDistDir(): string {
   const candidates = [
     path.resolve(process.cwd(), "relay-agent/dist"),
-    path.resolve(__dirname, "../../relay-agent/dist"),
-    path.resolve(__dirname, "../../../relay-agent/dist"),
+    path.resolve(__dirname_compat, "../../relay-agent/dist"),
+    path.resolve(__dirname_compat, "../../../relay-agent/dist"),
   ];
   for (const c of candidates) {
     if (fs.existsSync(c)) return c;

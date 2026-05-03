@@ -1,0 +1,84 @@
+-48a0-9e84-bb7ddc6d9cae","tenantId":"f1f6e857-3bc2-41fb-9984-8673095767d2","name":"Main Branch","address":"123 Iron Street, Los Angeles, CA 90001","phone":"+1 555-0101","email":"main@irontemple.com","managerId":null,"isActive":true,"createdAt":{}}]
+2|fitro360 | 7:00:18 AM [biometric] enrolment sync error: relation "devices" does not exist
+
+/root/.pm2/logs/fitro360-error.log last 80 lines:
+2|fitro360 |     at async /home/fitro360/htdocs/www.fitro360.com/dist/index.cjs:80:37980
+2|fitro360 |     at async Tw.getDashboardStats (/home/fitro360/htdocs/www.fitro360.com/dist/index.cjs:80:144510)
+2|fitro360 |     at async /home/fitro360/htdocs/www.fitro360.com/dist/index.cjs:120:28203 {
+2|fitro360 |   length: 109,
+2|fitro360 |   severity: 'ERROR',
+2|fitro360 |   code: '42703',
+2|fitro360 |   detail: undefined,
+2|fitro360 |   hint: undefined,
+2|fitro360 |   position: '98',
+2|fitro360 |   internalPosition: undefined,
+2|fitro360 |   internalQuery: undefined,
+2|fitro360 |   where: undefined,
+2|fitro360 |   schema: undefined,
+2|fitro360 |   table: undefined,
+2|fitro360 |   column: undefined,
+2|fitro360 |   dataType: undefined,
+2|fitro360 |   constraint: undefined,
+2|fitro360 |   file: 'parse_relation.c',
+2|fitro360 |   line: '3722',
+2|fitro360 |   routine: 'errorMissingColumn'
+2|fitro360 | }
+2|fitro360 | Internal Server Error: error: relation "devices" does not exist
+2|fitro360 |     at /home/fitro360/htdocs/www.fitro360.com/dist/index.cjs:74:13356
+2|fitro360 |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+2|fitro360 |     at async /home/fitro360/htdocs/www.fitro360.com/dist/index.cjs:80:37980
+2|fitro360 |     at async /home/fitro360/htdocs/www.fitro360.com/dist/index.cjs:106:3889 {
+2|fitro360 |   length: 107,
+2|fitro360 |   severity: 'ERROR',
+2|fitro360 |   code: '42P01',
+2|fitro360 |   detail: undefined,
+2|fitro360 |   hint: undefined,
+2|fitro360 |   position: '259',
+2|fitro360 |   internalPosition: undefined,
+2|fitro360 |   internalQuery: undefined,
+2|fitro360 |   where: undefined,
+2|fitro360 |   schema: undefined,
+2|fitro360 |   table: undefined,
+2|fitro360 |   column: undefined,
+2|fitro360 |   dataType: undefined,
+2|fitro360 |   constraint: undefined,
+2|fitro360 |   file: 'parse_relation.c',
+2|fitro360 |   line: '1449',
+2|fitro360 |   routine: 'parserOpenTable'
+2|fitro360 | }
+2|fitro360 | Internal Server Error: error: relation "devices" does not exist
+2|fitro360 |     at /home/fitro360/htdocs/www.fitro360.com/dist/index.cjs:74:13356
+2|fitro360 |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+2|fitro360 |     at async /home/fitro360/htdocs/www.fitro360.com/dist/index.cjs:80:37980
+2|fitro360 |     at async /home/fitro360/htdocs/www.fitro360.com/dist/index.cjs:106:3889 {
+2|fitro360 |   length: 107,
+2|fitro360 |   severity: 'ERROR',
+2|fitro360 |   code: '42P01',
+2|fitro360 |   detail: undefined,
+2|fitro360 |   hint: undefined,
+2|fitro360 |   position: '259',
+2|fitro360 |   internalPosition: undefined,
+2|fitro360 |   internalQuery: undefined,
+2|fitro360 |   where: undefined,
+2|fitro360 |   schema: undefined,
+2|fitro360 |   table: undefined,
+2|fitro360 |   column: undefined,
+2|fitro360 |   dataType: undefined,
+2|fitro360 |   constraint: undefined,
+2|fitro360 |   file: 'parse_relation.c',
+2|fitro360 |   line: '1449',
+2|fitro360 |   routine: 'parserOpenTable'
+2|fitro360 | }
+2|fitro360 | TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string or an instance of URL. Received undefined
+2|fitro360 |     at fileURLToPath (node:internal/url:1605:11)
+2|fitro360 |     at Object.<anonymous> (/home/fitro360/htdocs/www.fitro360.com/dist/index.cjs:106:4065)
+2|fitro360 |     at Module._compile (node:internal/modules/cjs/loader:1705:14)
+2|fitro360 |     at Object..js (node:internal/modules/cjs/loader:1838:10)
+2|fitro360 |     at Module.load (node:internal/modules/cjs/loader:1441:32)
+2|fitro360 |     at Function._load (node:internal/modules/cjs/loader:1263:12)
+2|fitro360 |     at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+2|fitro360 |     at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+2|fitro360 |     at cjsLoader (node:internal/modules/esm/translators:309:5)
+2|fitro360 |     at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:202:7) {
+2|fitro360 |   code: 'ERR_INVALID_ARG_TYPE'
+2|fitro360 | }
