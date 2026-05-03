@@ -1,5 +1,6 @@
 #requires -version 5.0
-# Hidden uninstaller. Removes the boot service; preserves config.json.
+# Hidden uninstaller. Removes the boot service and the Start Menu
+# shortcut; preserves config.json under %ProgramData%\Fitro360.
 
 [CmdletBinding()]
 param()
@@ -13,12 +14,12 @@ function Show-Msg { param([string]$Text,[string]$Title='Fitro360 Relay',[string]
 
 $exe = Join-Path $PSScriptRoot 'fitro360-relay.exe'
 if (-not (Test-Path -LiteralPath $exe)) {
-  Show-Msg 'fitro360-relay.exe not found in this folder.' 'Fitro360 — uninstall error' 'Error'
+  Show-Msg 'fitro360-relay.exe not found next to uninstall.ps1.' 'Fitro360 — uninstall error' 'Error'
   exit 1
 }
 
 $confirm = [System.Windows.MessageBox]::Show(
-  "Remove the Fitro360 Relay service?`n`nYour config.json under C:\ProgramData\Fitro360 will be preserved — delete that folder by hand if you also want to wipe stored device secrets.",
+  "Remove the Fitro360 Relay service and Start Menu shortcut?`n`nYour config.json under C:\ProgramData\Fitro360 will be preserved — delete that folder by hand if you also want to wipe stored device secrets.",
   'Fitro360 — confirm uninstall','YesNo','Question')
 if ($confirm -ne 'Yes') { exit 0 }
 
@@ -30,4 +31,11 @@ if ($p.ExitCode -ne 0) {
   Show-Msg "Uninstall failed (code $($p.ExitCode)). See $logOut" 'Fitro360 — uninstall failed' 'Error'
   exit 1
 }
+
+# Best-effort: remove the Start Menu shortcut left by Install.
+try {
+  $lnk = Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\Fitro360 Relay.lnk'
+  if (Test-Path -LiteralPath $lnk) { Remove-Item -LiteralPath $lnk -Force -ErrorAction SilentlyContinue }
+} catch {}
+
 Show-Msg 'The Fitro360 Relay service has been removed.' 'Fitro360 — uninstalled'
