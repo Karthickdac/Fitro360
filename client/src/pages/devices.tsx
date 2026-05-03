@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { CheckCircle2, AlertCircle, Cpu, DoorOpen, Trash2, Copy, Plus } from "lucide-react";
+import { CheckCircle2, AlertCircle, Cpu, DoorOpen, Trash2, Copy, Plus, Download } from "lucide-react";
 
 type Device = {
   id: string;
@@ -58,6 +58,20 @@ export default function DevicesPage() {
   const { data: brandsMeta } = useQuery<{ supported: string[]; planned: string[] }>({
     queryKey: ["/api/biometric/brands"],
   });
+  const { data: relayInfo } = useQuery<{
+    available: boolean;
+    filename?: string;
+    version?: string | null;
+    sizeBytes?: number;
+    url?: string;
+    message?: string;
+  }>({ queryKey: ["/api/devices/relay-agent/info"] });
+
+  const formatBytes = (n?: number) => {
+    if (!n) return "";
+    if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
+    return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -115,10 +129,27 @@ export default function DevicesPage() {
           <h1 className="text-2xl font-bold tracking-tight" data-testid="text-devices-heading">Biometric Devices</h1>
           <p className="text-sm text-muted-foreground">Connect face / fingerprint / RFID readers to control gym entry</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-add-device"><Plus className="mr-2 h-4 w-4" /> Add Device</Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          {relayInfo?.available ? (
+            <Button
+              variant="outline"
+              asChild
+              data-testid="button-download-relay-agent"
+              title={`Windows installer (.zip) — ${formatBytes(relayInfo.sizeBytes)}${relayInfo.version ? ` • v${relayInfo.version}` : ""}`}
+            >
+              <a href={relayInfo.url} download>
+                <Download className="mr-2 h-4 w-4" />
+                Download relay agent
+                <span className="ml-2 text-xs text-muted-foreground">
+                  Windows · {formatBytes(relayInfo.sizeBytes)}
+                </span>
+              </a>
+            </Button>
+          ) : null}
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button data-testid="button-add-device"><Plus className="mr-2 h-4 w-4" /> Add Device</Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Add a biometric device</DialogTitle>
@@ -233,7 +264,22 @@ export default function DevicesPage() {
             </Form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
+
+      {relayInfo && !relayInfo.available ? (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Download className="h-4 w-4" /> Relay agent download not yet available
+            </CardTitle>
+            <CardDescription data-testid="text-relay-agent-unavailable">
+              {relayInfo.message ||
+                "The Windows installer hasn't been built on this server yet. Once it's built it will appear here as a one-click download."}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      ) : null}
 
       {brandsMeta?.planned?.length ? (
         <Card>

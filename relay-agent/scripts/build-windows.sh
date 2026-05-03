@@ -46,18 +46,17 @@ cp "$ROOT/installer/install.bat"   "$STAGE/install.bat"
 cp "$ROOT/installer/uninstall.bat" "$STAGE/uninstall.bat"
 cp "$ROOT/installer/README.txt"    "$STAGE/README.txt"
 
-# Use Node to zip so we don't depend on `zip` being installed on the
-# build host (CI runners often lack it).
-node -e "
-const fs=require('fs'),path=require('path'),{execSync}=require('child_process');
-const stage='${STAGE}', out='${ZIP}';
-try {
-  execSync('zip -j -r ' + JSON.stringify(out) + ' ' + JSON.stringify(stage), {stdio:'inherit'});
-} catch {
-  // Fallback: PowerShell Compress-Archive when running on Windows.
-  execSync('powershell -NoProfile -Command \"Compress-Archive -Force -Path ' + stage + '\\\\* -DestinationPath ' + out + '\"', {stdio:'inherit'});
-}
-"
+# Pack the staged release. Three fallbacks so this works on any sane
+# build host: Linux/macOS with `zip`, Windows hosts via PowerShell
+# Compress-Archive, and bare-metal CI (Replit / minimal Nix) via the
+# pure-Node writer in scripts/zip-dir.js.
+if command -v zip >/dev/null 2>&1; then
+  ( cd "$STAGE" && zip -r "$ZIP" . )
+elif command -v powershell >/dev/null 2>&1; then
+  powershell -NoProfile -Command "Compress-Archive -Force -Path '$STAGE\\*' -DestinationPath '$ZIP'"
+else
+  node "$ROOT/scripts/zip-dir.js" "$STAGE" "$ZIP"
+fi
 
 echo ""
 echo "✓ Built: $ZIP"

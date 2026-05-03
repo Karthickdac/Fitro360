@@ -15,6 +15,45 @@ import type { AccessDecision } from "./types";
 import { broadcastAccessEvent, broadcastDeviceStatus } from "./ws";
 import { runRetentionSweep } from "./retention";
 import { runEnrolmentSync } from "./enrolment-sync";
+import fs from "node:fs";
+import path from "node:path";
+
+// Resolve the relay-agent dist directory at startup. We look for it
+// relative to the server source AND relative to process.cwd() so it
+// works in both `npm run dev` (server runs from project root) and the
+// production bundle (server bundled into dist/).
+function findRelayDistDir(): string {
+  const candidates = [
+    path.resolve(process.cwd(), "relay-agent/dist"),
+    path.resolve(__dirname, "../../relay-agent/dist"),
+    path.resolve(__dirname, "../../../relay-agent/dist"),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return candidates[0];
+}
+
+// Picks the newest fitro360-relay-windows-*.zip in the dist dir.
+// Returns null if none exists yet (the operator hasn't run the build
+// script). The /download route surfaces a friendly error in that case.
+function findLatestRelayZip(): { path: string; filename: string; version: string | null } | null {
+  const dir = findRelayDistDir();
+  if (!fs.existsSync(dir)) return null;
+  const zips = fs
+    .readdirSync(dir)
+    .filter((f) => /^fitro360-relay-windows.*\.zip$/i.test(f))
+    .map((f) => ({
+      filename: f,
+      path: path.join(dir, f),
+      mtime: fs.statSync(path.join(dir, f)).mtimeMs,
+    }))
+    .sort((a, b) => b.mtime - a.mtime);
+  if (zips.length === 0) return null;
+  const latest = zips[0];
+  const v = /v(\d+\.\d+\.\d+)/.exec(latest.filename);
+  return { path: latest.path, filename: latest.filename, version: v ? v[1] : null };
+}
 
 // ─── Helpers shared with main routes ────────────────────────────────────────
 type AuthUser = { id: string; role: string; tenantId?: string; firstName?: string; lastName?: string };
@@ -53,6 +92,53 @@ export function registerBiometricRoutes(app: Express, authMiddleware: any) {
       planned: PLANNED_BRANDS,
     });
   });
+
+  // ─── Relay agent download ────────────────────────────────
+  // Surface the prebuilt Windows release zip (and its file size +
+  // version) so the admin Devices page can render a real download
+  // button. Auth-gated to gym_owner/manager — the secret-bearing
+  // operators who would actually install the agent.
+  app.get(
+    "/api/devices/relay-agent/info",
+    authMiddleware,
+    requireRole("gym_owner", "manager", "super_admin"),
+    (_req: Request, res: Response) => {
+      const latest = findLatestRelayZip();
+      if (!latest) {
+        return res.json({
+          available: false,
+          message:
+            "Relay agent build not found. Run `bash relay-agent/scripts/build-windows.sh` to produce the Windows installer zip.",
+        });
+      }
+      const stat = fs.statSync(latest.path);
+      return res.json({
+        available: true,
+        filename: latest.filename,
+        version: latest.version,
+        sizeBytes: stat.size,
+        url: "/api/devices/relay-agent/download",
+      });
+    },
+  );
+
+  app.get(
+    "/api/devices/relay-agent/download",
+    authMiddleware,
+    requireRole("gym_owner", "manager", "super_admin"),
+    (_req: Request, res: Response) => {
+      const latest = findLatestRelayZip();
+      if (!latest) {
+        return res.status(503).json({
+          message:
+            "Relay agent build not found on this server. Ask your administrator to run `bash relay-agent/scripts/build-windows.sh`.",
+        });
+      }
+      res.setHeader("Content-Type", "application/zip");
+      res.setHeader("Content-Disposition", `attachment; filename="${latest.filename}"`);
+      return res.sendFile(latest.path);
+    },
+  );
 
   // ─── Devices CRUD ────────────────────────────────────────
   app.get(
