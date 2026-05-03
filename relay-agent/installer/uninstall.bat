@@ -1,9 +1,7 @@
 @echo off
-REM Power-user fallback — see install.bat.
+REM Fitro360 Relay Agent — uninstaller entry point. See install.bat
+REM for why this is a .bat and not a .vbs.
 cd /d "%~dp0"
-if exist "Uninstall Fitro360 Relay.vbs" (
-  cscript //nologo "%~dp0Uninstall Fitro360 Relay.vbs"
-  exit /b
-)
-echo Uninstall Fitro360 Relay.vbs is missing from this folder.
-pause
+start "" /min powershell.exe -NoProfile -WindowStyle Hidden -Command ^
+  "Start-Process powershell.exe -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-File','%~dp0uninstall.ps1' -Verb RunAs -WindowStyle Hidden"
+exit /b

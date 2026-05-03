@@ -52,6 +52,7 @@ cp "$ROOT/installer/uninstall.ps1" "$STAGE/uninstall.ps1"
 cp "$ROOT/installer/Install Fitro360 Relay.vbs"   "$STAGE/Install Fitro360 Relay.vbs"
 cp "$ROOT/installer/Uninstall Fitro360 Relay.vbs" "$STAGE/Uninstall Fitro360 Relay.vbs"
 cp "$ROOT/installer/Open Relay Manager.vbs"       "$STAGE/Open Relay Manager.vbs"
+cp "$ROOT/installer/Open Relay Manager.bat"       "$STAGE/Open Relay Manager.bat"
 
 # Pack the staged release. Three fallbacks so this works on any sane
 # build host: Linux/macOS with `zip`, Windows hosts via PowerShell
