@@ -34,32 +34,37 @@ command formatting in particular varies slightly between firmwares.
 
 ## 2. Install
 
-### Option A — Windows (recommended, single .exe)
+### Option A — Windows (recommended, single .exe + GUI)
 
 The Windows release is a single self-contained `fitro360-relay.exe` —
-**no Node.js install required** on the gym PC. The download includes a
-one-click `install.bat` that runs the setup wizard and registers the
-agent as a Windows boot service for you.
+**no Node.js install required** on the gym PC. The whole experience is
+graphical — no command prompt at any point.
 
 1. Download `fitro360-relay-windows-vX.Y.Z.zip` from your Fitro360
    dashboard → **Devices → Download relay agent**.
 2. Unzip the folder anywhere (e.g. `C:\Fitro360`).
 3. **Right-click `install.bat` → "Run as administrator"**.
-4. Answer the wizard prompts (cloud URL, brand, serial, secret, device
-   IP, admin user/password). The secret input is masked.
-5. Done — the agent is running and will auto-start on every boot. The
-   config lives at `C:\ProgramData\Fitro360\config.json`, locked down
-   to Administrators / SYSTEM only.
+4. A native Windows setup window opens. Fill in the cloud URL, click
+   **+ Add device** for each reader (paste the secret from the cloud
+   Devices page; the field is masked), then click **Save & install**.
+5. Done — the agent is registered as a boot service, started, and the
+   "Fitro360 Relay Manager" window opens so you can confirm it is
+   running and tail the live log.
+
+The config lives at `C:\ProgramData\Fitro360\config.json`, locked down
+to Administrators / SYSTEM only.
+
+**Manage it later:** double-click `manager.ps1` to open a small control
+panel — live status, Start/Stop/Restart buttons, configured devices,
+auto-refreshing log tail, and a Reconfigure button that re-opens the
+setup window with your existing values pre-filled.
 
 To uninstall: right-click `uninstall.bat` → Run as administrator.
 
-To re-run the wizard later (e.g. add another device):
-
-```cmd
-"C:\path\to\fitro360-relay.exe" --setup
-```
-
-To check status: `schtasks /Query /TN Fitro360Relay /V /FO LIST`
+The GUI is built with Windows Forms via PowerShell (zero-install on
+Windows 10 / 11 / Server 2016+). Power users can still drive everything
+from a command prompt with `--setup`, `--install-service`,
+`--start-service`, etc.
 
 **Building the release zip** (only needed if you're producing a fresh
 build for distribution — operators don't need this):

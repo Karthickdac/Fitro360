@@ -45,6 +45,8 @@ $PKG_BIN . --targets node20-win-x64 --compress GZip \
 cp "$ROOT/installer/install.bat"   "$STAGE/install.bat"
 cp "$ROOT/installer/uninstall.bat" "$STAGE/uninstall.bat"
 cp "$ROOT/installer/README.txt"    "$STAGE/README.txt"
+cp "$ROOT/installer/setup-gui.ps1" "$STAGE/setup-gui.ps1"
+cp "$ROOT/installer/manager.ps1"   "$STAGE/manager.ps1"
 
 # Pack the staged release. Three fallbacks so this works on any sane
 # build host: Linux/macOS with `zip`, Windows hosts via PowerShell
