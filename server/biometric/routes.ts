@@ -17,11 +17,15 @@ import { runRetentionSweep } from "./retention";
 import { runEnrolmentSync } from "./enrolment-sync";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-// Resolve the relay-agent dist directory at startup. We look for it
-// relative to the server source AND relative to process.cwd() so it
-// works in both `npm run dev` (server runs from project root) and the
+// Resolve the relay-agent dist directory at startup. The server is
+// bundled as ESM so `__dirname` does not exist — derive it from
+// import.meta.url. We look in a few candidate locations so this works
+// both in `npm run dev` (running from project root) and from the
 // production bundle (server bundled into dist/).
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 function findRelayDistDir(): string {
   const candidates = [
     path.resolve(process.cwd(), "relay-agent/dist"),
