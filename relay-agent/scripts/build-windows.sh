@@ -47,6 +47,11 @@ cp "$ROOT/installer/uninstall.bat" "$STAGE/uninstall.bat"
 cp "$ROOT/installer/README.txt"    "$STAGE/README.txt"
 cp "$ROOT/installer/setup-gui.ps1" "$STAGE/setup-gui.ps1"
 cp "$ROOT/installer/manager.ps1"   "$STAGE/manager.ps1"
+cp "$ROOT/installer/install.ps1"   "$STAGE/install.ps1"
+cp "$ROOT/installer/uninstall.ps1" "$STAGE/uninstall.ps1"
+cp "$ROOT/installer/Install Fitro360 Relay.vbs"   "$STAGE/Install Fitro360 Relay.vbs"
+cp "$ROOT/installer/Uninstall Fitro360 Relay.vbs" "$STAGE/Uninstall Fitro360 Relay.vbs"
+cp "$ROOT/installer/Open Relay Manager.vbs"       "$STAGE/Open Relay Manager.vbs"
 
 # Pack the staged release. Three fallbacks so this works on any sane
 # build host: Linux/macOS with `zip`, Windows hosts via PowerShell

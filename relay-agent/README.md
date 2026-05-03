@@ -43,7 +43,8 @@ graphical — no command prompt at any point.
 1. Download `fitro360-relay-windows-vX.Y.Z.zip` from your Fitro360
    dashboard → **Devices → Download relay agent**.
 2. Unzip the folder anywhere (e.g. `C:\Fitro360`).
-3. **Right-click `install.bat` → "Run as administrator"**.
+3. **Double-click `Install Fitro360 Relay.vbs`** and approve the UAC
+   prompt. (No command prompt window appears at any point.)
 4. A native Windows setup window opens. Fill in the cloud URL, click
    **+ Add device** for each reader (paste the secret from the cloud
    Devices page; the field is masked), then click **Save & install**.
@@ -54,12 +55,12 @@ graphical — no command prompt at any point.
 The config lives at `C:\ProgramData\Fitro360\config.json`, locked down
 to Administrators / SYSTEM only.
 
-**Manage it later:** double-click `manager.ps1` to open a small control
-panel — live status, Start/Stop/Restart buttons, configured devices,
-auto-refreshing log tail, and a Reconfigure button that re-opens the
-setup window with your existing values pre-filled.
+**Manage it later:** double-click `Open Relay Manager.vbs` to open a
+small control panel — live status, Start/Stop/Restart buttons,
+configured devices, auto-refreshing log tail, and a Reconfigure button
+that re-opens the setup window with your existing values pre-filled.
 
-To uninstall: right-click `uninstall.bat` → Run as administrator.
+To uninstall: double-click `Uninstall Fitro360 Relay.vbs`.
 
 The GUI is built with Windows Forms via PowerShell (zero-install on
 Windows 10 / 11 / Server 2016+). Power users can still drive everything

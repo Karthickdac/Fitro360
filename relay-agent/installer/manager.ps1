@@ -46,10 +46,16 @@ Add-Type -AssemblyName System.Drawing
 $TASK = 'Fitro360Relay'
 
 function Get-TaskState {
-  $r = & schtasks.exe /Query /TN $TASK /FO CSV /NH 2>$null
-  if ($LASTEXITCODE -ne 0) { return 'Not installed' }
+  # Run schtasks.exe via a hidden Start-Process so no console flashes
+  # while the manager auto-refreshes every 5 sec.
+  $tmp = Join-Path $env:TEMP 'fitro360-mgr-status.csv'
+  $p = Start-Process -FilePath 'schtasks.exe' `
+        -ArgumentList @('/Query','/TN',$TASK,'/FO','CSV','/NH') `
+        -Wait -PassThru -WindowStyle Hidden `
+        -RedirectStandardOutput $tmp -RedirectStandardError "$tmp.err"
+  if ($p.ExitCode -ne 0) { return 'Not installed' }
   try {
-    $cols = $r | ConvertFrom-Csv -Header 'Name','NextRun','Status'
+    $cols = (Get-Content -LiteralPath $tmp -Raw) | ConvertFrom-Csv -Header 'Name','NextRun','Status'
     return $cols[0].Status
   } catch { return 'Unknown' }
 }
@@ -61,7 +67,12 @@ function Run-Exe([string[]]$args) {
       'Missing binary','OK','Error') | Out-Null
     return
   }
-  Start-Process -FilePath $ExePath -ArgumentList $args -Wait -NoNewWindow
+  # WindowStyle Hidden — the .exe is a console-subsystem binary, so
+  # without this a black console window flashes for each click.
+  $logOut = Join-Path $env:TEMP 'fitro360-mgr.log'
+  Start-Process -FilePath $ExePath -ArgumentList $args -Wait `
+    -WindowStyle Hidden `
+    -RedirectStandardOutput $logOut -RedirectStandardError "$logOut.err" | Out-Null
 }
 
 # ─── Main window ──────────────────────────────────────────────────
