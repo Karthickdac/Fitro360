@@ -1,0 +1,46 @@
+[03-05-2026 11:47:26.53] Install.bat: started, cwd=C:\Users\USER\Downloads\fitro360-relay-windows-v1.2.2 
+[03-05-2026 11:47:26.58] Install.bat: elevated, launching install.ps1 
+[03-05-2026 11:47:26.60] Install.bat: spawned install.ps1, exiting 
+[2026-05-03 11:47:27] install.ps1: started, PSScriptRoot='C:\Users\USER\Downloads\fitro360-relay-windows-v1.2.2\lib', PID=96, IsAdmin=...checking
+[2026-05-03 11:47:27] install.ps1: PresentationFramework loaded
+[2026-05-03 11:47:27] install.ps1: paths: exe='C:\Users\USER\Downloads\fitro360-relay-windows-v1.2.2\lib\fitro360-relay.exe', gui='C:\Users\USER\Downloads\fitro360-relay-windows-v1.2.2\lib\setup-gui.ps1'
+[2026-05-03 11:47:27] install.ps1: isAdmin=True
+[2026-05-03 11:47:27] install.ps1: Unblock-File swept
+[2026-05-03 11:47:27] install.ps1: spawning setup-gui.ps1, WorkingDirectory='C:\Users\USER\Downloads\fitro360-relay-windows-v1.2.2\lib'
+[2026-05-03 11:47:27] setup-gui.ps1: started PID=3172
+[03-05-2026 12:02:40.81] Uninstall.bat: started 
+[03-05-2026 12:02:40.91] Uninstall.bat: not elevated, self-elevating 
+[03-05-2026 12:02:45.90] Uninstall.bat: started 
+[03-05-2026 12:02:45.99] Uninstall.bat: elevated, launching uninstall.ps1 
+[03-05-2026 12:03:49.91] Install.bat: started, cwd=C:\Users\USER\Downloads\fitro360-relay-windows-v1.2.3 
+[03-05-2026 12:03:49.95] Install.bat: elevated, launching install.ps1 
+[03-05-2026 12:03:49.97] Install.bat: spawned install.ps1, exiting 
+[2026-05-03 12:03:50] install.ps1: started, PSScriptRoot='C:\Users\USER\Downloads\fitro360-relay-windows-v1.2.3\lib', PID=18752, LangMode=FullLanguage
+[2026-05-03 12:03:50] install.ps1: PresentationFramework loaded
+[2026-05-03 12:03:50] install.ps1: paths: exe='C:\Users\USER\Downloads\fitro360-relay-windows-v1.2.3\lib\fitro360-relay.exe', gui='C:\Users\USER\Downloads\fitro360-relay-windows-v1.2.3\lib\setup-gui.ps1'
+[2026-05-03 12:03:50] install.ps1: isAdmin=True
+[2026-05-03 12:03:50] install.ps1: Unblock-File swept
+[2026-05-03 12:03:50] install.ps1: spawning setup-gui.ps1, WorkingDirectory='C:\Users\USER\Downloads\fitro360-relay-windows-v1.2.3\lib'
+[2026-05-03 12:03:50] setup-gui.ps1: started PID=17136
+[2026-05-03 12:03:50] setup-gui.ps1: LanguageMode=FullLanguage
+[2026-05-03 12:03:50] setup-gui.ps1: loading System.Windows.Forms
+[2026-05-03 12:03:51] setup-gui.ps1: loading System.Drawing
+[2026-05-03 12:03:51] setup-gui.ps1: EnableVisualStyles
+[2026-05-03 12:03:51] setup-gui.ps1: WinForms loaded OK
+[2026-05-03 12:03:51] setup-gui.ps1: building main form
+[03-05-2026 12:04:25.12] Install.bat: started, cwd=C:\Users\USER\Downloads\fitro360-relay-windows-v1.2.3 
+[03-05-2026 12:04:25.18] Install.bat: elevated, launching install.ps1 
+[03-05-2026 12:04:25.20] Install.bat: spawned install.ps1, exiting 
+[2026-05-03 12:04:25] install.ps1: started, PSScriptRoot='C:\Users\USER\Downloads\fitro360-relay-windows-v1.2.3\lib', PID=22556, LangMode=FullLanguage
+[2026-05-03 12:04:25] install.ps1: PresentationFramework loaded
+[2026-05-03 12:04:25] install.ps1: paths: exe='C:\Users\USER\Downloads\fitro360-relay-windows-v1.2.3\lib\fitro360-relay.exe', gui='C:\Users\USER\Downloads\fitro360-relay-windows-v1.2.3\lib\setup-gui.ps1'
+[2026-05-03 12:04:25] install.ps1: isAdmin=True
+[2026-05-03 12:04:25] install.ps1: Unblock-File swept
+[2026-05-03 12:04:25] install.ps1: spawning setup-gui.ps1, WorkingDirectory='C:\Users\USER\Downloads\fitro360-relay-windows-v1.2.3\lib'
+[2026-05-03 12:04:25] setup-gui.ps1: started PID=14928
+[2026-05-03 12:04:25] setup-gui.ps1: LanguageMode=FullLanguage
+[2026-05-03 12:04:25] setup-gui.ps1: loading System.Windows.Forms
+[2026-05-03 12:04:25] setup-gui.ps1: loading System.Drawing
+[2026-05-03 12:04:25] setup-gui.ps1: EnableVisualStyles
+[2026-05-03 12:04:25] setup-gui.ps1: WinForms loaded OK
+[2026-05-03 12:04:26] setup-gui.ps1: building main form

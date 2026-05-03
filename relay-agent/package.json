@@ -1,6 +1,6 @@
 {
   "name": "fitro360-relay-agent",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Fitro360 on-prem relay agent. Polls the Fitro360 cloud for queued device commands and executes them on biometric devices on the local gym LAN.",
   "main": "src/index.js",
   "type": "commonjs",

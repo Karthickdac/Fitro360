@@ -70,6 +70,25 @@ _trace "EnableVisualStyles"
 [System.Windows.Forms.Application]::EnableVisualStyles()
 _trace "WinForms loaded OK"
 
+# Win32 helper to force a window to the foreground. ShowDialog alone
+# is not enough when our parent powershell.exe is launched with
+# -WindowStyle Hidden: with no visible parent, the dialog opens but
+# Windows' z-order rules can leave it buried behind every other
+# top-level window, so the user sees no window at all.
+try {
+  Add-Type -Namespace Win32 -Name Fg -MemberDefinition @'
+[System.Runtime.InteropServices.DllImport("user32.dll")]
+public static extern bool SetForegroundWindow(System.IntPtr hWnd);
+[System.Runtime.InteropServices.DllImport("user32.dll")]
+public static extern bool ShowWindow(System.IntPtr hWnd, int nCmdShow);
+[System.Runtime.InteropServices.DllImport("user32.dll")]
+public static extern bool BringWindowToTop(System.IntPtr hWnd);
+'@
+  _trace "Win32 Fg helper loaded"
+} catch {
+  _trace "Win32 Fg helper FAILED to load: $($_.Exception.Message)"
+}
+
 $KnownBrands = @(
   'zkteco','essl','realtime','hikvision','suprema',
   'matrix','anviz','dahua','idemia','virdi','hid'
@@ -223,10 +242,20 @@ $main.Size = New-Object System.Drawing.Size(680, 560)
 # powershell.exe is launched with -WindowStyle Hidden, so otherwise
 # the form can open behind whatever the user has focused.
 $main.TopMost = $true
+$main.ShowInTaskbar = $true
+$main.WindowState = 'Normal'
+$main.MinimumSize = New-Object System.Drawing.Size(680, 560)
 $main.Add_Shown({
+  _trace "main form Shown event fired, hWnd=$($main.Handle)"
+  try {
+    [Win32.Fg]::ShowWindow($main.Handle, 5)        | Out-Null  # SW_SHOW
+    [Win32.Fg]::BringWindowToTop($main.Handle)     | Out-Null
+    [Win32.Fg]::SetForegroundWindow($main.Handle)  | Out-Null
+  } catch { _trace "Shown handler Win32 calls failed: $($_.Exception.Message)" }
   $main.Activate()
   $main.TopMost = $false
 })
+$main.Add_Load({ _trace "main form Load event fired" })
 
 $header = New-Object System.Windows.Forms.Label
 $header.Text = 'Connect this PC to your Fitro360 cloud account'
@@ -241,6 +270,7 @@ $sub.ForeColor = [System.Drawing.Color]::DimGray
 $sub.Location = New-Object System.Drawing.Point(20, 42)
 $sub.Size = New-Object System.Drawing.Size(640, 35)
 $main.Controls.Add($sub)
+_trace "header+sub added"
 
 # Cloud URL row
 $lblCloud = New-Object System.Windows.Forms.Label
@@ -285,6 +315,7 @@ $cmbLog.SelectedItem = if ($existing -and $existing.logLevel) { $existing.logLev
 $cmbLog.Location = New-Object System.Drawing.Point(330, 123)
 $cmbLog.Size = New-Object System.Drawing.Size(120, 22)
 $main.Controls.Add($cmbLog)
+_trace "cloud/poll/log rows added"
 
 # Devices section
 $lblDev = New-Object System.Windows.Forms.Label
@@ -318,6 +349,7 @@ function Refresh-Grid {
   }
 }
 Refresh-Grid
+_trace "device grid built and populated ($($devices.Count) devices)"
 
 $btnAdd = New-Object System.Windows.Forms.Button
 $btnAdd.Text = '+ Add device'
@@ -384,6 +416,7 @@ $btnCancel.Size = New-Object System.Drawing.Size(60, 32)
 $btnCancel.DialogResult = 'Cancel'
 $main.Controls.Add($btnCancel)
 $main.CancelButton = $btnCancel
+_trace "all action buttons added"
 
 $saved = $false
 $btnSave.Add_Click({
@@ -465,5 +498,7 @@ $btnSave.Add_Click({
   }
 })
 
-$null = $main.ShowDialog()
+_trace "main form built, calling ShowDialog (saved=$saved, devicesCount=$($devices.Count))"
+$dlgResult = $main.ShowDialog()
+_trace "ShowDialog returned: $dlgResult, saved=$saved"
 if ($saved) { exit 0 } else { exit 2 }
