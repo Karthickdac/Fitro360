@@ -159,6 +159,10 @@ export const members = pgTable("members", {
   membershipStart: timestamp("membership_start").defaultNow(),
   membershipEnd: timestamp("membership_end"),
   status: text("status").notNull().default("active"),
+  // Updated automatically (in storage.updateMember) every time `status`
+  // changes. Used by the GDPR retention sweeper to age out biometric
+  // templates 30 days after a member is marked inactive/transferred/cancelled.
+  statusUpdatedAt: timestamp("status_updated_at").defaultNow(),
   nationality: text("nationality"),
   dateOfBirth: date("date_of_birth"),
   salespersonId: varchar("salesperson_id").references(() => users.id),

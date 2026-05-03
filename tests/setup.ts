@@ -13,6 +13,7 @@ type Member = {
   membershipType: string;
   membershipEnd?: Date | null;
   status: string;
+  statusUpdatedAt?: Date | null;
   nationality?: string | null;
   waiverAcceptedAt?: Date | null;
   firstName: string;
@@ -116,6 +117,19 @@ const fakeStorage = {
     let n = 0;
     for (const [id, e] of state.events) {
       if (e.tenantId === t && e.capturedAt < cutoff) { state.events.delete(id); n++; }
+    }
+    return n;
+  },
+  async wipeAccessEventPayloadsOlderThan(t: string, cutoff: Date) {
+    let n = 0;
+    for (const e of state.events.values()) {
+      if (e.tenantId === t && e.capturedAt < cutoff) {
+        const hasData = (e as any).rawPayload != null || (e as any).photoUrl != null;
+        if (!hasData) continue;
+        (e as any).rawPayload = null;
+        (e as any).photoUrl = null;
+        n++;
+      }
     }
     return n;
   },

@@ -1,4 +1,4 @@
-import { eq, and, or, desc, gte, lte, lt, sql, between, inArray } from "drizzle-orm";
+import { eq, and, or, desc, gte, lte, lt, sql, between, inArray, isNotNull } from "drizzle-orm";
 import { db } from "./db";
 import { encryptString, decryptString, encryptJson, decryptJson } from "./biometric/crypto";
 import {
@@ -243,6 +243,10 @@ export interface IStorage {
   getAccessEventsByMember(memberId: string, limit?: number): Promise<AccessEvent[]>;
   createAccessEvent(event: InsertAccessEvent): Promise<AccessEvent>;
   deleteAccessEventsOlderThan(tenantId: string, cutoff: Date): Promise<number>;
+  // GDPR-friendly variant: keep the event row (decision metadata stays for
+  // audit) but null out rawPayload + photoUrl so we don't hold personal
+  // data past the retention window.
+  wipeAccessEventPayloadsOlderThan(tenantId: string, cutoff: Date): Promise<number>;
 
   // Custom owner-defined access rules + GDPR settings + unmatched device-side enrolments
   getAccessBlockRulesByTenant(tenantId: string): Promise<AccessBlockRule[]>;
@@ -489,7 +493,19 @@ export class DatabaseStorage implements IStorage {
 
   async updateMember(id: string, data: Partial<InsertMember>): Promise<Member | undefined> {
     if (!data || Object.keys(data).length === 0) return this.getMember(id);
-    const [updated] = await db.update(members).set(data as any).where(eq(members.id, id)).returning();
+    // If the caller is changing `status`, bump `statusUpdatedAt` so the GDPR
+    // retention sweeper can age the row at exactly 30 days from the change
+    // (rather than guessing from membershipEnd, which a back-office edit
+    // may not touch). Only stamp when the status actually differs from
+    // what's already on the row to avoid no-op writes.
+    let patch: any = { ...data };
+    if (data.status !== undefined) {
+      const current = await this.getMember(id);
+      if (current && current.status !== data.status) {
+        patch.statusUpdatedAt = new Date();
+      }
+    }
+    const [updated] = await db.update(members).set(patch).where(eq(members.id, id)).returning();
     return updated;
   }
 
@@ -1402,6 +1418,21 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(accessEvents.tenantId, tenantId), lt(accessEvents.capturedAt, cutoff)))
       .returning({ id: accessEvents.id });
     return deleted.length;
+  }
+
+  async wipeAccessEventPayloadsOlderThan(tenantId: string, cutoff: Date): Promise<number> {
+    // Skip rows where both payload-bearing columns are already null so we
+    // don't re-update (and re-count) the same rows on every daily sweep.
+    // The activity-log row therefore reflects only newly-wiped records.
+    const updated = await db.update(accessEvents)
+      .set({ rawPayload: null, photoUrl: null })
+      .where(and(
+        eq(accessEvents.tenantId, tenantId),
+        lt(accessEvents.capturedAt, cutoff),
+        or(isNotNull(accessEvents.rawPayload), isNotNull(accessEvents.photoUrl)),
+      ))
+      .returning({ id: accessEvents.id });
+    return updated.length;
   }
 
   // ─── Biometric: Custom block rules ────────────────────────

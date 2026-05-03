@@ -52,6 +52,7 @@ import DevicesPage from "@/pages/devices";
 import EnrolmentPage from "@/pages/enrolment";
 import AccessEventsPage from "@/pages/access-events";
 import AccessBlockRulesPage from "@/pages/access-block-rules";
+import BiometricSettingsPage from "@/pages/biometric-settings";
 
 function LoadingScreen() {
   return (
@@ -130,6 +131,7 @@ function ManagerRouter() {
       <Route path="/enrolment" component={EnrolmentPage} />
       <Route path="/access-events" component={AccessEventsPage} />
       <Route path="/access-block-rules" component={AccessBlockRulesPage} />
+      <Route path="/biometric-settings" component={BiometricSettingsPage} />
       <Route path="/activity" component={ActivityPage} />
       <Route path="/notifications" component={NotificationsPage} />
       <Route path="/analytics" component={AnalyticsPage} />
@@ -175,6 +177,7 @@ function GymOwnerRouter() {
       <Route path="/enrolment" component={EnrolmentPage} />
       <Route path="/access-events" component={AccessEventsPage} />
       <Route path="/access-block-rules" component={AccessBlockRulesPage} />
+      <Route path="/biometric-settings" component={BiometricSettingsPage} />
       <Route path="/settings/billing" component={BillingPage} />
       <Route component={NotFound} />
     </Switch>

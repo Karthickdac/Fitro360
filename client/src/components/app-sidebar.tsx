@@ -36,6 +36,7 @@ import {
   Fingerprint,
   ScanFace,
   ShieldOff,
+  ShieldCheck,
   History,
   ChevronDown,
 } from "lucide-react";
@@ -150,6 +151,7 @@ const gymAccessControlItems: NavItem[] = [
   { title: "Enrol Member", url: "/enrolment", icon: ScanFace },
   { title: "Access Log", url: "/access-events", icon: History },
   { title: "Block Rules", url: "/access-block-rules", icon: ShieldOff },
+  { title: "Retention & GDPR", url: "/biometric-settings", icon: ShieldCheck },
 ];
 
 const gymProcurementItems: NavItem[] = [
