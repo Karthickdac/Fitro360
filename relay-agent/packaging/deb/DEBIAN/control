@@ -1,0 +1,11 @@
+Package: fitro360-relay
+Version: 1.0.0
+Section: net
+Priority: optional
+Architecture: all
+Depends: nodejs (>= 18) | nodejs-18 | nodejs-20
+Maintainer: Fitro360 <support@fitro360.com>
+Description: Fitro360 on-prem relay agent
+ Polls the Fitro360 cloud for queued biometric device commands and
+ executes them on devices on the local gym LAN. Authenticates with
+ a per-device serial + secret using HMAC-SHA256.

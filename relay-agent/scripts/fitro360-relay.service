@@ -1,0 +1,23 @@
+[Unit]
+Description=Fitro360 on-prem relay agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=fitro360
+Group=fitro360
+ExecStart=/usr/bin/node /opt/fitro360-relay/src/index.js --config /etc/fitro360/config.json
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+# Hardening — the agent only needs outbound HTTPS + LAN HTTP.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/log/fitro360
+
+[Install]
+WantedBy=multi-user.target

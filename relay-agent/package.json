@@ -1,0 +1,29 @@
+{
+  "name": "fitro360-relay-agent",
+  "version": "1.0.0",
+  "description": "Fitro360 on-prem relay agent. Polls the Fitro360 cloud for queued device commands and executes them on biometric devices on the local gym LAN.",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "bin": {
+    "fitro360-relay": "src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node tests/signing.test.js && node tests/poller.test.js",
+    "package:win": "pkg . --targets node18-win-x64 --output dist/fitro360-relay.exe",
+    "package:linux": "pkg . --targets node18-linux-x64 --output dist/fitro360-relay-linux",
+    "package:macos": "pkg . --targets node18-macos-x64 --output dist/fitro360-relay-macos"
+  },
+  "pkg": {
+    "scripts": [
+      "src/**/*.js"
+    ],
+    "assets": [
+      "config.example.json"
+    ]
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

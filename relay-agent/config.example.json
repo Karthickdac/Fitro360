@@ -1,0 +1,16 @@
+{
+  "cloudUrl": "https://app.fitro360.com",
+  "pollIntervalMs": 5000,
+  "logLevel": "info",
+  "devices": [
+    {
+      "serial": "ZK-XXXX-1234",
+      "secret": "paste-the-secret-shown-once-on-the-devices-page",
+      "brand": "zkteco",
+      "host": "192.168.1.50",
+      "port": 80,
+      "username": "admin",
+      "password": "device-admin-password"
+    }
+  ]
+}

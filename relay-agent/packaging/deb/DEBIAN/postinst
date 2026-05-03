@@ -1,0 +1,27 @@
+#!/bin/sh
+set -e
+
+# Create the system user the systemd unit runs as.
+if ! id -u fitro360 >/dev/null 2>&1; then
+  useradd --system --no-create-home --shell /usr/sbin/nologin fitro360
+fi
+
+# Seed config.json from the example on a fresh install only.
+if [ ! -f /etc/fitro360/config.json ]; then
+  cp /etc/fitro360/config.example.json /etc/fitro360/config.json
+  chmod 600 /etc/fitro360/config.json
+  chown fitro360:fitro360 /etc/fitro360/config.json
+  echo ">>> Edit /etc/fitro360/config.json with your cloudUrl, device serial, and secret."
+fi
+
+mkdir -p /var/log/fitro360
+chown -R fitro360:fitro360 /opt/fitro360-relay /var/log/fitro360 /etc/fitro360
+
+# Reload systemd and enable (do not start until config is filled in).
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl daemon-reload || true
+  systemctl enable fitro360-relay.service || true
+  echo ">>> Run: sudo systemctl start fitro360-relay"
+fi
+
+exit 0
