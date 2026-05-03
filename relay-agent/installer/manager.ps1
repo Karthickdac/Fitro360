@@ -170,10 +170,15 @@ $btnReconfigure.Add_Click({
       'Missing file','OK','Error') | Out-Null
     return
   }
-  $p = Start-Process -FilePath 'powershell.exe' -ArgumentList @(
-    '-NoProfile','-ExecutionPolicy','Bypass','-File',$gui,
-    '-ConfigPath',$ConfigPath
-  ) -Wait -PassThru
+  # Use -WorkingDirectory + relative path to avoid the
+  # "Start-Process doesn't quote array elements with spaces" trap
+  # when the install folder lives under e.g. "C:\Users\John Smith\".
+  $p = Start-Process -FilePath 'powershell.exe' `
+    -WorkingDirectory $PSScriptRoot `
+    -ArgumentList @(
+      '-NoProfile','-ExecutionPolicy','Bypass','-File','setup-gui.ps1',
+      '-ConfigPath',"`"$ConfigPath`""
+    ) -Wait -PassThru -WindowStyle Hidden
   if ($p.ExitCode -eq 0) {
     Run-Exe @('--stop-service')
     Run-Exe @('--start-service')

@@ -25,6 +25,23 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+# Surface ANY uncaught exception as a MessageBox so the operator sees
+# a real error instead of "exit code 1". Also writes a copy to TEMP.
+trap {
+  $errFile = Join-Path $env:TEMP 'fitro360-setup-gui.err.log'
+  try {
+    "[{0}] {1}`n{2}" -f (Get-Date), $_.Exception.Message, $_.ScriptStackTrace |
+      Out-File -LiteralPath $errFile -Encoding UTF8 -Append
+  } catch {}
+  try {
+    Add-Type -AssemblyName PresentationFramework -ErrorAction SilentlyContinue
+    [System.Windows.MessageBox]::Show(
+      "The setup window crashed:`n`n$($_.Exception.Message)`n`nDetails written to:`n$errFile",
+      'Fitro360 — setup error','OK','Error') | Out-Null
+  } catch {}
+  exit 1
+}
+
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
@@ -177,6 +194,14 @@ $main.StartPosition = 'CenterScreen'
 $main.FormBorderStyle = 'FixedDialog'
 $main.MaximizeBox = $false
 $main.Size = New-Object System.Drawing.Size(680, 560)
+# Force the window to the foreground when it appears. The parent
+# powershell.exe is launched with -WindowStyle Hidden, so otherwise
+# the form can open behind whatever the user has focused.
+$main.TopMost = $true
+$main.Add_Shown({
+  $main.Activate()
+  $main.TopMost = $false
+})
 
 $header = New-Object System.Windows.Forms.Label
 $header.Text = 'Connect this PC to your Fitro360 cloud account'

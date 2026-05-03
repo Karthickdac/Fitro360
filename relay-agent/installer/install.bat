@@ -3,17 +3,15 @@ REM ─────────────────────────�
 REM  Fitro360 Relay Agent — installer entry point.
 REM
 REM  Double-click this file. The CMD window flashes for a fraction
-REM  of a second, then everything from that point on is graphical:
-REM  the UAC prompt, the setup wizard, and the manager window.
+REM  of a second, then everything is graphical: UAC prompt, setup
+REM  wizard, manager window.
 REM
-REM  We use a .bat (not a .vbs) as the primary entry because Windows
-REM  11 Smart App Control silently blocks unsigned VBScript files
-REM  downloaded from the internet, while .bat files are universally
-REM  allowed. A VBS launcher is still shipped alongside as an
-REM  alternative — see "Install Fitro360 Relay.vbs".
+REM  We use -WorkingDirectory + a relative -File argument because the
+REM  install folder may sit under a path with spaces (e.g.
+REM  "C:\Users\John Smith\Downloads\...") and Start-Process does not
+REM  quote ArgumentList elements automatically.
 REM ─────────────────────────────────────────────────────────────────
 
 cd /d "%~dp0"
-start "" /min powershell.exe -NoProfile -WindowStyle Hidden -Command ^
-  "Start-Process powershell.exe -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-File','%~dp0install.ps1' -Verb RunAs -WindowStyle Hidden"
+start "" /min powershell.exe -NoProfile -WindowStyle Hidden -Command "Start-Process powershell.exe -Verb RunAs -WindowStyle Hidden -WorkingDirectory '%~dp0' -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-File','install.ps1'"
 exit /b
