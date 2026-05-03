@@ -22,6 +22,11 @@ param(
   [string]$DefaultCloudUrl = 'https://app.fitro360.com'
 )
 
+# Trace marker at the very top, before StrictMode/Add-Type, so we
+# can see in %TEMP%\fitro360-trace.log if this script even started.
+$Trace = Join-Path $env:TEMP 'fitro360-trace.log'
+try { "[{0}] setup-gui.ps1: started PID=$PID" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | Out-File -LiteralPath $Trace -Encoding UTF8 -Append } catch {}
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -32,6 +37,8 @@ trap {
   try {
     "[{0}] {1}`n{2}" -f (Get-Date), $_.Exception.Message, $_.ScriptStackTrace |
       Out-File -LiteralPath $errFile -Encoding UTF8 -Append
+    "[{0}] setup-gui.ps1: CRASHED {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $_.Exception.Message |
+      Out-File -LiteralPath $Trace -Encoding UTF8 -Append
   } catch {}
   try {
     Add-Type -AssemblyName PresentationFramework -ErrorAction SilentlyContinue

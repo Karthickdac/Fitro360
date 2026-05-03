@@ -1,19 +1,42 @@
 #requires -version 5.0
-# -----------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────
 #  Fitro360 Relay Agent - installer orchestrator (no console UI).
-#
 #  Lives in <release>\lib\ alongside the .exe and helper scripts.
-#  Launched (hidden, elevated) by ..\Install.bat. All user-facing
-#  output is via WPF MessageBox so no console window ever appears.
-# -----------------------------------------------------------------
+#  Launched (hidden, elevated) by ..\Install.bat.
+# ─────────────────────────────────────────────────────────────────
 
 [CmdletBinding()]
 param()
+
+# === Stage 1: tracing & error trap ==================================
+# Write a trace marker at the VERY first line, before any Add-Type or
+# StrictMode, so we can see in %TEMP%\fitro360-trace.log exactly how
+# far we got even if everything that follows blows up.
+$Trace = Join-Path $env:TEMP 'fitro360-trace.log'
+function Write-Trace {
+  param([string]$Msg)
+  try { "[{0}] install.ps1: {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Msg | Out-File -LiteralPath $Trace -Encoding UTF8 -Append } catch {}
+}
+Write-Trace "started, PSScriptRoot='$PSScriptRoot', PID=$PID, IsAdmin=...checking"
+
+# Top-level trap so ANY uncaught error in this script surfaces as a
+# MessageBox AND lands in the trace log (instead of silently dying).
+trap {
+  Write-Trace ("UNCAUGHT: {0}`n  at: {1}" -f $_.Exception.Message, $_.InvocationInfo.PositionMessage)
+  try {
+    Add-Type -AssemblyName PresentationFramework -ErrorAction SilentlyContinue
+    [System.Windows.MessageBox]::Show(
+      ("Installer crashed:`n`n{0}`n`nDetails: $Trace" -f $_.Exception.Message),
+      'Fitro360 - install error','OK','Error') | Out-Null
+  } catch {}
+  exit 1
+}
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 Add-Type -AssemblyName PresentationFramework | Out-Null
+Write-Trace "PresentationFramework loaded"
 
 function Show-Msg {
   param([string]$Text, [string]$Title = 'Fitro360 Relay', [string]$Icon = 'Information')
@@ -24,47 +47,52 @@ $here = $PSScriptRoot                       # ...\release\lib
 $exe  = Join-Path $here 'fitro360-relay.exe'
 $gui  = Join-Path $here 'setup-gui.ps1'
 $mgr  = Join-Path $here 'manager.ps1'
+Write-Trace "paths: exe='$exe', gui='$gui'"
 
 if (-not (Test-Path -LiteralPath $exe)) {
+  Write-Trace "exe missing: $exe"
   Show-Msg "fitro360-relay.exe was not found in:`n$here`n`nPlease re-extract the entire release zip and try again." 'Fitro360 - install error' 'Error'
   exit 1
 }
 if (-not (Test-Path -LiteralPath $gui)) {
+  Write-Trace "gui missing: $gui"
   Show-Msg "setup-gui.ps1 is missing from the lib folder." 'Fitro360 - install error' 'Error'
   exit 1
 }
 
-# Verify we are elevated (Install.bat already requested it).
+# Verify we are elevated.
 $pri = [Security.Principal.WindowsIdentity]::GetCurrent()
 $isAdmin = (New-Object Security.Principal.WindowsPrincipal $pri).IsInRole(
   [Security.Principal.WindowsBuiltInRole]::Administrator)
+Write-Trace "isAdmin=$isAdmin"
 if (-not $isAdmin) {
   Show-Msg "The installer needs administrator rights. Right-click Install.bat and choose Run as administrator." 'Fitro360 - install error' 'Error'
   exit 1
 }
 
-# Clear "Mark of the Web" from sibling scripts (defense in depth).
+# Clear MOTW from sibling scripts.
 try {
   Get-ChildItem -LiteralPath $here -Filter '*.ps1' -ErrorAction SilentlyContinue |
     ForEach-Object { Unblock-File -LiteralPath $_.FullName -ErrorAction SilentlyContinue }
-} catch {}
+  Write-Trace "Unblock-File swept"
+} catch { Write-Trace "Unblock-File error: $($_.Exception.Message)" }
 
-# 1. Setup wizard. Use -WorkingDirectory + relative -File so paths
-#    with spaces (e.g. "C:\Users\John Smith\...") don't break
-#    Start-Process's no-quoting-of-array-elements behaviour.
+# === Stage 2: setup wizard ==========================================
 $logErr = Join-Path $env:TEMP 'fitro360-wizard.err.log'
 $logOut = Join-Path $env:TEMP 'fitro360-wizard.out.log'
 if (Test-Path -LiteralPath $logErr) { Remove-Item -LiteralPath $logErr -Force -ErrorAction SilentlyContinue }
+Write-Trace "spawning setup-gui.ps1, WorkingDirectory='$here'"
 
 $wizard = Start-Process -FilePath 'powershell.exe' `
   -WorkingDirectory $here `
   -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File','setup-gui.ps1') `
   -Wait -PassThru -WindowStyle Hidden `
   -RedirectStandardOutput $logOut -RedirectStandardError $logErr
+Write-Trace "wizard exit=$($wizard.ExitCode)"
 
 switch ($wizard.ExitCode) {
   0 { } # saved - proceed
-  2 { exit 0 }   # user cancelled - silent
+  2 { Write-Trace "user cancelled"; exit 0 }
   default {
     $tail = ''
     if (Test-Path -LiteralPath $logErr) {
@@ -74,18 +102,19 @@ switch ($wizard.ExitCode) {
       } catch {}
     }
     if (-not $tail) { $tail = '(no error output captured)' }
-    Show-Msg "The setup wizard exited with code $($wizard.ExitCode). Service was NOT installed.`n`nLast error output:`n$tail`n`nFull log: $logErr" 'Fitro360 - setup failed' 'Error'
+    Show-Msg "The setup wizard exited with code $($wizard.ExitCode). Service was NOT installed.`n`nLast error output:`n$tail`n`nFull log: $logErr`nTrace: $Trace" 'Fitro360 - setup failed' 'Error'
     exit 1
   }
 }
 
-# 2. Register the boot service. The .exe is console-subsystem, so
-#    -WindowStyle Hidden + redirected output keeps it invisible.
+# === Stage 3: register boot service =================================
 $svcOut = Join-Path $env:TEMP 'fitro360-install.log'
 $svcErr = Join-Path $env:TEMP 'fitro360-install.err.log'
+Write-Trace "registering service via $exe --install-service"
 $svc = Start-Process -FilePath $exe -ArgumentList @('--install-service') `
   -Wait -PassThru -WindowStyle Hidden `
   -RedirectStandardOutput $svcOut -RedirectStandardError $svcErr
+Write-Trace "service install exit=$($svc.ExitCode)"
 if ($svc.ExitCode -ne 0) {
   $tail = ''
   if (Test-Path -LiteralPath $svcErr) {
@@ -95,8 +124,7 @@ if ($svc.ExitCode -ne 0) {
   exit 1
 }
 
-# 3. Create a Start Menu shortcut so the operator can re-open the
-#    manager later without finding this install folder again.
+# === Stage 4: Start Menu shortcut ===================================
 try {
   $startMenu = Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs'
   $lnkPath   = Join-Path $startMenu 'Fitro360 Relay.lnk'
@@ -106,17 +134,20 @@ try {
   $sc.Arguments        = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$mgr`""
   $sc.WorkingDirectory = $here
   $sc.IconLocation     = "$exe,0"
-  $sc.WindowStyle      = 7   # 7 = Minimized (the launcher window)
+  $sc.WindowStyle      = 7
   $sc.Description      = 'Open the Fitro360 Relay manager'
   $sc.Save()
+  Write-Trace "Start Menu shortcut created at $lnkPath"
 } catch {
-  # Non-fatal - installer continues.
+  Write-Trace "Start Menu shortcut FAILED: $($_.Exception.Message)"
 }
 
-# 4. Open the manager window so the operator sees it's running.
+# === Stage 5: open manager window ===================================
+Write-Trace "spawning manager.ps1"
 Start-Process -FilePath 'powershell.exe' `
   -WorkingDirectory $here `
   -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File','manager.ps1') `
   -WindowStyle Hidden | Out-Null
 
+Write-Trace "DONE"
 exit 0
