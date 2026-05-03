@@ -34,30 +34,59 @@ command formatting in particular varies slightly between firmwares.
 
 ## 2. Install
 
-### Option A — Linux (Debian / Ubuntu, recommended)
+### Option A — Windows (recommended, single .exe)
+
+The Windows release is a single self-contained `fitro360-relay.exe` —
+**no Node.js install required** on the gym PC. The download includes a
+one-click `install.bat` that runs the setup wizard and registers the
+agent as a Windows boot service for you.
+
+1. Download `fitro360-relay-windows-vX.Y.Z.zip` from your Fitro360
+   dashboard → **Devices → Download relay agent**.
+2. Unzip the folder anywhere (e.g. `C:\Fitro360`).
+3. **Right-click `install.bat` → "Run as administrator"**.
+4. Answer the wizard prompts (cloud URL, brand, serial, secret, device
+   IP, admin user/password). The secret input is masked.
+5. Done — the agent is running and will auto-start on every boot. The
+   config lives at `C:\ProgramData\Fitro360\config.json`, locked down
+   to Administrators / SYSTEM only.
+
+To uninstall: right-click `uninstall.bat` → Run as administrator.
+
+To re-run the wizard later (e.g. add another device):
+
+```cmd
+"C:\path\to\fitro360-relay.exe" --setup
+```
+
+To check status: `schtasks /Query /TN Fitro360Relay /V /FO LIST`
+
+**Building the release zip** (only needed if you're producing a fresh
+build for distribution — operators don't need this):
 
 ```bash
-# On the gym PC:
+cd relay-agent
+npm install -g @yao-pkg/pkg     # one-time, on the build machine
+bash scripts/build-windows.sh
+# → dist/fitro360-relay-windows-vX.Y.Z.zip
+```
+
+### Option B — Linux (Debian / Ubuntu)
+
+```bash
 sudo apt-get install -y nodejs       # Node.js 18+
-
-# Get the agent source (the `relay-agent/` folder shipped with Fitro360):
-#   - Download `relay-agent.tar.gz` from your Fitro360 dashboard
-#     → Devices → "Download relay agent", OR
-#   - Copy the `relay-agent/` folder out of the Fitro360 monorepo.
 cd /path/to/relay-agent
-
 sudo bash scripts/install-linux.sh
 sudo nano /etc/fitro360/config.json  # fill in cloudUrl + devices
 sudo systemctl start fitro360-relay
 sudo journalctl -u fitro360-relay -f
 ```
 
-**Build a `.deb` instead** (recommended for fleet rollout):
+**Build a `.deb` for fleet rollout:**
 
 ```bash
 cd relay-agent
 bash packaging/build-deb.sh
-# → dist/fitro360-relay_1.0.0_all.deb
 sudo dpkg -i dist/fitro360-relay_1.0.0_all.deb
 sudo nano /etc/fitro360/config.json
 sudo systemctl start fitro360-relay
@@ -65,32 +94,10 @@ sudo systemctl start fitro360-relay
 
 The `.deb` installs the agent under `/opt/fitro360-relay`, the systemd
 unit under `/lib/systemd/system/fitro360-relay.service`, the config
-example under `/etc/fitro360/`, and creates the `fitro360` system user
-on first install. Removing it (`sudo apt-get remove fitro360-relay`)
-stops and disables the service automatically.
+example under `/etc/fitro360/`, and creates the `fitro360` system user.
 
-### Option B — Windows
-
-1. Install Node.js 18+ from <https://nodejs.org/>.
-2. Download the latest `fitro360-relay-windows.zip` from the Fitro360
-   Devices page and unzip to a folder of your choice.
-3. Right-click PowerShell → **Run as Administrator** → run:
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File .\scripts\install-windows.ps1
-   ```
-4. Edit `C:\ProgramData\Fitro360\config.json` with your cloud URL, device
-   serial, and secret.
-5. The agent is registered as a Scheduled Task that starts on boot. To
-   restart manually: `Start-ScheduledTask -TaskName Fitro360Relay`.
-
-To produce a single-file `.exe` (no Node install required for the operator),
-run on a build machine:
-
-```bash
-npm install -g pkg
-cd relay-agent
-npm run package:win   # → dist/fitro360-relay.exe
-```
+You can also run the wizard on Linux:
+`sudo /opt/fitro360-relay/src/index.js --setup`.
 
 ### Option C — Docker (any OS with Docker)
 
