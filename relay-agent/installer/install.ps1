@@ -17,7 +17,7 @@ function Write-Trace {
   param([string]$Msg)
   try { "[{0}] install.ps1: {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Msg | Out-File -LiteralPath $Trace -Encoding UTF8 -Append } catch {}
 }
-Write-Trace "started, PSScriptRoot='$PSScriptRoot', PID=$PID, IsAdmin=...checking"
+Write-Trace "started, PSScriptRoot='$PSScriptRoot', PID=$PID, LangMode=$($ExecutionContext.SessionState.LanguageMode)"
 
 # Top-level trap so ANY uncaught error in this script surfaces as a
 # MessageBox AND lands in the trace log (instead of silently dying).
@@ -93,6 +93,20 @@ Write-Trace "wizard exit=$($wizard.ExitCode)"
 switch ($wizard.ExitCode) {
   0 { } # saved - proceed
   2 { Write-Trace "user cancelled"; exit 0 }
+  3 {
+    Write-Trace "wizard refused to run: Constrained Language Mode (Smart App Control)"
+    Show-Msg ("Windows Smart App Control is blocking the graphical setup wizard " +
+      "(PowerShell is locked into Constrained Language Mode for unsigned scripts).`n`n" +
+      "Two options:`n" +
+      "  1. Disable Smart App Control: Windows Security -> App & browser control" +
+      " -> Smart App Control settings -> Off. (One-way: cannot be re-enabled" +
+      " without reinstalling Windows.)`n`n" +
+      "  2. Run the CLI setup wizard instead. Open Command Prompt as Administrator" +
+      " and run:`n      `"$exe`" --setup`n" +
+      "    Then:`n      `"$exe`" --install-service`n`n" +
+      "Trace: $Trace") 'Fitro360 - Smart App Control blocking GUI' 'Warning'
+    exit 1
+  }
   default {
     $tail = ''
     if (Test-Path -LiteralPath $logErr) {

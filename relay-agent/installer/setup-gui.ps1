@@ -22,10 +22,24 @@ param(
   [string]$DefaultCloudUrl = 'https://app.fitro360.com'
 )
 
-# Trace marker at the very top, before StrictMode/Add-Type, so we
-# can see in %TEMP%\fitro360-trace.log if this script even started.
+# Trace marker at the very top, before StrictMode/Add-Type.
 $Trace = Join-Path $env:TEMP 'fitro360-trace.log'
-try { "[{0}] setup-gui.ps1: started PID=$PID" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | Out-File -LiteralPath $Trace -Encoding UTF8 -Append } catch {}
+function _trace { param([string]$m) try { "[{0}] setup-gui.ps1: {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $m | Out-File -LiteralPath $Trace -Encoding UTF8 -Append } catch {} }
+_trace "started PID=$PID"
+
+# Detect Constrained Language Mode (Smart App Control / WDAC forces
+# this on unsigned scripts and silently blocks Add-Type / .NET method
+# calls — which would kill our WinForms wizard with no error visible).
+$lang = $ExecutionContext.SessionState.LanguageMode
+_trace "LanguageMode=$lang"
+if ("$lang" -ne 'FullLanguage') {
+  _trace "FATAL: not in FullLanguage. Smart App Control or WDAC is forcing $lang."
+  # Try to surface a Win32 MessageBox via cmd's msg.exe (works even in CLM).
+  try {
+    & "$env:SystemRoot\System32\msg.exe" * /TIME:60 "Fitro360: Windows Smart App Control is blocking the graphical setup wizard (PowerShell language mode = $lang). Please disable Smart App Control temporarily, OR run the CLI setup: open Command Prompt as administrator and run `"$PSScriptRoot\fitro360-relay.exe`" --setup" 2>$null
+  } catch {}
+  exit 3
+}
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -37,9 +51,8 @@ trap {
   try {
     "[{0}] {1}`n{2}" -f (Get-Date), $_.Exception.Message, $_.ScriptStackTrace |
       Out-File -LiteralPath $errFile -Encoding UTF8 -Append
-    "[{0}] setup-gui.ps1: CRASHED {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $_.Exception.Message |
-      Out-File -LiteralPath $Trace -Encoding UTF8 -Append
   } catch {}
+  _trace "CRASHED $($_.Exception.Message) at $($_.InvocationInfo.PositionMessage)"
   try {
     Add-Type -AssemblyName PresentationFramework -ErrorAction SilentlyContinue
     [System.Windows.MessageBox]::Show(
@@ -49,9 +62,13 @@ trap {
   exit 1
 }
 
+_trace "loading System.Windows.Forms"
 Add-Type -AssemblyName System.Windows.Forms
+_trace "loading System.Drawing"
 Add-Type -AssemblyName System.Drawing
+_trace "EnableVisualStyles"
 [System.Windows.Forms.Application]::EnableVisualStyles()
+_trace "WinForms loaded OK"
 
 $KnownBrands = @(
   'zkteco','essl','realtime','hikvision','suprema',
@@ -195,6 +212,7 @@ function Show-DeviceDialog {
 # ---------------------------------------------------------------------
 #  Main wizard window.
 # ---------------------------------------------------------------------
+_trace "building main form"
 $main = New-Object System.Windows.Forms.Form
 $main.Text = 'Fitro360 Relay Agent - Setup'
 $main.StartPosition = 'CenterScreen'
