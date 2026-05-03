@@ -1,6 +1,6 @@
 #requires -version 5.0
-# ─────────────────────────────────────────────────────────────────────
-#  Fitro360 Relay Manager — small "control panel" window.
+# ---------------------------------------------------------------------
+#  Fitro360 Relay Manager - small "control panel" window.
 #
 #  Shows the live state of the Fitro360Relay scheduled task, the
 #  configured devices, and the latest log lines. Buttons let the
@@ -9,7 +9,7 @@
 #
 #  Self-elevates if the user launches it without admin rights, since
 #  start/stop and Save & install all need elevation.
-# ─────────────────────────────────────────────────────────────────────
+# ---------------------------------------------------------------------
 
 [CmdletBinding()]
 param(
@@ -67,7 +67,7 @@ function Run-Exe([string[]]$args) {
       'Missing binary','OK','Error') | Out-Null
     return
   }
-  # WindowStyle Hidden — the .exe is a console-subsystem binary, so
+  # WindowStyle Hidden - the .exe is a console-subsystem binary, so
   # without this a black console window flashes for each click.
   $logOut = Join-Path $env:TEMP 'fitro360-mgr.log'
   Start-Process -FilePath $ExePath -ArgumentList $args -Wait `
@@ -75,7 +75,7 @@ function Run-Exe([string[]]$args) {
     -RedirectStandardOutput $logOut -RedirectStandardError "$logOut.err" | Out-Null
 }
 
-# ─── Main window ──────────────────────────────────────────────────
+# --- Main window --------------------------------------------------
 $form = New-Object System.Windows.Forms.Form
 $form.Text = 'Fitro360 Relay Manager'
 $form.StartPosition = 'CenterScreen'

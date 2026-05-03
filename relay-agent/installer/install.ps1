@@ -1,11 +1,11 @@
 #requires -version 5.0
-# ─────────────────────────────────────────────────────────────────
-#  Fitro360 Relay Agent — installer orchestrator (no console UI).
+# -----------------------------------------------------------------
+#  Fitro360 Relay Agent - installer orchestrator (no console UI).
 #
 #  Lives in <release>\lib\ alongside the .exe and helper scripts.
 #  Launched (hidden, elevated) by ..\Install.bat. All user-facing
 #  output is via WPF MessageBox so no console window ever appears.
-# ─────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------
 
 [CmdletBinding()]
 param()
@@ -26,11 +26,11 @@ $gui  = Join-Path $here 'setup-gui.ps1'
 $mgr  = Join-Path $here 'manager.ps1'
 
 if (-not (Test-Path -LiteralPath $exe)) {
-  Show-Msg "fitro360-relay.exe was not found in:`n$here`n`nPlease re-extract the entire release zip and try again." 'Fitro360 — install error' 'Error'
+  Show-Msg "fitro360-relay.exe was not found in:`n$here`n`nPlease re-extract the entire release zip and try again." 'Fitro360 - install error' 'Error'
   exit 1
 }
 if (-not (Test-Path -LiteralPath $gui)) {
-  Show-Msg "setup-gui.ps1 is missing from the lib folder." 'Fitro360 — install error' 'Error'
+  Show-Msg "setup-gui.ps1 is missing from the lib folder." 'Fitro360 - install error' 'Error'
   exit 1
 }
 
@@ -39,7 +39,7 @@ $pri = [Security.Principal.WindowsIdentity]::GetCurrent()
 $isAdmin = (New-Object Security.Principal.WindowsPrincipal $pri).IsInRole(
   [Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
-  Show-Msg "The installer needs administrator rights. Right-click Install.bat and choose Run as administrator." 'Fitro360 — install error' 'Error'
+  Show-Msg "The installer needs administrator rights. Right-click Install.bat and choose Run as administrator." 'Fitro360 - install error' 'Error'
   exit 1
 }
 
@@ -63,8 +63,8 @@ $wizard = Start-Process -FilePath 'powershell.exe' `
   -RedirectStandardOutput $logOut -RedirectStandardError $logErr
 
 switch ($wizard.ExitCode) {
-  0 { } # saved — proceed
-  2 { exit 0 }   # user cancelled — silent
+  0 { } # saved - proceed
+  2 { exit 0 }   # user cancelled - silent
   default {
     $tail = ''
     if (Test-Path -LiteralPath $logErr) {
@@ -74,7 +74,7 @@ switch ($wizard.ExitCode) {
       } catch {}
     }
     if (-not $tail) { $tail = '(no error output captured)' }
-    Show-Msg "The setup wizard exited with code $($wizard.ExitCode). Service was NOT installed.`n`nLast error output:`n$tail`n`nFull log: $logErr" 'Fitro360 — setup failed' 'Error'
+    Show-Msg "The setup wizard exited with code $($wizard.ExitCode). Service was NOT installed.`n`nLast error output:`n$tail`n`nFull log: $logErr" 'Fitro360 - setup failed' 'Error'
     exit 1
   }
 }
@@ -91,7 +91,7 @@ if ($svc.ExitCode -ne 0) {
   if (Test-Path -LiteralPath $svcErr) {
     try { $tail = (Get-Content -LiteralPath $svcErr -Tail 10) -join "`n" } catch {}
   }
-  Show-Msg "Service registration failed (code $($svc.ExitCode)).`n`n$tail`n`nFull log: $svcOut" 'Fitro360 — install failed' 'Error'
+  Show-Msg "Service registration failed (code $($svc.ExitCode)).`n`n$tail`n`nFull log: $svcOut" 'Fitro360 - install failed' 'Error'
   exit 1
 }
 
@@ -110,7 +110,7 @@ try {
   $sc.Description      = 'Open the Fitro360 Relay manager'
   $sc.Save()
 } catch {
-  # Non-fatal — installer continues.
+  # Non-fatal - installer continues.
 }
 
 # 4. Open the manager window so the operator sees it's running.

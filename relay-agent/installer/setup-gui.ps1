@@ -1,6 +1,6 @@
 #requires -version 5.0
-# ─────────────────────────────────────────────────────────────────────
-#  Fitro360 Relay Agent — Windows Forms setup wizard.
+# ---------------------------------------------------------------------
+#  Fitro360 Relay Agent - Windows Forms setup wizard.
 #
 #  A native-looking GUI that replaces the CLI prompts. Collects the
 #  same fields the .exe --setup wizard does, validates them, and
@@ -14,7 +14,7 @@
 #    0  = config saved (caller should proceed to install service)
 #    2  = user cancelled (caller should abort silently)
 #    1  = unrecoverable error (caller should show its own message)
-# ─────────────────────────────────────────────────────────────────────
+# ---------------------------------------------------------------------
 
 [CmdletBinding()]
 param(
@@ -37,7 +37,7 @@ trap {
     Add-Type -AssemblyName PresentationFramework -ErrorAction SilentlyContinue
     [System.Windows.MessageBox]::Show(
       "The setup window crashed:`n`n$($_.Exception.Message)`n`nDetails written to:`n$errFile",
-      'Fitro360 — setup error','OK','Error') | Out-Null
+      'Fitro360 - setup error','OK','Error') | Out-Null
   } catch {}
   exit 1
 }
@@ -51,7 +51,7 @@ $KnownBrands = @(
   'matrix','anviz','dahua','idemia','virdi','hid'
 )
 
-# ─── Load any existing config so re-running the wizard pre-fills the form ───
+# --- Load any existing config so re-running the wizard pre-fills the form ---
 $existing = $null
 if (Test-Path -LiteralPath $ConfigPath) {
   try { $existing = Get-Content -LiteralPath $ConfigPath -Raw | ConvertFrom-Json }
@@ -76,16 +76,16 @@ if ($existing -and $existing.devices) {
   }
 }
 
-# ─────────────────────────────────────────────────────────────────────
+# ---------------------------------------------------------------------
 #  Device editor sub-dialog. Returns $null on cancel, otherwise a
 #  pscustomobject with all fields populated.
-# ─────────────────────────────────────────────────────────────────────
+# ---------------------------------------------------------------------
 function Show-DeviceDialog {
   param($Device)
 
   $isEdit = $null -ne $Device
   $form = New-Object System.Windows.Forms.Form
-  $form.Text = if ($isEdit) { "Edit device — $($Device.serial)" } else { 'Add biometric device' }
+  $form.Text = if ($isEdit) { "Edit device - $($Device.serial)" } else { 'Add biometric device' }
   $form.StartPosition = 'CenterParent'
   $form.FormBorderStyle = 'FixedDialog'
   $form.MaximizeBox = $false
@@ -185,11 +185,11 @@ function Show-DeviceDialog {
   }
 }
 
-# ─────────────────────────────────────────────────────────────────────
+# ---------------------------------------------------------------------
 #  Main wizard window.
-# ─────────────────────────────────────────────────────────────────────
+# ---------------------------------------------------------------------
 $main = New-Object System.Windows.Forms.Form
-$main.Text = 'Fitro360 Relay Agent — Setup'
+$main.Text = 'Fitro360 Relay Agent - Setup'
 $main.StartPosition = 'CenterScreen'
 $main.FormBorderStyle = 'FixedDialog'
 $main.MaximizeBox = $false
@@ -419,7 +419,7 @@ $btnSave.Add_Click({
     & icacls.exe $dir '/grant:r' '*S-1-5-32-544:(OI)(CI)F' 2>$null | Out-Null
     & icacls.exe $dir '/grant:r' '*S-1-5-18:(OI)(CI)F'    2>$null | Out-Null
 
-    # Write BOM-less UTF-8 — Windows PowerShell 5.1's `Set-Content -Encoding UTF8`
+    # Write BOM-less UTF-8 - Windows PowerShell 5.1's `Set-Content -Encoding UTF8`
     # prepends a BOM, which makes Node's JSON.parse() throw when the agent
     # reads the file. Use .NET directly to guarantee no BOM.
     $json = $cfg | ConvertTo-Json -Depth 5
